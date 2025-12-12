@@ -9,11 +9,6 @@ const withNextra = nextra({
 export default withNextra({
   reactStrictMode: true,
   pageExtensions: ['ts', 'tsx', 'mdx'],
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if

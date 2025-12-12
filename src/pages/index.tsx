@@ -1,0 +1,17 @@
+import HomeExperience from '../app/HomeExperience'
+import DesktopLayout from '../layout/desktop/Layout'
+import MobileLayout from '../layout/mobile/Layout'
+import useDevice from '../hooks/useDevice'
+
+export default function IndexPage() {
+  const isMobile = useDevice()
+
+  const content = <HomeExperience />
+
+  return isMobile ? (
+    <MobileLayout>{content}</MobileLayout>
+  ) : (
+    <DesktopLayout>{content}</DesktopLayout>
+  )
+}
+

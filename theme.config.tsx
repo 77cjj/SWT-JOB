@@ -1,7 +1,10 @@
 import React from 'react';
 
 const config = {
-  logo: <span>SWT Docs</span>,
+  logo: <span>返回首页</span>,
+  nextThemes: {
+    defaultTheme: 'dark',
+  },
   project: {
     link: 'https://github.com/77cjj/swt-job-picker',
   },

@@ -29,21 +29,35 @@ function normalizeJob(job: any): JobRecord {
 }
 
 export function useSavedJobs() {
-  const [jobs, setJobs] = useState<JobRecord[]>(() => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-    try {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed.map(normalizeJob) : [];
-    } catch {
-      return [];
-    }
-  });
+  // 为了避免 SSR 首屏与 CSR 首屏不一致导致 hydration 失败：
+  // - 首次渲染（含客户端第一次渲染）一律返回 []
+  // - 挂载后再从 localStorage 读取并 setJobs
+  const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      setHydrated(true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      setJobs(Array.isArray(parsed) ? parsed.map(normalizeJob) : []);
+    } catch {
+      setJobs([]);
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!hydrated) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
-  }, [jobs]);
+  }, [jobs, hydrated]);
 
   const addJob = (job: JobRecord) => {
     setJobs((prev) => [...prev, job]);

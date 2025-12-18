@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Container, Typography, Box, Paper, Alert, Button } from '@mui/material';
 import JobForm from '../components/JobForm';
 import SavedJobCard from '../components/SavedJobCard';
@@ -20,6 +20,13 @@ export default function HomeExperience() {
     income: IncomeSummary | null;
     projectWeeks: number;
   } | null>(null);
+
+  const handlePreviewChange = useCallback(
+    (payload: { income: IncomeSummary | null; projectWeeks: number } | null) => {
+      setPreview(payload);
+    },
+    [],
+  );
 
   const comparedJobs = jobs.filter((job) => compareIds.includes(job.jobId));
 
@@ -92,9 +99,7 @@ export default function HomeExperience() {
                 </Box>
                 <JobForm
                   onSubmit={handleSubmit}
-                  onPreviewChange={(payload) => {
-                    setPreview(payload);
-                  }}
+                  onPreviewChange={handlePreviewChange}
                 />
               </Box>
 

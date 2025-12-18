@@ -2,9 +2,28 @@ import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import React from 'react';
-import { theme } from '../theme/theme';
+import { AppThemeProvider, useAppTheme } from '../context/AppThemeContext';
+import { createAppTheme } from '../theme/theme';
 import '../index.css';
 import 'nextra-theme-docs/style.css';
+import '../nextra-overrides.css';
+
+function SWTApp({ Component, pageProps }: AppProps) {
+  const { mode } = useAppTheme();
+  const theme = React.useMemo(() => createAppTheme(mode), [mode]);
+
+  React.useEffect(() => {
+    document.body.dataset.app = 'swt';
+    document.body.dataset.theme = mode;
+  }, [mode]);
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Component {...pageProps} />
+    </ThemeProvider>
+  );
+}
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -12,19 +31,21 @@ export default function App({ Component, pageProps }: AppProps) {
 
   React.useEffect(() => {
     // 让全局 CSS 可以区分 docs 与非 docs 页面，避免覆盖 Nextra 的 light/dark 主题样式
-    document.body.dataset.app = isDocs ? 'docs' : 'swt';
+    if (isDocs) {
+      document.body.dataset.app = 'docs';
+      delete document.body.dataset.theme;
+    }
   }, [isDocs]);
 
-  // Docs 交给 Nextra 控制主题；避免被 MUI 的 dark Theme + CssBaseline 覆盖
+  // Docs 交给 Nextra 控制主题；避免被 MUI 覆盖
   if (isDocs) {
     return <Component {...pageProps} />;
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Component {...pageProps} />
-    </ThemeProvider>
+    <AppThemeProvider>
+      <SWTApp Component={Component} pageProps={pageProps} />
+    </AppThemeProvider>
   );
 }
 

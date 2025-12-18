@@ -2,10 +2,10 @@
 
 @layer base {
   :root {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-      sans-serif;
+    font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei",
+      system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     line-height: 1.5;
-    font-weight: 400;
+    font-weight: 500;
     color-scheme: light dark;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -22,16 +22,29 @@
     @apply min-h-screen;
   }
 
-  /* 非 docs 页面（/swt 等）使用应用的暗色外观；docs 页面交给 Nextra 主题控制 */
-  body[data-app='swt'] {
+  /* 非 docs 页面（首页/选岗模拟）由我们自己控制 light/dark；docs 页面交给 Nextra 主题控制 */
+  body[data-app='swt'][data-theme='dark'] {
     @apply bg-neutral-950 text-neutral-100;
   }
 
-  body[data-app='swt'] a {
+  body[data-app='swt'][data-theme='light'] {
+    @apply bg-white text-neutral-900;
+  }
+
+  body[data-app='swt'][data-theme='dark'] a {
     @apply font-medium text-indigo-400 transition-colors hover:text-indigo-300;
   }
 
-  body[data-app='swt'] button {
+  body[data-app='swt'][data-theme='light'] a {
+    @apply font-medium text-indigo-600 transition-colors hover:text-indigo-500;
+  }
+
+  /* 避免影响 MUI Button/IconButton（它们会带 .MuiButtonBase-root） */
+  body[data-app='swt'][data-theme='dark'] button:not(.MuiButtonBase-root) {
     @apply rounded-lg border border-transparent bg-neutral-900 px-5 py-2 font-medium text-white transition-colors hover:border-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500;
+  }
+
+  body[data-app='swt'][data-theme='light'] button:not(.MuiButtonBase-root) {
+    @apply rounded-lg border border-neutral-200 bg-neutral-50 px-5 py-2 font-medium text-neutral-900 transition-colors hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500;
   }
 }

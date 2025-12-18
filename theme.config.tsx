@@ -6,9 +6,9 @@ const config = {
     defaultTheme: 'dark',
   },
   project: {
-    link: 'https://github.com/77cjj/swt-job-picker',
+    link: 'https://github.com/77cjj/SWT-JOB',
   },
-  docsRepositoryBase: 'https://github.com/77cjj/swt-job-picker',
+  docsRepositoryBase: 'https://github.com/77cjj/SWT-JOB',
   footer: {
     text: 'SWT Job Picker Documentation © 2024',
   },

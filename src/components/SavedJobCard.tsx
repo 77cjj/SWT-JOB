@@ -51,12 +51,6 @@ export default function SavedJobCard({
     return 'warning';
   };
 
-  const getSecondJobColor = (level: JobRecord['secondJobPossible']) => {
-    if (level === '高') return 'primary';
-    if (level === '中') return 'info';
-    return 'default';
-  };
-
   return (
     <Card
       sx={{
@@ -133,12 +127,7 @@ export default function SavedJobCard({
             color={getIncomeColor(Math.round(income.netIncomeWithSecondJob))}
             variant="outlined"
           />
-          <Chip
-            label={`二工：${job.secondJobPossible}`}
-            size="small"
-            color={getSecondJobColor(job.secondJobPossible)}
-            variant="outlined"
-          />
+         
         </Box>
 
         <Box

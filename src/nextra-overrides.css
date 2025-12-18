@@ -1,0 +1,17 @@
+/* Nextra 文档主题的最小覆盖：
+   - 必须在 `nextra-theme-docs/style.css` 之后加载，否则会被它的 `html { font-family: ... }` 覆盖
+   - PingFang 仅在 macOS/iOS 上存在；Windows/Linux 会走后面的中文/系统字体 fallback
+*/
+
+html {
+  font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei",
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans",
+    "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+}
+
+body {
+  font-weight: 500;
+}
+
+

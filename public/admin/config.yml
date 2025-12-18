@@ -1,6 +1,9 @@
 backend:
-  name: git-gateway
-  branch: main # Branch to update (optional; defaults to master)
+  name: github
+  repo: 77cjj/SWT-JOB
+  branch: main
+  base_url: https://你的Vercel域名.vercel.app # 替换为你的真实域名
+  auth_endpoint: api/auth # 对应 src/pages/api/auth.ts
 
 media_folder: "public/images"
 public_folder: "/images"

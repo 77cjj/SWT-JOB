@@ -1,8 +1,6 @@
 {
-  "index": "项目概览",
-  "basics": "新手入门",
-  "jobs": "岗位指南",
-  "income": "搞钱攻略",
-  "safety": "安全生存",
-  "faq": "常见问题"
+  "intro": "项目介绍",
+  "preparation": "行前准备",
+  "experience": "行中指南",
+  "after": "行后与归国"
 }

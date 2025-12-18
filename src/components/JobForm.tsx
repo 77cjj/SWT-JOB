@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -21,8 +21,9 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import type { JobRecord, SecondJobDifficulty } from '../types/job';
-import { stateTaxLookup } from '../data/jobs';
-import { computeIncome } from '../utils/jobMetrics';
+import taxTable from '../data/tax.json';
+import { computeIncome, type IncomeSummary } from '../utils/jobMetrics';
+import { getStateMaxMarginalRate } from '../utils/stateTax';
 
 const JOB_TITLE_OPTIONS = [
   'Host',
@@ -33,13 +34,22 @@ const JOB_TITLE_OPTIONS = [
   'Retail',
 ];
 
+const STATE_OPTIONS = (taxTable as { personal_income_tax_rates: Array<{ state: string }> })
+  .personal_income_tax_rates
+  .map((x) => x.state)
+  .sort();
+
 interface Props {
   onSubmit: (job: JobRecord) => void;
   initialData?: JobRecord;
   onCancel?: () => void;
+  onPreviewChange?: (payload: {
+    income: IncomeSummary | null;
+    projectWeeks: number;
+  }) => void;
 }
 
-export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
+export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChange }: Props) {
   const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState<Partial<JobRecord>>(
     initialData ?? {
@@ -52,8 +62,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       avgHoursPerWeek: 40,
       workHoursRange: [35, 45],
       overtimeAvailable: false,
-      startDate: '',
-      endDate: '',
       hasHousing: false,
       housingCostPerWeek: 120,
       housingDistanceKm: 2,
@@ -66,8 +74,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       employerRating: 3,
       lastYearIncidents: false,
       description: '',
-      highlights: [],
-      stateTaxRate: stateTaxLookup.CA,
       projectStartDate: '2026-06-01',
       projectEndDate: '2026-09-15',
     },
@@ -87,8 +93,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       jobTitle: (formData.jobTitle?.trim() ? formData.jobTitle.trim() : '未命名岗位'),
       company: (formData.company?.trim() ? formData.company.trim() : '未知公司'),
       state,
-      stateTaxRate: formData.stateTaxRate ?? stateTaxLookup[state] ?? 0,
-      jobType: formData.jobType ?? '',
       hourlyWage,
       overtimeRate: formData.overtimeRate ?? 1.5,
       tipped: formData.tipped ?? false,
@@ -108,7 +112,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       employerRating: (formData.employerRating ?? 3) as 1 | 2 | 3 | 4 | 5,
       lastYearIncidents: formData.lastYearIncidents ?? false,
       description: formData.description ?? '',
-      highlights: formData.highlights ?? [],
       projectStartDate: formData.projectStartDate ?? '2026-06-01',
       projectEndDate: formData.projectEndDate ?? '2026-09-15',
     };
@@ -120,12 +123,14 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
     });
   }, [formData]);
 
-  const projectStartDate = formData.projectStartDate 
-    ? dayjs(formData.projectStartDate) 
-    : dayjs('2026-06-01');
-  const projectEndDate = formData.projectEndDate 
-    ? dayjs(formData.projectEndDate) 
-    : dayjs('2026-09-15');
+  const projectStartDate = useMemo(() => {
+    const d = dayjs(formData.projectStartDate ?? '2026-06-01');
+    return d.isValid() ? d : dayjs('2026-06-01');
+  }, [formData.projectStartDate]);
+  const projectEndDate = useMemo(() => {
+    const d = dayjs(formData.projectEndDate ?? '2026-09-15');
+    return d.isValid() ? d : dayjs('2026-09-15');
+  }, [formData.projectEndDate]);
 
   const projectDurationWeeks = useMemo(() => {
     const diff = projectEndDate.diff(projectStartDate, 'day');
@@ -137,6 +142,14 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
     if (!estimatedIncome || projectDurationWeeks === 0) return null;
     return estimatedIncome.netIncomeWithSecondJob * projectDurationWeeks;
   }, [estimatedIncome, projectDurationWeeks]);
+
+  useEffect(() => {
+    if (!onPreviewChange) return;
+    onPreviewChange({
+      income: estimatedIncome,
+      projectWeeks: projectDurationWeeks,
+    });
+  }, [estimatedIncome, onPreviewChange, projectDurationWeeks]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,8 +167,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       jobTitle: (formData.jobTitle?.trim() ? formData.jobTitle.trim() : '未命名岗位'),
       company: (formData.company?.trim() ? formData.company.trim() : '未知公司'),
       state: formData.state!,
-      stateTaxRate: formData.stateTaxRate ?? stateTaxLookup[formData.state!] ?? 0,
-      jobType: formData.jobType ?? '',
       hourlyWage: formData.hourlyWage ?? 15,
       overtimeRate: formData.overtimeRate ?? 1.5,
       tipped: formData.tipped ?? false,
@@ -163,8 +174,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       avgHoursPerWeek: formData.avgHoursPerWeek ?? 40,
       workHoursRange: formData.workHoursRange ?? [35, 45],
       overtimeAvailable: formData.overtimeAvailable ?? false,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
       hasHousing: formData.hasHousing ?? false,
       housingCostPerWeek: formData.housingCostPerWeek ?? 120,
       housingDistanceKm: formData.housingDistanceKm ?? 2,
@@ -177,7 +186,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       employerRating: (formData.employerRating ?? 3) as 1 | 2 | 3 | 4 | 5,
       lastYearIncidents: formData.lastYearIncidents ?? false,
       description: formData.description ?? '',
-      highlights: formData.highlights ?? [],
       projectStartDate: projectStartDate.format('YYYY-MM-DD'),
       projectEndDate: projectEndDate.format('YYYY-MM-DD'),
     };
@@ -194,8 +202,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
         avgHoursPerWeek: 40,
         workHoursRange: [35, 45],
         overtimeAvailable: false,
-        startDate: '',
-        endDate: '',
         hasHousing: false,
         housingCostPerWeek: 120,
         housingDistanceKm: 2,
@@ -208,8 +214,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
         employerRating: 3,
         lastYearIncidents: false,
         description: '',
-        highlights: [],
-        stateTaxRate: stateTaxLookup.CA,
         projectStartDate: '2026-06-01',
         projectEndDate: '2026-09-15',
       });
@@ -290,15 +294,18 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   setFormData({
                     ...formData,
                     state,
-                    stateTaxRate: stateTaxLookup[state] ?? 0,
                   });
                 }}
               >
-                {Object.keys(stateTaxLookup).map((s) => (
+                {STATE_OPTIONS.map((s) => {
+                  const maxRate = getStateMaxMarginalRate(s);
+                  const suffix = maxRate > 0 ? `（最高税率 ${(maxRate * 100).toFixed(2)}%）` : '（免州税）';
+                  return (
                   <MenuItem key={s} value={s}>
-                    {s} (税率 {(stateTaxLookup[s] * 100).toFixed(1)}%)
+                    {s} {suffix}
                   </MenuItem>
-                ))}
+                  );
+                })}
               </TextField>
             </Box>
           </Box>
@@ -331,6 +338,7 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   </Typography>
                 </Typography>
                 <Slider
+                  size="small"
                   value={formData.hourlyWage ?? 15}
                   min={5}
                   max={35}
@@ -356,6 +364,7 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   </Typography>
                 </Typography>
                 <Slider
+                  size="small"
                   value={formData.avgHoursPerWeek ?? 40}
                   min={20}
                   max={60}
@@ -389,6 +398,7 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   </Typography>
                 </Typography>
                 <Slider
+                  size="small"
                   value={formData.secondJobHours ?? 15}
                   min={0}
                   max={30}
@@ -460,53 +470,67 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
               />
               {formData.hasHousing && (
                 <>
-                  <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 250px' }, minWidth: 200 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      住宿费用 ($/周)
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ ml: 1 }}
-                      >
-                        当前 ${formData.housingCostPerWeek ?? 120}/周
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      flexWrap: 'nowrap',
+                      gap: 2,
+                      width: '100%',
+                      overflowX: { xs: 'auto', md: 'visible' },
+                      pb: { xs: 0.5, md: 0 },
+                    }}
+                  >
+                    <Box sx={{ flex: '0 0 190px', minWidth: 170 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, whiteSpace: 'nowrap' }}>
+                        费用
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ ml: 1 }}
+                        >
+                          当前 ${formData.housingCostPerWeek ?? 120}/周
+                        </Typography>
                       </Typography>
-                    </Typography>
-                    <Slider
-                      value={formData.housingCostPerWeek ?? 120}
-                      min={0}
-                      max={250}
-                      step={5}
-                      valueLabelDisplay="auto"
-                      onChange={(_, value) => {
-                        const next = Array.isArray(value) ? value[0] : value;
-                        setFormData({ ...formData, housingCostPerWeek: next });
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 250px' }, minWidth: 200 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      住宿距离 (km)
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ ml: 1 }}
-                      >
-                        当前 {formData.housingDistanceKm ?? 2} km
+                      <Slider
+                        size="small"
+                        value={formData.housingCostPerWeek ?? 120}
+                        min={0}
+                        max={250}
+                        step={5}
+                        valueLabelDisplay="auto"
+                        onChange={(_, value) => {
+                          const next = Array.isArray(value) ? value[0] : value;
+                          setFormData({ ...formData, housingCostPerWeek: next });
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ flex: '0 0 190px', minWidth: 170 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, whiteSpace: 'nowrap' }}>
+                        距离
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ ml: 1 }}
+                        >
+                          当前 {formData.housingDistanceKm ?? 2} km
+                        </Typography>
                       </Typography>
-                    </Typography>
-                    <Slider
-                      value={formData.housingDistanceKm ?? 2}
-                      min={0}
-                      max={15}
-                      step={0.5}
-                      valueLabelDisplay="auto"
-                      onChange={(_, value) => {
-                        const next = Array.isArray(value) ? value[0] : value;
-                        setFormData({ ...formData, housingDistanceKm: next });
-                      }}
-                    />
+                      <Slider
+                        size="small"
+                        value={formData.housingDistanceKm ?? 2}
+                        min={0}
+                        max={15}
+                        step={0.5}
+                        valueLabelDisplay="auto"
+                        onChange={(_, value) => {
+                          const next = Array.isArray(value) ? value[0] : value;
+                          setFormData({ ...formData, housingDistanceKm: next });
+                        }}
+                      />
+                    </Box>
                   </Box>
                 </>
               )}
@@ -519,10 +543,12 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                 gap: 3,
               }}
             >
-              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 50%' } }}>
+              <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 220px' }, minWidth: 0 }}>
                 <DatePicker
                   label="项目开始日期"
                   value={projectStartDate}
+                  format="YYYY-MM-DD"
+                  maxDate={projectEndDate}
                   onChange={(newValue) => {
                     if (newValue) {
                       setFormData({ ...formData, projectStartDate: newValue.format('YYYY-MM-DD') });
@@ -531,14 +557,17 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   slotProps={{
                     textField: {
                       fullWidth: true,
+                      size: 'small',
                     },
                   }}
                 />
               </Box>
-              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 50%' } }}>
+              <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 220px' }, minWidth: 0 }}>
                 <DatePicker
                   label="项目结束日期"
                   value={projectEndDate}
+                  format="YYYY-MM-DD"
+                  minDate={projectStartDate}
                   onChange={(newValue) => {
                     if (newValue) {
                       setFormData({ ...formData, projectEndDate: newValue.format('YYYY-MM-DD') });
@@ -547,6 +576,7 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   slotProps={{
                     textField: {
                       fullWidth: true,
+                      size: 'small',
                     },
                   }}
                 />

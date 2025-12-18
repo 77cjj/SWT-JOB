@@ -5,8 +5,6 @@ export interface JobRecord {
   jobTitle: string;
   company: string;
   state: string;
-  stateTaxRate: number; // 0.06 -> 6%
-  jobType: string;
 
   hourlyWage: number;
   overtimeRate: number;
@@ -16,10 +14,6 @@ export interface JobRecord {
   avgHoursPerWeek: number;
   workHoursRange: [number, number];
   overtimeAvailable: boolean;
-
-  // 工作时间段
-  startDate?: string; // ISO date string
-  endDate?: string; // ISO date string
 
   hasHousing: boolean;
   housingCostPerWeek: number;
@@ -36,7 +30,6 @@ export interface JobRecord {
   lastYearIncidents: boolean;
 
   description: string;
-  highlights: string[];
   projectStartDate: string;
   projectEndDate: string;
 }

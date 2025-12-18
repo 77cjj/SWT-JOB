@@ -81,7 +81,10 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
         },
         { label: '基础时薪', render: (j: JobRecord) => `$${j.hourlyWage.toFixed(2)}/h` },
         { label: '平均工时', render: (j: JobRecord) => `${j.avgHoursPerWeek}h/周` },
-        { label: '州税率', render: (j: JobRecord) => percent(j.stateTaxRate) },
+        {
+          label: '预估州税率',
+          render: (_j: JobRecord, i: number) => percent(items[i]!.income.stateTaxRateEffective),
+        },
         {
           label: '住宿',
           render: (j: JobRecord) =>

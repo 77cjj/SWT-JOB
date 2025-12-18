@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 
 export type AppThemeMode = 'light' | 'dark';
@@ -12,20 +13,28 @@ const AppThemeContext = React.createContext<AppThemeContextValue | null>(null);
 
 const STORAGE_KEY = 'swt-theme-mode';
 
-export function AppThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = React.useState<AppThemeMode>('light');
+function readStoredMode(): AppThemeMode | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    return saved === 'light' || saved === 'dark' ? saved : null;
+  } catch {
+    return null;
+  }
+}
 
-  // hydrate from localStorage (client only)
-  React.useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved === 'light' || saved === 'dark') {
-        setModeState(saved);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+function getSystemMode(): AppThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  try {
+    return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+export function AppThemeProvider({ children }: { children: React.ReactNode }) {
+  // 首次渲染：优先 localStorage；没有则跟随系统主题
+  const [mode, setModeState] = React.useState<AppThemeMode>(() => readStoredMode() ?? getSystemMode());
 
   const setMode = React.useCallback((next: AppThemeMode) => {
     setModeState(next);
@@ -48,6 +57,31 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // 仅当用户没有手动保存主题时，才跟随系统主题变化
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (readStoredMode()) return;
+
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return;
+
+    const handler = () => setModeState(mq.matches ? 'dark' : 'light');
+
+    // 初始化一次，避免系统主题切换前状态不一致
+    handler();
+
+    try {
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    } catch {
+      // Safari 老版本
+      mq.addListener?.(handler);
+      return () => {
+        mq.removeListener?.(handler);
+      };
+    }
+  }, []);
+
   const value = React.useMemo<AppThemeContextValue>(
     () => ({
       mode,
@@ -65,5 +99,3 @@ export function useAppTheme() {
   if (!ctx) throw new Error('useAppTheme must be used within AppThemeProvider');
   return ctx;
 }
-
-

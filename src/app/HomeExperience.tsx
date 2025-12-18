@@ -5,8 +5,10 @@ import SavedJobCard from '../components/SavedJobCard';
 import CompareDialog from '../components/CompareDialog';
 import JobDetailPanel from '../components/JobDetailPanel';
 import JobEditDialog from '../components/JobEditDialog';
+import IncomeBreakdownCard from '../components/IncomeBreakdownCard';
 import { useSavedJobs } from '../hooks/useSavedJobs';
 import type { JobRecord } from '../types/job';
+import type { IncomeSummary } from '../utils/jobMetrics';
 
 export default function HomeExperience() {
   const { jobs, addJob, updateJob, deleteJob } = useSavedJobs();
@@ -14,6 +16,10 @@ export default function HomeExperience() {
   const [editingJob, setEditingJob] = useState<JobRecord | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [preview, setPreview] = useState<{
+    income: IncomeSummary | null;
+    projectWeeks: number;
+  } | null>(null);
 
   const comparedJobs = jobs.filter((job) => compareIds.includes(job.jobId));
 
@@ -60,18 +66,20 @@ export default function HomeExperience() {
           <Box sx={{ width: '100%', maxWidth: '110rem' }}>
             <Box
               sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: 'center',
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  md: 'minmax(0, 520px) minmax(0, 1fr)',
+                },
+                alignItems: 'start',
                 gap: { xs: 3, md: 4 },
               }}
             >
               {/* 左侧：新建岗位表单 */}
               <Box
                 sx={{
-                  // 左侧表单列不要太宽，否则会挤压右侧“我的岗位”
-                  flex: { xs: '1 1 100%', md: '0 0 480px', lg: '0 0 900px' },
-                  minWidth: 0,
+                  gridColumn: { xs: '1', md: '1' },
+                  gridRow: { xs: 'auto', md: '1' },
                 }}
               >
                 <Box sx={{ mb: 2 }}>
@@ -82,11 +90,29 @@ export default function HomeExperience() {
                     填写岗位信息，保存后出现在右侧“我的岗位”
                   </Typography>
                 </Box>
-                <JobForm onSubmit={handleSubmit} />
+                <JobForm
+                  onSubmit={handleSubmit}
+                  onPreviewChange={(payload) => {
+                    setPreview(payload);
+                  }}
+                />
               </Box>
 
               {/* 右侧：我的岗位 */}
-              <Box sx={{ flex: '1 1 auto', minWidth: { xs: 0, md: 360 } }}>
+              <Box
+                sx={{
+                  gridColumn: { xs: '1', md: '2' },
+                  gridRow: { xs: 'auto', md: '1' },
+                  minWidth: { xs: 0, md: 360 },
+                }}
+              >
+                <Box sx={{ mb: 2 }}>
+                  <IncomeBreakdownCard
+                    title="收入拆解预览"
+                    income={preview?.income ?? null}
+                    projectWeeks={preview?.projectWeeks ?? 0}
+                  />
+                </Box>
                 <Box
                   sx={{
                     mb: 2,

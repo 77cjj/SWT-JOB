@@ -1,5 +1,6 @@
 import type { JobRecord } from '../types/job';
 import dayjs from 'dayjs';
+import { computeWeeklyStateTax } from './stateTax';
 
 const SECOND_JOB_DEFAULT_WAGE = 13;
 const DEFAULT_EXCHANGE_RATE = 7.2;
@@ -9,7 +10,6 @@ export interface IncomeOptions {
   primaryHours?: number;
   secondHours?: number;
   exchangeRate?: number;
-  taxRate?: number; // 州税率
   federalTaxRate?: number; // 联邦税率（简化预估）
   housingCost?: number;
 }
@@ -22,6 +22,7 @@ export interface IncomeSummary {
   totalGross: number;
   federalTax: number;
   stateTax: number;
+  stateTaxRateEffective: number; // 预估有效州税率（stateTax / taxableBase）
   tax: number; // federalTax + stateTax
   housing: number;
   netIncomePrimary: number;
@@ -44,7 +45,6 @@ export function getProjectDurationWeeks(job: Pick<JobRecord, 'projectStartDate' 
 export function computeIncome(job: JobRecord, options: IncomeOptions = {}): IncomeSummary {
   const primaryHours = options.primaryHours ?? job.avgHoursPerWeek;
   const secondHours = options.secondHours ?? job.secondJobHours;
-  const stateTaxRate = options.taxRate ?? job.stateTaxRate;
   const federalTaxRate = options.federalTaxRate ?? DEFAULT_FEDERAL_TAX_RATE;
   const housingCost = options.housingCost ?? job.housingCostPerWeek;
   const exchangeRate = options.exchangeRate ?? DEFAULT_EXCHANGE_RATE;
@@ -65,7 +65,8 @@ export function computeIncome(job: JobRecord, options: IncomeOptions = {}): Inco
   const taxableBase = Math.max(primaryGross - 150, 0);
   // 简化口径：按主要工作收入估算税基（与当前产品逻辑保持一致）
   const federalTax = taxableBase * federalTaxRate;
-  const stateTax = taxableBase * stateTaxRate;
+  const stateTax = computeWeeklyStateTax(job.state, taxableBase);
+  const stateTaxRateEffective = taxableBase > 0 ? stateTax / taxableBase : 0;
   const tax = federalTax + stateTax;
 
   const netIncomePrimary = primaryGross - tax - housingCost;
@@ -79,6 +80,7 @@ export function computeIncome(job: JobRecord, options: IncomeOptions = {}): Inco
     totalGross,
     federalTax,
     stateTax,
+    stateTaxRateEffective,
     tax,
     housing: housingCost,
     netIncomePrimary,

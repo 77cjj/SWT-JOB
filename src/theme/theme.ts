@@ -148,3 +148,7 @@ export function createAppTheme(mode: PaletteMode) {
 export const lightTheme = createAppTheme('light');
 export const darkTheme = createAppTheme('dark');
 
+// 兼容旧代码/插件的导入：某些地方可能会从 '../theme/theme' 直接 import { theme }
+// 默认导出亮色主题即可（暗色请使用 createAppTheme('dark') 或 darkTheme）
+export const theme = lightTheme;
+

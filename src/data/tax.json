@@ -1,0 +1,75 @@
+{
+    "personal_income_tax_rates": [
+      { "state": "AL", "rates": [ {"rate": "2.00%", "threshold": 0}, {"rate": "4.00%", "threshold": 500}, {"rate": "5.00%", "threshold": 3000} ] },
+      { "state": "AK", "rates": "none" },
+      { "state": "AZ", "rates": [ {"rate": "2.59%", "threshold": 0}, {"rate": "4.50%", "threshold": 159000} ] },
+      { "state": "AR", "rates": [ {"rate": "2.00%", "threshold": 0}, {"rate": "4.00%", "threshold": 4300}, {"rate": "5.90%", "threshold": 8400} ] },
+      { "state": "CA", "rates": [
+          {"rate": "1.00%", "threshold": 0}, {"rate": "2.00%", "threshold": 8809}, {"rate": "4.00%", "threshold": 20883},
+          {"rate": "6.00%", "threshold": 32960}, {"rate": "8.00%", "threshold": 45753}, {"rate": "9.30%", "threshold": 57821},
+          {"rate": "10.30%", "threshold": 312686}, {"rate": "11.30%", "threshold": 375221}, {"rate": "12.30%", "threshold": 625369},
+          {"rate": "13.30%", "threshold": 1000000}
+      ]},
+      { "state": "CO", "rates": [ {"rate": "4.55%", "threshold": 0} ] },
+      { "state": "CT", "rates": [
+          {"rate": "3.00%", "threshold": 0}, {"rate": "5.00%", "threshold": 10000}, {"rate": "5.50%", "threshold": 50000},
+          {"rate": "6.00%", "threshold": 100000}, {"rate": "6.50%", "threshold": 200000}, {"rate": "6.90%", "threshold": 250000},
+          {"rate": "6.99%", "threshold": 500000}
+      ]},
+      { "state": "DE", "rates": [
+          {"rate": "2.20%", "threshold": 2000}, {"rate": "3.90%", "threshold": 5000}, {"rate": "4.80%", "threshold": 10000},
+          {"rate": "5.20%", "threshold": 20000}, {"rate": "5.55%", "threshold": 25000}, {"rate": "6.60%", "threshold": 60000}
+      ]},
+      { "state": "FL", "rates": "none" },
+      { "state": "GA", "rates": [ {"rate": "1.00%", "threshold": 0}, {"rate": "5.75%", "threshold": 7000} ] },
+      { "state": "HI", "rates": [
+          {"rate": "1.40%", "threshold": 0}, {"rate": "3.20%", "threshold": 2400}, {"rate": "5.50%", "threshold": 9600},
+          {"rate": "7.20%", "threshold": 19200}, {"rate": "8.25%", "threshold": 48000}, {"rate": "11.00%", "threshold": 200000}
+      ]},
+      { "state": "ID", "rates": [ {"rate": "1.125%", "threshold": 0}, {"rate": "6.925%", "threshold": 11760} ] },
+      { "state": "IL", "rates": [ {"rate": "4.95%", "threshold": 0} ] },
+      { "state": "IN", "rates": [ {"rate": "3.23%", "threshold": 0} ] },
+      { "state": "IA", "rates": [ {"rate": "0.33%", "threshold": 0}, {"rate": "8.53%", "threshold": 74430} ] },
+      { "state": "KS", "rates": [ {"rate": "3.10%", "threshold": 0}, {"rate": "5.70%", "threshold": 30000} ] },
+      { "state": "KY", "rates": [ {"rate": "5.00%", "threshold": 0} ] },
+      { "state": "LA", "rates": [ {"rate": "2.00%", "threshold": 0}, {"rate": "6.00%", "threshold": 50000} ] },
+      { "state": "ME", "rates": [ {"rate": "5.80%", "threshold": 0}, {"rate": "7.15%", "threshold": 52400} ] },
+      { "state": "MD", "rates": [
+          {"rate": "2.00%", "threshold": 0}, {"rate": "4.75%", "threshold": 3000}, {"rate": "5.75%", "threshold": 250000}
+      ]},
+      { "state": "MA", "rates": [ {"rate": "5.00%", "threshold": 0} ] },
+      { "state": "MI", "rates": [ {"rate": "4.25%", "threshold": 0} ] },
+      { "state": "MN", "rates": [ {"rate": "5.35%", "threshold": 0}, {"rate": "9.85%", "threshold": 166040} ] },
+      { "state": "MS", "rates": [ {"rate": "0.00%", "threshold": 0}, {"rate": "5.00%", "threshold": 10000} ] },
+      { "state": "MO", "rates": [ {"rate": "0.00%", "threshold": 0}, {"rate": "5.40%", "threshold": 8700} ] },
+      { "state": "MT", "rates": [ {"rate": "1.00%", "threshold": 0}, {"rate": "6.90%", "threshold": 18700} ] },
+      { "state": "NE", "rates": [ {"rate": "2.46%", "threshold": 0}, {"rate": "6.84%", "threshold": 32210} ] },
+      { "state": "NV", "rates": "none" },
+      { "state": "NH", "rates": "none" },
+      { "state": "NJ", "rates": [
+          {"rate": "1.40%", "threshold": 0}, {"rate": "6.37%", "threshold": 75000}, {"rate": "10.75%", "threshold": 1000000}
+      ]},
+      { "state": "NM", "rates": [ {"rate": "1.70%", "threshold": 0}, {"rate": "5.90%", "threshold": 210000} ] },
+      { "state": "NY", "rates": [
+          {"rate": "4.00%", "threshold": 0}, {"rate": "5.97%", "threshold": 80650}, {"rate": "8.82%", "threshold": 1077550}
+      ]},
+      { "state": "NC", "rates": [ {"rate": "5.25%", "threshold": 0} ] },
+      { "state": "ND", "rates": [ {"rate": "1.10%", "threshold": 0}, {"rate": "2.90%", "threshold": 433400} ] },
+      { "state": "OH", "rates": [ {"rate": "0.00%", "threshold": 0}, {"rate": "4.79%", "threshold": 217400} ] },
+      { "state": "OK", "rates": [ {"rate": "0.50%", "threshold": 0}, {"rate": "5.00%", "threshold": 7200} ] },
+      { "state": "OR", "rates": [ {"rate": "4.75%", "threshold": 0}, {"rate": "9.90%", "threshold": 125000} ] },
+      { "state": "PA", "rates": [ {"rate": "3.07%", "threshold": 0} ] },
+      { "state": "RI", "rates": [ {"rate": "3.75%", "threshold": 0}, {"rate": "5.99%", "threshold": 155050} ] },
+      { "state": "SC", "rates": [ {"rate": "0.00%", "threshold": 0}, {"rate": "7.00%", "threshold": 15400} ] },
+      { "state": "SD", "rates": "none" },
+      { "state": "TN", "rates": "none" },
+      { "state": "TX", "rates": "none" },
+      { "state": "UT", "rates": [ {"rate": "4.95%", "threshold": 0} ] },
+      { "state": "VT", "rates": [ {"rate": "3.35%", "threshold": 0}, {"rate": "8.75%", "threshold": 204750} ] },
+      { "state": "VA", "rates": [ {"rate": "2.00%", "threshold": 0}, {"rate": "5.75%", "threshold": 17000} ] },
+      { "state": "WA", "rates": "none" },
+      { "state": "WV", "rates": [ {"rate": "3.00%", "threshold": 0}, {"rate": "6.50%", "threshold": 60000} ] },
+      { "state": "WI", "rates": [ {"rate": "3.54%", "threshold": 0}, {"rate": "7.65%", "threshold": 263480} ] },
+      { "state": "WY", "rates": "none" }
+    ]
+  }

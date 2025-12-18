@@ -1,13 +1,16 @@
 import type { JobRecord } from '../types/job';
+import dayjs from 'dayjs';
 
 const SECOND_JOB_DEFAULT_WAGE = 13;
 const DEFAULT_EXCHANGE_RATE = 7.2;
+const DEFAULT_FEDERAL_TAX_RATE = 0.1;
 
 export interface IncomeOptions {
   primaryHours?: number;
   secondHours?: number;
   exchangeRate?: number;
-  taxRate?: number;
+  taxRate?: number; // 州税率
+  federalTaxRate?: number; // 联邦税率（简化预估）
   housingCost?: number;
 }
 
@@ -16,17 +19,33 @@ export interface IncomeSummary {
   tipIncome: number;
   overtimeIncome: number;
   secondJobIncome: number;
-  tax: number;
+  totalGross: number;
+  federalTax: number;
+  stateTax: number;
+  tax: number; // federalTax + stateTax
   housing: number;
   netIncomePrimary: number;
   netIncomeWithSecondJob: number;
   incomeRmb: number;
 }
 
+export function getProjectDurationWeeks(job: Pick<JobRecord, 'projectStartDate' | 'projectEndDate'>): number {
+  const start = dayjs(job.projectStartDate);
+  const end = dayjs(job.projectEndDate);
+
+  if (!start.isValid() || !end.isValid()) return 0;
+
+  // 与 JobForm 中预估口径保持一致：按天差向上取整到周
+  const diff = end.diff(start, 'day');
+  if (diff <= 0) return 0;
+  return Math.max(1, Math.ceil(diff / 7));
+}
+
 export function computeIncome(job: JobRecord, options: IncomeOptions = {}): IncomeSummary {
   const primaryHours = options.primaryHours ?? job.avgHoursPerWeek;
   const secondHours = options.secondHours ?? job.secondJobHours;
-  const taxRate = options.taxRate ?? job.stateTaxRate;
+  const stateTaxRate = options.taxRate ?? job.stateTaxRate;
+  const federalTaxRate = options.federalTaxRate ?? DEFAULT_FEDERAL_TAX_RATE;
   const housingCost = options.housingCost ?? job.housingCostPerWeek;
   const exchangeRate = options.exchangeRate ?? DEFAULT_EXCHANGE_RATE;
 
@@ -44,7 +63,10 @@ export function computeIncome(job: JobRecord, options: IncomeOptions = {}): Inco
   const totalGross = primaryGross + secondJobIncome;
 
   const taxableBase = Math.max(primaryGross - 150, 0);
-  const tax = taxableBase * taxRate;
+  // 简化口径：按主要工作收入估算税基（与当前产品逻辑保持一致）
+  const federalTax = taxableBase * federalTaxRate;
+  const stateTax = taxableBase * stateTaxRate;
+  const tax = federalTax + stateTax;
 
   const netIncomePrimary = primaryGross - tax - housingCost;
   const netIncomeWithSecondJob = totalGross - tax - housingCost;
@@ -54,6 +76,9 @@ export function computeIncome(job: JobRecord, options: IncomeOptions = {}): Inco
     tipIncome,
     overtimeIncome,
     secondJobIncome,
+    totalGross,
+    federalTax,
+    stateTax,
     tax,
     housing: housingCost,
     netIncomePrimary,

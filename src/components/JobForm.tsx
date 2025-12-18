@@ -22,8 +22,6 @@ import dayjs from 'dayjs';
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import type { JobRecord, SecondJobDifficulty } from '../types/job';
 import { stateTaxLookup } from '../data/jobs';
-import type { CityOption } from '../data/usCities';
-import { usCities } from '../data/usCities';
 import { computeIncome } from '../utils/jobMetrics';
 
 const JOB_TITLE_OPTIONS = [
@@ -47,7 +45,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
     initialData ?? {
       jobTitle: '',
       company: '',
-      city: '',
       state: 'CA',
       hourlyWage: 15,
       overtimeRate: 1.5,
@@ -87,9 +84,8 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
 
     const mockJob: JobRecord = {
       jobId: 'PREVIEW',
-      jobTitle: formData.jobTitle ?? '预估岗位',
-      company: formData.company ?? '预估公司',
-      city: formData.city ?? '',
+      jobTitle: (formData.jobTitle?.trim() ? formData.jobTitle.trim() : '未命名岗位'),
+      company: (formData.company?.trim() ? formData.company.trim() : '未知公司'),
       state,
       stateTaxRate: formData.stateTaxRate ?? stateTaxLookup[state] ?? 0,
       jobType: formData.jobType ?? '',
@@ -124,12 +120,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
     });
   }, [formData]);
 
-  const matchedCityOption = useMemo<CityOption | null>(() => {
-    if (!formData.city) return null;
-    const cityLower = formData.city.toLowerCase();
-    return usCities.find((option) => option.city.toLowerCase() === cityLower) ?? null;
-  }, [formData.city]);
-
   const projectStartDate = formData.projectStartDate 
     ? dayjs(formData.projectStartDate) 
     : dayjs('2026-06-01');
@@ -151,18 +141,18 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (!formData.jobTitle || !formData.company || !formData.city || !formData.state) {
-      setError('请填写必填字段：岗位名、公司、城市、州');
+
+    // 岗位名/公司名允许为空：保存时兜底为默认占位文案
+    if (!formData.state) {
+      setError('请选择州');
       return;
     }
 
     const jobId = initialData?.jobId ?? `CUSTOM-${Date.now()}`;
     const job: JobRecord = {
       jobId,
-      jobTitle: formData.jobTitle!,
-      company: formData.company!,
-      city: formData.city!,
+      jobTitle: (formData.jobTitle?.trim() ? formData.jobTitle.trim() : '未命名岗位'),
+      company: (formData.company?.trim() ? formData.company.trim() : '未知公司'),
       state: formData.state!,
       stateTaxRate: formData.stateTaxRate ?? stateTaxLookup[formData.state!] ?? 0,
       jobType: formData.jobType ?? '',
@@ -197,7 +187,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
       setFormData({
         jobTitle: '',
         company: '',
-        city: '',
         state: 'CA',
         hourlyWage: 15,
         overtimeRate: 1.5,
@@ -229,7 +218,12 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Card>
+      <Card
+        sx={{
+          bgcolor: (theme) =>
+            theme.palette.mode === 'light' ? theme.palette.grey[50] : theme.palette.background.paper,
+        }}
+      >
       <CardHeader
         title={initialData ? '编辑岗位信息' : '创建新岗位'}
         subheader={initialData ? '修改岗位信息并保存' : '填写岗位信息，保存后出现在右侧面板'}
@@ -267,7 +261,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    required
                     label="岗位名称"
                     placeholder="请选择或输入岗位名称"
                   />
@@ -278,69 +271,10 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
             <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 220px' }, minWidth: 200 }}>
               <TextField
                 fullWidth
-                required
                 label="公司名称"
                 value={formData.company ?? ''}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 placeholder="雇主公司名"
-              />
-            </Box>
-
-            <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 220px' }, minWidth: 200 }}>
-              <Autocomplete
-                fullWidth
-                freeSolo
-                options={usCities}
-                value={matchedCityOption}
-                inputValue={formData.city ?? ''}
-                onInputChange={(_, newInputValue) =>
-                  setFormData({ ...formData, city: newInputValue })
-                }
-                onChange={(_, newValue) => {
-                  if (typeof newValue === 'string') {
-                    setFormData({ ...formData, city: newValue });
-                    return;
-                  }
-                  if (newValue) {
-                    setFormData({
-                      ...formData,
-                      city: newValue.city,
-                      state: newValue.state,
-                      stateTaxRate: stateTaxLookup[newValue.state] ?? 0,
-                    });
-                  } else {
-                    setFormData({ ...formData, city: '' });
-                  }
-                }}
-                filterOptions={(options, { inputValue }) => {
-                  const normalized = inputValue.trim().toLowerCase();
-                  if (!normalized) {
-                    return options.slice(0, 10);
-                  }
-                  return options
-                    .filter((option) => option.city.toLowerCase().startsWith(normalized))
-                    .slice(0, 10);
-                }}
-                getOptionLabel={(option) =>
-                  typeof option === 'string' ? option : `${option.city}, ${option.state}`
-                }
-                renderOption={(props, option) => (
-                  <li {...props} key={`${option.city}-${option.state}`}>
-                    {option.city}, {option.state}
-                  </li>
-                )}
-                isOptionEqualToValue={(option, value) =>
-                  !!value && option.city === value.city && option.state === value.state
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    required
-                    label="城市"
-                    placeholder="输入城市开头即可匹配"
-                  />
-                )}
               />
             </Box>
 
@@ -387,6 +321,14 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
               <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                   基础时薪 ($/h)
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ml: 1 }}
+                  >
+                    当前 {(formData.hourlyWage ?? 15).toFixed(2)} $/h
+                  </Typography>
                 </Typography>
                 <Slider
                   value={formData.hourlyWage ?? 15}
@@ -399,14 +341,19 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                     setFormData({ ...formData, hourlyWage: next });
                   }}
                 />
-                <Typography variant="body2" color="text.secondary">
-                  当前 {(formData.hourlyWage ?? 15).toFixed(2)} $/h
-                </Typography>
               </Box>
 
               <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                   平均周工时
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ml: 1 }}
+                  >
+                    当前 {formData.avgHoursPerWeek ?? 40} h/周
+                  </Typography>
                 </Typography>
                 <Slider
                   value={formData.avgHoursPerWeek ?? 40}
@@ -419,9 +366,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                     setFormData({ ...formData, avgHoursPerWeek: next });
                   }}
                 />
-                <Typography variant="body2" color="text.secondary">
-                  当前 {formData.avgHoursPerWeek ?? 40} h/周
-                </Typography>
               </Box>
             </Box>
 
@@ -435,6 +379,14 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
               <Box sx={{ flex: 1, minWidth: 220 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                   二工工时 (h/周)
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ml: 1 }}
+                  >
+                    当前 {formData.secondJobHours ?? 15} h/周
+                  </Typography>
                 </Typography>
                 <Slider
                   value={formData.secondJobHours ?? 15}
@@ -447,9 +399,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                     setFormData({ ...formData, secondJobHours: next });
                   }}
                 />
-                <Typography variant="body2" color="text.secondary">
-                  当前 {formData.secondJobHours ?? 15} h/周
-                </Typography>
               </Box>
             </Box>
 
@@ -514,6 +463,14 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                   <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 250px' }, minWidth: 200 }}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
                       住宿费用 ($/周)
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ ml: 1 }}
+                      >
+                        当前 ${formData.housingCostPerWeek ?? 120}/周
+                      </Typography>
                     </Typography>
                     <Slider
                       value={formData.housingCostPerWeek ?? 120}
@@ -526,13 +483,18 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                         setFormData({ ...formData, housingCostPerWeek: next });
                       }}
                     />
-                    <Typography variant="body2" color="text.secondary">
-                      当前 ${formData.housingCostPerWeek ?? 120}/周
-                    </Typography>
                   </Box>
                   <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 250px' }, minWidth: 200 }}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
                       住宿距离 (km)
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ ml: 1 }}
+                      >
+                        当前 {formData.housingDistanceKm ?? 2} km
+                      </Typography>
                     </Typography>
                     <Slider
                       value={formData.housingDistanceKm ?? 2}
@@ -545,9 +507,6 @@ export default function JobForm({ onSubmit, initialData, onCancel }: Props) {
                         setFormData({ ...formData, housingDistanceKm: next });
                       }}
                     />
-                    <Typography variant="body2" color="text.secondary">
-                      当前 {formData.housingDistanceKm ?? 2} km
-                    </Typography>
                   </Box>
                 </>
               )}

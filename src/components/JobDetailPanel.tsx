@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import type { JobRecord } from '../types/job';
-import { computeIncome } from '../utils/jobMetrics';
+import { computeIncome, getProjectDurationWeeks } from '../utils/jobMetrics';
 
 interface Props {
   job: JobRecord | null;
@@ -23,6 +23,14 @@ export default function JobDetailPanel({ job, onClose }: Props) {
   if (!job) return null;
 
   const income = computeIncome(job);
+  const projectWeeks = getProjectDurationWeeks(job);
+  const scale = projectWeeks > 0 ? projectWeeks : 1;
+  const fmtMoney = (value: number) => Math.round(value).toLocaleString('en-US');
+  const grossTotal = income.totalGross * scale;
+  const federalTaxTotal = income.federalTax * scale;
+  const stateTaxTotal = income.stateTax * scale;
+  const housingTotal = income.housing * scale;
+  const netTotal = income.netIncomeWithSecondJob * scale;
 
   return (
     <Dialog open={!!job} onClose={onClose} maxWidth="md" fullWidth>
@@ -36,7 +44,7 @@ export default function JobDetailPanel({ job, onClose }: Props) {
               {job.jobTitle}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {job.company} · {job.city}, {job.state}{' '}
+              {job.company}  {job.state}{' '}
               <Chip
                 label={`州税率 ${(job.stateTaxRate * 100).toFixed(1)}%`}
                 size="small"
@@ -122,22 +130,70 @@ export default function JobDetailPanel({ job, onClose }: Props) {
           <Paper
             sx={{
               p: 3,
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(30, 41, 59, 0.5) 100%)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: 3,
+              bgcolor: (theme) =>
+                theme.palette.mode === 'light' ? theme.palette.grey[50] : theme.palette.background.paper,
+              border: '1px solid',
+              borderColor: 'divider',
             }}
           >
-            <Typography variant="subtitle2" color="success.main" sx={{ mb: 2, fontWeight: 600 }}>
-              收入预测
-            </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.light', mb: 1 }}>
-              ${income.netIncomePrimary.toFixed(0)}/周
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              含二工：${income.netIncomeWithSecondJob.toFixed(0)}/周
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              折合人民币：¥{income.incomeRmb.toFixed(0)}（汇率
-              1:{(income.incomeRmb / income.netIncomeWithSecondJob).toFixed(2)}）
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                税前总收入 Gross
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                +${fmtMoney(grossTotal)}
+              </Typography>
+            </Box>
+
+            <Divider
+              sx={{
+                my: 1.25,
+                borderStyle: 'dashed',
+                borderColor: (theme) =>
+                  theme.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.25)' : theme.palette.divider,
+              }}
+            />
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.1 }}>
+              <BreakdownRow
+                label={`联邦税 (Fed 10%)`}
+                value={`-$${fmtMoney(federalTaxTotal)}`}
+                valueColor="error.main"
+              />
+              <BreakdownRow
+                label={`州税 (State ${(job.stateTaxRate * 100).toFixed(2)}%)`}
+                value={`-$${fmtMoney(stateTaxTotal)}`}
+                valueColor="error.main"
+              />
+              <BreakdownRow
+                label="总住宿费 Housing"
+                value={`-$${fmtMoney(housingTotal)}`}
+                valueColor="error.main"
+              />
+            </Box>
+
+            <Divider
+              sx={{
+                my: 1.25,
+                borderStyle: 'dashed',
+                borderColor: (theme) =>
+                  theme.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.25)' : theme.palette.divider,
+              }}
+            />
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                预计到手 Net
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.main' }}>
+                +${fmtMoney(netTotal)}
+              </Typography>
+            </Box>
+
+            <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
+              *{projectWeeks > 0 ? `按项目周期约 ${projectWeeks} 周合计；` : '按每周估算；'}
+              FICA 默认按 J-1 免除，税费为简化预估
             </Typography>
           </Paper>
           <Paper sx={{ p: 2, height: '100%' }}>
@@ -159,7 +215,7 @@ export default function JobDetailPanel({ job, onClose }: Props) {
               }}
             >
               <Typography variant="body2" color="text.secondary">
-                {job.city}, {job.state} · 近似地理位置
+                 {job.state} · 近似地理位置
               </Typography>
               <Typography variant="caption" color="text.disabled">
                 此处可对接实际地图组件
@@ -185,6 +241,27 @@ function DetailRow({ label, value }: { label: string; value: string }) {
         {label}
       </Typography>
       <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+function BreakdownRow({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, color: valueColor ?? 'text.primary' }}>
         {value}
       </Typography>
     </Box>

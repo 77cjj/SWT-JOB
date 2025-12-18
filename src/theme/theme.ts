@@ -17,11 +17,12 @@ const commonTypography = {
   fontWeightRegular: 500,
   fontWeightMedium: 600,
   fontWeightBold: 700,
-  h1: { fontWeight: 600, fontSize: '2.5rem' },
-  h2: { fontWeight: 600, fontSize: '2rem' },
-  h3: { fontWeight: 600, fontSize: '1.5rem' },
-  h4: { fontWeight: 600, fontSize: '1.25rem' },
-  h5: { fontWeight: 600, fontSize: '1.125rem' },
+  // 整体字号稍微收敛一点
+  h1: { fontWeight: 600, fontSize: '2.25rem' },
+  h2: { fontWeight: 600, fontSize: '1.75rem' },
+  h3: { fontWeight: 600, fontSize: '1.375rem' },
+  h4: { fontWeight: 600, fontSize: '1.125rem' },
+  h5: { fontWeight: 600, fontSize: '1.05rem' },
   h6: { fontWeight: 600, fontSize: '1rem' },
 } as const;
 
@@ -80,7 +81,8 @@ export function createAppTheme(mode: PaletteMode) {
     },
     typography: commonTypography,
     shape: {
-      borderRadius: 12,
+      // 全站圆角统一收敛一些（之前偏大）
+      borderRadius: 8,
     },
     components: {
       MuiButton: {
@@ -88,8 +90,8 @@ export function createAppTheme(mode: PaletteMode) {
           root: {
             textTransform: 'none',
             fontWeight: 600,
-            borderRadius: 12,
-            padding: '10px 24px',
+            borderRadius: 10,
+            padding: '8px 18px',
           },
           contained: {
             boxShadow: 'none',
@@ -103,7 +105,8 @@ export function createAppTheme(mode: PaletteMode) {
         styleOverrides: {
           root: ({ theme }) => ({
             backgroundImage: 'none',
-            borderRadius: 16,
+            // Card 本身也收敛圆角
+            borderRadius: 10,
             border: `1px solid ${
               theme.palette.mode === 'dark'
                 ? 'rgba(255, 255, 255, 0.08)'
@@ -115,9 +118,9 @@ export function createAppTheme(mode: PaletteMode) {
       MuiCardContent: {
         styleOverrides: {
           root: {
-            padding: 16,
+            padding: 14,
             '&:last-child': {
-              paddingBottom: 16,
+              paddingBottom: 14,
             },
           },
         },
@@ -126,7 +129,7 @@ export function createAppTheme(mode: PaletteMode) {
         styleOverrides: {
           root: {
             '& .MuiOutlinedInput-root': {
-              borderRadius: 12,
+              borderRadius: 10,
             },
           },
         },

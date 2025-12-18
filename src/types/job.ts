@@ -4,7 +4,6 @@ export interface JobRecord {
   jobId: string;
   jobTitle: string;
   company: string;
-  city: string;
   state: string;
   stateTaxRate: number; // 0.06 -> 6%
   jobType: string;

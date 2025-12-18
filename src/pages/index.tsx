@@ -11,7 +11,7 @@ export default function IndexPage() {
   return isMobile ? (
     <MobileLayout>{content}</MobileLayout>
   ) : (
-    <DesktopLayout>{content}</DesktopLayout>
+    <DesktopLayout maxWidthClassName="max-w-7xl">{content}</DesktopLayout>
   )
 }
 

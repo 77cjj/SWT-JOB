@@ -18,7 +18,14 @@ import {
 import type { JobRecord } from '../types/job';
 import {
   computeIncome,
+  getProjectDurationWeeks,
 } from '../utils/jobMetrics';
+
+function formatShortDate(date: string) {
+  // 期望输入：YYYY-MM-DD -> MM-DD（不包含年份）
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date.slice(5);
+  return date;
+}
 
 interface SavedJobCardProps {
   job: JobRecord;
@@ -38,6 +45,9 @@ export default function SavedJobCard({
   isCompared,
 }: SavedJobCardProps) {
   const income = computeIncome(job);
+  const projectWeeks = getProjectDurationWeeks(job);
+  const totalIncome = projectWeeks > 0 ? income.netIncomeWithSecondJob * projectWeeks : null;
+  const totalIncomeRmb = projectWeeks > 0 ? income.incomeRmb * projectWeeks : null;
 
   const getFatigueColor = (hours: number) => {
     if (hours > 52) return 'error';
@@ -57,58 +67,30 @@ export default function SavedJobCard({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        position: 'relative',
-        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.18)',
-        borderRadius: 3,
-        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        // 去掉玻璃拟态大阴影（会显得“脏/怪”），改成更克制的卡片风格
+        bgcolor: (theme) =>
+          theme.palette.mode === 'light' ? theme.palette.grey[50] : theme.palette.background.paper,
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: (theme) => theme.shadows[1],
         overflow: 'hidden',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
-          opacity: 0,
-          transition: 'opacity 0.4s ease',
-        },
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: '-100%',
-          width: '100%',
-          height: '100%',
-          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
-          transition: 'left 0.6s ease',
-        },
+        transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
         '&:hover': {
-          transform: 'translateY(-6px) scale(1.02)',
-          boxShadow: '0 12px 40px 0 rgba(31, 38, 135, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%)',
-          '&::before': {
-            opacity: 1,
-          },
-          '&::after': {
-            left: '100%',
-          },
+          transform: 'translateY(-2px)',
+          boxShadow: (theme) => theme.shadows[3],
+          borderColor: (theme) =>
+            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(17,24,39,0.14)',
         },
       }}
     >
-      <CardContent sx={{ flexGrow: 1, position: 'relative', zIndex: 1 }}>
+      <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
             <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
               {job.jobTitle}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {job.company} · {job.city}
+              {job.company} · {job.state}
             </Typography>
           </Box>
           <Chip label={job.jobTitle} size="small" variant="outlined" />
@@ -122,9 +104,20 @@ export default function SavedJobCard({
             variant="outlined"
           />
           <Chip
-            label={`$${Math.round(income.netIncomeWithSecondJob)}/w`}
+            label={
+              totalIncome !== null
+                ? `总收入 $${Math.round(totalIncome)}`
+                : `$${Math.round(income.netIncomeWithSecondJob)}/w`
+            }
             size="small"
             color={getIncomeColor(Math.round(income.netIncomeWithSecondJob))}
+            variant="outlined"
+          />
+          <Chip
+            label={`${formatShortDate(job.projectStartDate)} ~ ${formatShortDate(job.projectEndDate)}${
+              projectWeeks > 0 ? `（约${projectWeeks}周）` : ''
+            }`}
+            size="small"
             variant="outlined"
           />
          
@@ -168,14 +161,27 @@ export default function SavedJobCard({
           </Box>
           <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(33.333% - 16px)', minWidth: 0 } }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              净收入（含二工）
+              项目总收入（含二工）
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
-              ${Math.round(income.netIncomeWithSecondJob)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              ¥{Math.round(income.incomeRmb)}
-            </Typography>
+            {totalIncome !== null && totalIncomeRmb !== null ? (
+              <>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
+                  ${Math.round(totalIncome)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ¥{Math.round(totalIncomeRmb)}（每周约 ${Math.round(income.netIncomeWithSecondJob)}/w）
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
+                  ${Math.round(income.netIncomeWithSecondJob)}/w
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ¥{Math.round(income.incomeRmb)}
+                </Typography>
+              </>
+            )}
           </Box>
         </Box>
 
@@ -186,7 +192,7 @@ export default function SavedJobCard({
         )}
       </CardContent>
 
-      <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, position: 'relative', zIndex: 1 }}>
+      <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
         <Button
           size="small"
           variant="outlined"

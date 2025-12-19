@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Script from 'next/script';
 
@@ -9,88 +9,127 @@ declare global {
       init: () => void;
     };
     __CMS_INITIALIZED__?: boolean;
+    __CMS_INIT_TIMEOUT__?: NodeJS.Timeout;
+    __CMS_ROOT_ELEMENT__?: HTMLElement;
   }
 }
 
 export default function AdminPage() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const initAttempted = useRef(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    // 使用 ref 和全局标记双重防止重复初始化
-    if (initAttempted.current || (typeof window !== 'undefined' && window.__CMS_INITIALIZED__)) {
+    // 标记组件已挂载
+    mountedRef.current = true;
+
+    // 清理函数
+    return () => {
+      mountedRef.current = false;
+      // 清理可能存在的超时
+      if (window.__CMS_INIT_TIMEOUT__) {
+        clearTimeout(window.__CMS_INIT_TIMEOUT__);
+        delete window.__CMS_INIT_TIMEOUT__;
+      }
+      // 安全地清理 DOM，避免 removeChild 错误
+      // 注意：在 React StrictMode 下，清理函数会被调用两次
+      // 我们需要确保只在元素确实存在且是有效子节点时才删除
+      try {
+        const rootElement = document.getElementById('nc-root');
+        if (rootElement) {
+          // 使用更安全的方式清理：直接设置 innerHTML 为空
+          // 这比逐个删除子节点更安全，避免 removeChild 错误
+          const children = Array.from(rootElement.children);
+          children.forEach((child) => {
+            try {
+              if (child.parentNode === rootElement) {
+                rootElement.removeChild(child);
+              }
+            } catch {
+              // 忽略单个子节点的删除错误
+            }
+          });
+        }
+      } catch {
+        // 忽略 DOM 操作错误，避免控制台报错
+        // 这些错误通常是由于 React StrictMode 的双重清理导致的
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // 如果已经初始化，直接返回
+    if (window.__CMS_INITIALIZED__) {
       return;
     }
 
-    const initCMS = () => {
-      // 多重检查防止重复初始化
-      if (initAttempted.current || window.__CMS_INITIALIZED__) {
+    // 如果脚本还没加载，等待
+    if (!scriptLoaded || typeof window === 'undefined' || !window.CMS) {
+      return;
+    }
+
+    // 确保组件已挂载
+    if (!mountedRef.current) {
+      return;
+    }
+
+    const rootElement = document.getElementById('nc-root');
+    if (!rootElement) {
+      return;
+    }
+
+    // 检查是否已经有 CMS 实例在运行
+    if (rootElement.querySelector('.nc-root') || rootElement.querySelector('[data-netlify-cms-root]')) {
+      window.__CMS_INITIALIZED__ = true;
+      return;
+    }
+
+    // 使用全局超时标记，防止重复初始化
+    if (window.__CMS_INIT_TIMEOUT__) {
+      return;
+    }
+
+    // 延迟初始化，确保 React 渲染完成
+    window.__CMS_INIT_TIMEOUT__ = setTimeout(() => {
+      // 再次检查所有条件
+      if (!mountedRef.current || window.__CMS_INITIALIZED__) {
+        delete window.__CMS_INIT_TIMEOUT__;
         return;
       }
 
-      if (typeof window !== 'undefined' && window.CMS) {
-        const rootElement = document.getElementById('nc-root');
-        if (!rootElement) {
-          console.warn('CMS root element not found');
-          return;
-        }
-
-        // 检查是否已经有 CMS 实例在运行
-        if (rootElement.querySelector('.nc-root')) {
-          console.log('CMS already initialized, skipping');
-          window.__CMS_INITIALIZED__ = true;
-          return;
-        }
-
-        try {
-          // 设置标记
-          initAttempted.current = true;
-          window.__CMS_INITIALIZED__ = true;
-          
-          // Decap CMS 会自动查找 /admin/config.yml
-          // 通过 rewrites，这个路径会被重定向到 /api/admin/config
-          window.CMS.init();
-        } catch (error) {
-          console.error('CMS initialization error:', error);
-          // 重置标记以允许重试
-          initAttempted.current = false;
-          window.__CMS_INITIALIZED__ = false;
-        }
-      }
-    };
-
-    // 如果脚本已经加载
-    if (window.CMS) {
-      // 延迟初始化，确保 DOM 已准备好
-      const timer = setTimeout(initCMS, 300);
-      return () => clearTimeout(timer);
-    } else {
-      // 等待脚本加载
-      const handleLoad = () => {
-        setTimeout(initCMS, 300);
-      };
-      
-      // 监听 load 事件
-      if (document.readyState === 'complete') {
-        handleLoad();
-      } else {
-        window.addEventListener('load', handleLoad);
+      const element = document.getElementById('nc-root');
+      if (!element) {
+        delete window.__CMS_INIT_TIMEOUT__;
+        return;
       }
 
-      // 也轮询检查 CMS 是否已加载（双重保险）
-      const checkInterval = setInterval(() => {
-        if (window.CMS) {
-          clearInterval(checkInterval);
-          handleLoad();
-        }
-      }, 100);
+      // 检查是否已经有 CMS 实例
+      if (element.querySelector('.nc-root') || element.querySelector('[data-netlify-cms-root]')) {
+        window.__CMS_INITIALIZED__ = true;
+        delete window.__CMS_INIT_TIMEOUT__;
+        return;
+      }
 
-      return () => {
-        window.removeEventListener('load', handleLoad);
-        clearInterval(checkInterval);
-      };
-    }
-  }, []);
+      try {
+        if (window.CMS && mountedRef.current) {
+          // 确保根元素存在且是有效的
+          if (element && element.parentNode) {
+            window.__CMS_INITIALIZED__ = true;
+            window.__CMS_ROOT_ELEMENT__ = element;
+            window.CMS.init();
+            delete window.__CMS_INIT_TIMEOUT__;
+          } else {
+            console.warn('CMS root element is not valid');
+            delete window.__CMS_INIT_TIMEOUT__;
+          }
+        }
+      } catch (error) {
+        console.error('CMS initialization error:', error);
+        window.__CMS_INITIALIZED__ = false;
+        delete window.__CMS_INIT_TIMEOUT__;
+      }
+    }, 500);
+  }, [scriptLoaded]);
 
   return (
     <>
@@ -113,22 +152,11 @@ export default function AdminPage() {
         src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"
         strategy="lazyOnload"
         onLoad={() => {
-          // 延迟初始化，避免与 React 的 DOM 操作冲突
-          // 使用更长的延迟确保 React 渲染完成
-          setTimeout(() => {
-            if (window.CMS && !window.__CMS_INITIALIZED__) {
-              const rootElement = document.getElementById('nc-root');
-              if (rootElement && !rootElement.querySelector('.nc-root')) {
-                try {
-                  window.__CMS_INITIALIZED__ = true;
-                  window.CMS.init();
-                } catch (error) {
-                  console.error('CMS initialization error:', error);
-                  window.__CMS_INITIALIZED__ = false;
-                }
-              }
-            }
-          }, 500);
+          // 标记脚本已加载
+          setScriptLoaded(true);
+        }}
+        onError={(e) => {
+          console.error('Failed to load Decap CMS script:', e);
         }}
       />
     </>

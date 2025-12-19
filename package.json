@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:cms": "concurrently \"npm run dev\" \"decap-cms-proxy-server\"",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint ."

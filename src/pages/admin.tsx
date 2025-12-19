@@ -27,28 +27,69 @@ export default function AdminPage() {
     const setupGlobalErrorHandler = () => {
       // 捕获全局错误，过滤掉 Decap CMS 的 removeChild 错误
       const originalErrorHandler = window.onerror;
-      window.onerror = function(msg, url, line, col, error) {
-        // 如果是 removeChild 错误且来自 decap-cms，只记录警告而不抛出
-        if (msg && typeof msg === 'string' && 
-            msg.includes('removeChild') && 
-            (url && url.includes('decap-cms'))) {
-          console.warn('[CMS] Decap CMS removeChild 错误（已忽略）:', msg);
-          return true; // 阻止默认错误处理，防止影响 CMS
+      
+      // 错误处理函数
+      const errorHandler = function(msg: string | Event | null, url?: string, line?: number, col?: number, error?: Error | null): boolean {
+        // 处理字符串消息
+        if (typeof msg === 'string') {
+          if (msg.includes('removeChild') || msg.includes('NotFoundError')) {
+            console.warn('[CMS] removeChild 错误（已忽略）:', msg.substring(0, 100));
+            return true; // 阻止默认错误处理
+          }
         }
+        
+        // 处理 Error 对象
+        if (error) {
+          const errorMessage = error.message || '';
+          const errorName = error.name || '';
+          
+          if (errorName === 'NotFoundError' || 
+              errorMessage.includes('removeChild') || 
+              errorMessage.includes('not a child')) {
+            console.warn('[CMS] NotFoundError removeChild（已忽略）:', errorMessage.substring(0, 100));
+            return true;
+          }
+        }
+        
         // 其他错误正常处理
         if (originalErrorHandler) {
-          return originalErrorHandler.call(this, msg, url, line, col, error);
+          return originalErrorHandler.call(window, msg as string | Event, url, line, col, error as Error);
         }
         return false;
       };
       
+      window.onerror = errorHandler as OnErrorEventHandler;
+      
+      // 也捕获 Error 事件（捕获阶段）
+      const errorEventListener = (event: ErrorEvent) => {
+        const error = event.error;
+        const message = error?.message || event.message || '';
+        
+        if (error?.name === 'NotFoundError' || 
+            message.includes('removeChild') || 
+            message.includes('not a child') ||
+            (error?.stack && error.stack.includes('react-dom'))) {
+          console.warn('[CMS] Error 事件中的 removeChild（已忽略）:', message.substring(0, 100));
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+        }
+      };
+      
+      window.addEventListener('error', errorEventListener, true);
+      
       // 捕获未处理的 Promise 拒绝
       const unhandledRejectionHandler = (event: PromiseRejectionEvent) => {
-        if (event.reason && event.reason.message && 
-            event.reason.message.includes('removeChild') &&
-            event.reason.stack && event.reason.stack.includes('decap-cms')) {
-          console.warn('[CMS] Decap CMS Promise 错误（已忽略）:', event.reason.message);
-          event.preventDefault(); // 阻止默认错误处理
+        const reason = event.reason;
+        const message = reason?.message || '';
+        const stack = reason?.stack || '';
+        
+        if (reason?.name === 'NotFoundError' ||
+            message.includes('removeChild') || 
+            message.includes('not a child') ||
+            (stack && (stack.includes('decap-cms') || stack.includes('react-dom')))) {
+          console.warn('[CMS] Decap CMS Promise 错误（已忽略）:', message.substring(0, 100));
+          event.preventDefault();
         }
       };
       
@@ -57,6 +98,7 @@ export default function AdminPage() {
       // 返回清理函数
       return () => {
         window.onerror = originalErrorHandler || null;
+        window.removeEventListener('error', errorEventListener, true);
         window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
       };
     };
@@ -74,54 +116,50 @@ export default function AdminPage() {
           const data = JSON.parse(message.replace('authorization:github:success:', ''));
           console.log('[CMS Admin] 授权成功，Token:', data.token ? '已接收' : '未找到');
           
-          // Decap CMS 会自动处理这个消息，我们需要给它时间处理
-          // 不要立即刷新，而是等待 CMS 更新 UI
-          console.log('[CMS Admin] 等待 Decap CMS 处理认证消息...');
+          // Decap CMS 会自动处理这个消息
+          // 我们需要等待足够的时间让 CMS 处理认证并更新 UI
+          console.log('[CMS Admin] 等待 Decap CMS 处理认证消息（3秒）...');
           
-          // 检查 CMS 是否已经更新了 UI（登录按钮消失或显示内容）
-          let checkCount = 0;
-          const maxChecks = 20; // 最多检查 10 秒
-          
-          const checkCMSStatus = () => {
-            checkCount++;
+          // 等待 3 秒让 CMS 处理消息，然后检查状态
+          setTimeout(() => {
             const rootElement = document.getElementById('nc-root');
-            
-            if (rootElement) {
-              // 检查是否显示了 CMS 内容（说明已经认证）
-              const cmsContent = rootElement.querySelector('.nc-root, [data-netlify-cms-root]');
-              
-              // 如果找到了 CMS 内容区域，说明可能已经登录了
-              if (cmsContent && cmsContent.children.length > 0) {
-                console.log('[CMS Admin] CMS 内容已显示，认证可能成功');
-                // 再等一秒确保完全加载
-                setTimeout(() => {
-                  // 检查是否还有登录按钮
-                  const stillLogin = rootElement.querySelector('button[class*="login"], a[class*="login"]');
-                  if (!stillLogin) {
-                    console.log('[CMS Admin] 确认已登录，无需刷新');
-                    return; // 不需要刷新
-                  } else {
-                    console.log('[CMS Admin] 仍有登录按钮，刷新页面');
-                    window.location.reload();
-                  }
-                }, 1000);
-                return;
-              }
-            }
-            
-            // 如果检查了太多次还没变化，刷新页面
-            if (checkCount >= maxChecks) {
-              console.log('[CMS Admin] 超时，刷新页面以应用认证状态');
+            if (!rootElement) {
+              console.log('[CMS Admin] 找不到 root element，刷新页面');
               window.location.reload();
               return;
             }
             
-            // 继续检查
-            setTimeout(checkCMSStatus, 500);
-          };
-          
-          // 开始检查
-          setTimeout(checkCMSStatus, 1000);
+            // 检查是否还有登录界面
+            const loginElements = rootElement.querySelectorAll('button, a, [class*="login"], [class*="Login"]');
+            const hasLoginUI = Array.from(loginElements).some(el => {
+              const text = el.textContent?.toLowerCase() || '';
+              return text.includes('login') || text.includes('登录') || text.includes('sign in');
+            });
+            
+            // 检查是否有 CMS 内容
+            const cmsContent = rootElement.querySelector('.nc-root, [data-netlify-cms-root], [class*="nc-"]');
+            const hasCMSContent = cmsContent && cmsContent.children.length > 0;
+            
+            console.log('[CMS Admin] 检查结果:', {
+              hasLoginUI,
+              hasCMSContent,
+              loginElementsCount: loginElements.length
+            });
+            
+            // 如果还有登录界面且没有 CMS 内容，刷新页面
+            if (hasLoginUI && !hasCMSContent) {
+              console.log('[CMS Admin] 仍有登录界面，刷新页面以应用认证状态');
+              window.location.reload();
+            } else if (!hasLoginUI && hasCMSContent) {
+              console.log('[CMS Admin] CMS 内容已显示，认证成功，无需刷新');
+            } else {
+              // 不确定状态，再等 2 秒后刷新
+              console.log('[CMS Admin] 状态不确定，再等待 2 秒后刷新');
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000);
+            }
+          }, 3000);
           
         } catch (e) {
           console.error('[CMS Admin] 解析授权消息失败:', e);
@@ -143,32 +181,31 @@ export default function AdminPage() {
           // 如果 token 是最近 5 分钟内存储的，可能是授权窗口发送的
           if (age < 5 * 60 * 1000) {
             console.log('[CMS Admin] 检测到 localStorage 中的 token（fallback），可能是授权成功');
-            // 清除 localStorage 中的 token
+            // 清除 localStorage 中的 token（避免重复触发）
             localStorage.removeItem('cms_token');
             localStorage.removeItem('cms_token_timestamp');
             
-            // 如果 CMS 已初始化，等待一下再刷新
-            if (window.CMS && window.__CMS_INITIALIZED__) {
-              console.log('[CMS Admin] 通过 localStorage fallback 检测到授权，准备刷新页面');
-              setTimeout(() => {
-                window.location.reload();
-              }, 1000);
-            } else {
-              // CMS 还没初始化，等待初始化
-              console.log('[CMS Admin] 等待 CMS 初始化后刷新');
-              const checkInterval = setInterval(() => {
-                if (window.CMS && window.__CMS_INITIALIZED__) {
-                  clearInterval(checkInterval);
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 1000);
+            // 等待 CMS 处理，然后检查状态
+            setTimeout(() => {
+              const rootElement = document.getElementById('nc-root');
+              if (rootElement) {
+                const loginElements = rootElement.querySelectorAll('button, a, [class*="login"]');
+                const hasLoginUI = Array.from(loginElements).some(el => {
+                  const text = el.textContent?.toLowerCase() || '';
+                  return text.includes('login') || text.includes('登录');
+                });
+                
+                const cmsContent = rootElement.querySelector('.nc-root, [data-netlify-cms-root]');
+                const hasCMSContent = cmsContent && cmsContent.children.length > 0;
+                
+                if (hasLoginUI && !hasCMSContent) {
+                  console.log('[CMS Admin] Fallback: 仍有登录界面，刷新页面');
+                  window.location.reload();
+                } else {
+                  console.log('[CMS Admin] Fallback: CMS 可能已更新，不刷新');
                 }
-              }, 500);
-              
-              setTimeout(() => {
-                clearInterval(checkInterval);
-              }, 10000);
-            }
+              }
+            }, 3000);
           }
         }
       } catch (e) {
@@ -200,23 +237,33 @@ export default function AdminPage() {
       // 我们需要确保只在元素确实存在且是有效子节点时才删除
       try {
         const rootElement = document.getElementById('nc-root');
-        if (rootElement) {
-          // 使用更安全的方式清理：直接设置 innerHTML 为空
-          // 这比逐个删除子节点更安全，避免 removeChild 错误
+        if (rootElement && rootElement.parentNode) {
+          // 使用更安全的方式：检查每个子节点是否仍然存在
+          // 在 React StrictMode 下，第一次清理可能已经移除了所有子节点
           const children = Array.from(rootElement.children);
+          
+          // 如果已经没有子节点，直接返回，避免不必要的操作
+          if (children.length === 0) {
+            return;
+          }
+          
+          // 逐个安全地移除子节点
           children.forEach((child) => {
             try {
-              if (child.parentNode === rootElement) {
+              // 双重检查：确保子节点仍然存在且父节点匹配
+              if (child && child.parentNode === rootElement && rootElement.contains(child)) {
                 rootElement.removeChild(child);
               }
             } catch {
               // 忽略单个子节点的删除错误
+              // 这通常发生在 React StrictMode 的双重清理中
             }
           });
         }
       } catch {
         // 忽略 DOM 操作错误，避免控制台报错
         // 这些错误通常是由于 React StrictMode 的双重清理导致的
+        // 或者 Decap CMS 已经清理了 DOM
       }
     };
   }, []);
@@ -282,12 +329,27 @@ export default function AdminPage() {
             try {
               // 尝试清理 CMS 可能创建的 DOM 结构
               const existingRoot = element.querySelector('.nc-root, [data-netlify-cms-root]');
-              if (existingRoot && existingRoot.parentNode === element) {
-                // 安全地移除旧实例
-                element.removeChild(existingRoot);
+              if (existingRoot) {
+                // 双重检查：确保元素仍然存在且父节点匹配
+                if (existingRoot.parentNode === element && element.contains(existingRoot)) {
+                  try {
+                    element.removeChild(existingRoot);
+                  } catch {
+                    // 如果移除失败，尝试使用 replaceWith 或直接清空
+                    try {
+                      existingRoot.replaceWith(document.createDocumentFragment());
+                    } catch {
+                      // 最后的手段：直接清空父元素的 innerHTML（但保留元素本身）
+                      if (element.children.length > 0) {
+                        element.innerHTML = '';
+                      }
+                    }
+                  }
+                }
               }
             } catch (cleanupError) {
               // 忽略清理错误，继续初始化
+              // 这些错误通常是由于 React StrictMode 或 DOM 状态不一致导致的
               console.warn('[CMS] 清理旧实例时出错（可忽略）:', cleanupError);
             }
 

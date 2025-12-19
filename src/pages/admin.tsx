@@ -23,29 +23,106 @@ export default function AdminPage() {
     // 标记组件已挂载
     mountedRef.current = true;
 
+    // 立即设置全局错误处理，防止 removeChild 错误影响 CMS
+    const setupGlobalErrorHandler = () => {
+      // 捕获全局错误，过滤掉 Decap CMS 的 removeChild 错误
+      const originalErrorHandler = window.onerror;
+      window.onerror = function(msg, url, line, col, error) {
+        // 如果是 removeChild 错误且来自 decap-cms，只记录警告而不抛出
+        if (msg && typeof msg === 'string' && 
+            msg.includes('removeChild') && 
+            (url && url.includes('decap-cms'))) {
+          console.warn('[CMS] Decap CMS removeChild 错误（已忽略）:', msg);
+          return true; // 阻止默认错误处理，防止影响 CMS
+        }
+        // 其他错误正常处理
+        if (originalErrorHandler) {
+          return originalErrorHandler.call(this, msg, url, line, col, error);
+        }
+        return false;
+      };
+      
+      // 捕获未处理的 Promise 拒绝
+      const unhandledRejectionHandler = (event: PromiseRejectionEvent) => {
+        if (event.reason && event.reason.message && 
+            event.reason.message.includes('removeChild') &&
+            event.reason.stack && event.reason.stack.includes('decap-cms')) {
+          console.warn('[CMS] Decap CMS Promise 错误（已忽略）:', event.reason.message);
+          event.preventDefault(); // 阻止默认错误处理
+        }
+      };
+      
+      window.addEventListener('unhandledrejection', unhandledRejectionHandler);
+      
+      // 返回清理函数
+      return () => {
+        window.onerror = originalErrorHandler || null;
+        window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
+      };
+    };
+
+    const cleanupErrorHandler = setupGlobalErrorHandler();
+
     // 监听来自授权窗口的 postMessage
     const handleMessage = (event: MessageEvent) => {
-      // 安全检查：只接受来自同源的消息（生产环境可能需要放宽）
-      // if (event.origin !== window.location.origin) {
-      //   return;
-      // }
-
       const message = event.data;
-      console.log('[CMS Admin] 收到消息:', message);
+      console.log('[CMS Admin] 收到消息:', typeof message === 'string' ? message.substring(0, 100) : message);
+      console.log('[CMS Admin] 消息来源:', event.origin);
 
       if (typeof message === 'string' && message.startsWith('authorization:github:success:')) {
         try {
           const data = JSON.parse(message.replace('authorization:github:success:', ''));
           console.log('[CMS Admin] 授权成功，Token:', data.token ? '已接收' : '未找到');
           
-          // 如果 CMS 已经初始化，可能需要重新加载以应用新的认证状态
-          if (window.CMS && window.__CMS_INITIALIZED__) {
-            console.log('[CMS Admin] CMS 已初始化，可能需要刷新页面以应用认证状态');
-            // 可以尝试刷新页面或重新初始化 CMS
-            setTimeout(() => {
+          // Decap CMS 会自动处理这个消息，我们需要给它时间处理
+          // 不要立即刷新，而是等待 CMS 更新 UI
+          console.log('[CMS Admin] 等待 Decap CMS 处理认证消息...');
+          
+          // 检查 CMS 是否已经更新了 UI（登录按钮消失或显示内容）
+          let checkCount = 0;
+          const maxChecks = 20; // 最多检查 10 秒
+          
+          const checkCMSStatus = () => {
+            checkCount++;
+            const rootElement = document.getElementById('nc-root');
+            
+            if (rootElement) {
+              // 检查是否显示了 CMS 内容（说明已经认证）
+              const cmsContent = rootElement.querySelector('.nc-root, [data-netlify-cms-root]');
+              
+              // 如果找到了 CMS 内容区域，说明可能已经登录了
+              if (cmsContent && cmsContent.children.length > 0) {
+                console.log('[CMS Admin] CMS 内容已显示，认证可能成功');
+                // 再等一秒确保完全加载
+                setTimeout(() => {
+                  // 检查是否还有登录按钮
+                  const stillLogin = rootElement.querySelector('button[class*="login"], a[class*="login"]');
+                  if (!stillLogin) {
+                    console.log('[CMS Admin] 确认已登录，无需刷新');
+                    return; // 不需要刷新
+                  } else {
+                    console.log('[CMS Admin] 仍有登录按钮，刷新页面');
+                    window.location.reload();
+                  }
+                }, 1000);
+                return;
+              }
+            }
+            
+            // 如果检查了太多次还没变化，刷新页面
+            if (checkCount >= maxChecks) {
+              console.log('[CMS Admin] 超时，刷新页面以应用认证状态');
               window.location.reload();
-            }, 500);
-          }
+              return;
+            }
+            
+            // 继续检查
+            setTimeout(checkCMSStatus, 500);
+          };
+          
+          // 开始检查
+          setTimeout(checkCMSStatus, 1000);
+          
         } catch (e) {
           console.error('[CMS Admin] 解析授权消息失败:', e);
         }
@@ -65,16 +142,32 @@ export default function AdminPage() {
           const age = Date.now() - parseInt(timestamp, 10);
           // 如果 token 是最近 5 分钟内存储的，可能是授权窗口发送的
           if (age < 5 * 60 * 1000) {
-            console.log('[CMS Admin] 检测到 localStorage 中的 token，可能是授权成功');
+            console.log('[CMS Admin] 检测到 localStorage 中的 token（fallback），可能是授权成功');
             // 清除 localStorage 中的 token
             localStorage.removeItem('cms_token');
             localStorage.removeItem('cms_token_timestamp');
             
-            // 如果 CMS 已初始化，刷新页面
+            // 如果 CMS 已初始化，等待一下再刷新
             if (window.CMS && window.__CMS_INITIALIZED__) {
+              console.log('[CMS Admin] 通过 localStorage fallback 检测到授权，准备刷新页面');
               setTimeout(() => {
                 window.location.reload();
+              }, 1000);
+            } else {
+              // CMS 还没初始化，等待初始化
+              console.log('[CMS Admin] 等待 CMS 初始化后刷新');
+              const checkInterval = setInterval(() => {
+                if (window.CMS && window.__CMS_INITIALIZED__) {
+                  clearInterval(checkInterval);
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                }
               }, 500);
+              
+              setTimeout(() => {
+                clearInterval(checkInterval);
+              }, 10000);
             }
           }
         }
@@ -90,11 +183,12 @@ export default function AdminPage() {
     // 定期检查 localStorage（作为 fallback）
     const storageCheckInterval = setInterval(checkLocalStorageToken, 1000);
 
-    // 清理函数
+      // 清理函数
     return () => {
       mountedRef.current = false;
       window.removeEventListener('message', handleMessage);
       clearInterval(storageCheckInterval);
+      cleanupErrorHandler(); // 清理错误处理器
       
       // 清理可能存在的超时
       if (window.__CMS_INIT_TIMEOUT__) {
@@ -265,41 +359,6 @@ export default function AdminPage() {
         }}
         onError={(e) => {
           console.error('[CMS] 加载 Decap CMS 脚本失败:', e);
-        }}
-      />
-      {/* 全局错误处理：捕获 Decap CMS 内部的 removeChild 错误 */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              // 捕获全局错误，过滤掉 Decap CMS 的 removeChild 错误
-              const originalErrorHandler = window.onerror;
-              window.onerror = function(msg, url, line, col, error) {
-                // 如果是 removeChild 错误且来自 decap-cms，只记录警告而不抛出
-                if (msg && typeof msg === 'string' && 
-                    msg.includes('removeChild') && 
-                    (url && url.includes('decap-cms'))) {
-                  console.warn('[CMS] Decap CMS removeChild 错误（已忽略）:', msg);
-                  return true; // 阻止默认错误处理
-                }
-                // 其他错误正常处理
-                if (originalErrorHandler) {
-                  return originalErrorHandler.call(this, msg, url, line, col, error);
-                }
-                return false;
-              };
-              
-              // 捕获未处理的 Promise 拒绝
-              window.addEventListener('unhandledrejection', function(event) {
-                if (event.reason && event.reason.message && 
-                    event.reason.message.includes('removeChild') &&
-                    event.reason.stack && event.reason.stack.includes('decap-cms')) {
-                  console.warn('[CMS] Decap CMS Promise 错误（已忽略）:', event.reason.message);
-                  event.preventDefault(); // 阻止默认错误处理
-                }
-              });
-            })();
-          `,
         }}
       />
     </>

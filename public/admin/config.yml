@@ -1,22 +1,35 @@
 backend:
   name: github
   repo: 77cjj/SWT-JOB
-  branch: main
-  base_url: https://你的Vercel域名.vercel.app # 替换为你的真实域名
-  auth_endpoint: api/auth # 对应 src/pages/api/auth.ts
+  branch: master
+  base_url: https://swt-job-picker.vercel.app
+  auth_endpoint: api/auth
+  auth_scope: repo
+  commit_messages:
+    create: '创建 {{collection}} "{{slug}}"'
+    update: '更新 {{collection}} "{{slug}}"'
+    delete: '删除 {{collection}} "{{slug}}"'
+    uploadMedia: '上传 "{{path}}"'
+    deleteMedia: '删除 "{{path}}"'
 
 media_folder: "public/images"
 public_folder: "/images"
 
+# 本地开发时使用
+local_backend: false
+
 # A list of collections the CMS should be able to edit
 collections:
   - name: "intro"
-    label: "介绍 (Intro)"
+    label: "项目介绍 (Intro)"
     folder: "src/pages/docs/intro"
     create: true
     slug: "{{slug}}"
+    extension: mdx
+    format: frontmatter
+    frontmatter_delimiter: "---"
     fields:
-      - {label: "Title", name: "title", widget: "string"}
+      - {label: "Title", name: "title", widget: "string", required: false}
       - {label: "Body", name: "body", widget: "markdown"}
 
   - name: "preparation"
@@ -24,8 +37,11 @@ collections:
     folder: "src/pages/docs/preparation"
     create: true
     slug: "{{slug}}"
+    extension: mdx
+    format: frontmatter
+    frontmatter_delimiter: "---"
     fields:
-      - {label: "Title", name: "title", widget: "string"}
+      - {label: "Title", name: "title", widget: "string", required: false}
       - {label: "Body", name: "body", widget: "markdown"}
 
   - name: "experience"
@@ -33,8 +49,11 @@ collections:
     folder: "src/pages/docs/experience"
     create: true
     slug: "{{slug}}"
+    extension: mdx
+    format: frontmatter
+    frontmatter_delimiter: "---"
     fields:
-      - {label: "Title", name: "title", widget: "string"}
+      - {label: "Title", name: "title", widget: "string", required: false}
       - {label: "Body", name: "body", widget: "markdown"}
 
   - name: "after"
@@ -42,9 +61,33 @@ collections:
     folder: "src/pages/docs/after"
     create: true
     slug: "{{slug}}"
+    extension: mdx
+    format: frontmatter
+    frontmatter_delimiter: "---"
     fields:
-      - {label: "Title", name: "title", widget: "string"}
+      - {label: "Title", name: "title", widget: "string", required: false}
       - {label: "Body", name: "body", widget: "markdown"}
+
+  - name: "basics"
+    label: "基础指南 (Basics)"
+    folder: "src/pages/docs/basics"
+    create: true
+    slug: "{{slug}}"
+    extension: mdx
+    format: frontmatter
+    frontmatter_delimiter: "---"
+    fields:
+      - {label: "Title", name: "title", widget: "string", required: false}
+      - {label: "Body", name: "body", widget: "markdown"}
+
+  - name: "index"
+    label: "首页文档"
+    files:
+      - label: "文档首页"
+        name: "index"
+        file: "src/pages/docs/index.mdx"
+        fields:
+          - {label: "Body", name: "body", widget: "markdown"}
 
   - name: "meta"
     label: "菜单配置 (_meta.json)"
@@ -53,20 +96,25 @@ collections:
         label: "介绍菜单"
         file: "src/pages/docs/intro/_meta.json"
         fields:
-          - {label: "Menu Items", name: "items", widget: "code", output_code_only: true, default_language: "json"}
+          - {label: "Menu Items (JSON)", name: "body", widget: "code", default_language: "json"}
       - name: "preparation_meta"
         label: "行前菜单"
         file: "src/pages/docs/preparation/_meta.json"
         fields:
-          - {label: "Menu Items", name: "items", widget: "code", output_code_only: true, default_language: "json"}
+          - {label: "Menu Items (JSON)", name: "body", widget: "code", default_language: "json"}
       - name: "experience_meta"
         label: "行中菜单"
         file: "src/pages/docs/experience/_meta.json"
         fields:
-          - {label: "Menu Items", name: "items", widget: "code", output_code_only: true, default_language: "json"}
+          - {label: "Menu Items (JSON)", name: "body", widget: "code", default_language: "json"}
       - name: "after_meta"
         label: "行后菜单"
         file: "src/pages/docs/after/_meta.json"
         fields:
-          - {label: "Menu Items", name: "items", widget: "code", output_code_only: true, default_language: "json"}
+          - {label: "Menu Items (JSON)", name: "body", widget: "code", default_language: "json"}
+      - name: "main_meta"
+        label: "主菜单"
+        file: "src/pages/docs/_meta.json"
+        fields:
+          - {label: "Menu Items (JSON)", name: "body", widget: "code", default_language: "json"}
 

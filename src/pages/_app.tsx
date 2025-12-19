@@ -12,9 +12,18 @@ function SWTApp({ Component, pageProps }: AppProps) {
   const { mode } = useAppTheme();
   const theme = React.useMemo(() => createAppTheme(mode), [mode]);
 
+  // 同步主题到 body 的 data 属性，用于 CSS 选择器
   React.useEffect(() => {
     document.body.dataset.app = 'swt';
     document.body.dataset.theme = mode;
+    // 确保 body 的背景色与主题一致，避免闪烁
+    if (mode === 'dark') {
+      document.body.style.backgroundColor = '#0a0a0a';
+      document.body.style.color = '#f5f5f5';
+    } else {
+      document.body.style.backgroundColor = '#ffffff';
+      document.body.style.color = '#111827';
+    }
   }, [mode]);
 
   return (

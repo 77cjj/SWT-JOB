@@ -7,7 +7,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const clientId = process.env.OAUTH_CLIENT_ID;
-  const redirectUri = process.env.OAUTH_REDIRECT_URI || ''; // Optional, should match GitHub app settings if strictly enforced
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : 'http://localhost:3000';
+  const redirectUri = `${baseUrl}/api/callback`;
 
   if (!clientId) {
     return res.status(500).send('OAUTH_CLIENT_ID not configured');
@@ -16,7 +19,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // Decap CMS expects to open a popup that eventually signals back.
   // We redirect to GitHub to start the flow.
   // Scope 'repo' is needed for private repos or writing to public repos.
-  const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo,user`;
+  const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,user`;
   
   res.redirect(authUrl);
 }

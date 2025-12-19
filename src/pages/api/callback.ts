@@ -171,6 +171,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Return the script that posts the message back to the main window (Decap CMS)
+    const messageData = JSON.stringify({ token, provider: 'github' });
+    const message = `authorization:github:success:${messageData}`;
+    
     const content = `
       <!DOCTYPE html>
       <html>
@@ -181,20 +184,88 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         <body>
           <script>
             (function() {
+              console.log('[OAuth Callback] 开始发送授权消息...');
+              console.log('[OAuth Callback] window.opener 存在:', !!window.opener);
+              console.log('[OAuth Callback] window.opener 是否关闭:', window.opener ? window.opener.closed : 'N/A');
+              
+              // 将 token 存储到 localStorage 作为 fallback
               try {
-                window.opener.postMessage(
-                  'authorization:github:success:${JSON.stringify({ token, provider: 'github' })}',
-                  '*'
-                );
+                localStorage.setItem('cms_token', '${token}');
+                localStorage.setItem('cms_token_timestamp', Date.now().toString());
+                console.log('[OAuth Callback] Token 已存储到 localStorage');
               } catch (e) {
-                console.error('Failed to post message:', e);
+                console.warn('[OAuth Callback] 无法存储到 localStorage:', e);
               }
+              
+              let messageSent = false;
+              let attempts = 0;
+              const maxAttempts = 5;
+              
+              function sendMessage() {
+                attempts++;
+                console.log('[OAuth Callback] 尝试发送消息 (第 ' + attempts + ' 次)...');
+                
+                if (!window.opener) {
+                  console.error('[OAuth Callback] window.opener 不存在，无法发送消息');
+                  if (attempts >= maxAttempts) {
+                    showFallbackMessage();
+                    return;
+                  }
+                  setTimeout(sendMessage, 200);
+                  return;
+                }
+                
+                if (window.opener.closed) {
+                  console.error('[OAuth Callback] 父窗口已关闭，无法发送消息');
+                  if (attempts >= maxAttempts) {
+                    showFallbackMessage();
+                    return;
+                  }
+                  setTimeout(sendMessage, 200);
+                  return;
+                }
+                
+                try {
+                  // 发送消息到父窗口
+                  window.opener.postMessage('${message}', '*');
+                  console.log('[OAuth Callback] 消息已发送:', '${message.substring(0, 50)}...');
+                  messageSent = true;
+                  
+                  // 等待一小段时间确保消息被接收，然后关闭窗口
+                  setTimeout(function() {
+                    console.log('[OAuth Callback] 准备关闭窗口');
+                    window.close();
+                  }, 500);
+                } catch (e) {
+                  console.error('[OAuth Callback] 发送消息失败:', e);
+                  if (attempts < maxAttempts) {
+                    setTimeout(sendMessage, 200);
+                  } else {
+                    showFallbackMessage();
+                  }
+                }
+              }
+              
+              function showFallbackMessage() {
+                document.body.innerHTML = '<div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;"><h2>授权成功！</h2><p>Token 已保存，请返回 CMS 页面并刷新。</p><p>如果问题持续，请检查浏览器控制台。</p></div>';
+              }
+              
+              // 立即尝试发送
+              sendMessage();
+              
+              // 如果 3 秒后还没发送成功，显示提示
               setTimeout(function() {
-                window.close();
-              }, 100);
+                if (!messageSent) {
+                  console.warn('[OAuth Callback] 消息发送超时');
+                  showFallbackMessage();
+                }
+              }, 3000);
             })();
           </script>
-          <p>授权成功！如果窗口没有自动关闭，请手动关闭。</p>
+          <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+            <p>授权成功！正在返回 CMS...</p>
+            <p style="font-size: 12px; color: #666;">如果窗口没有自动关闭，请手动关闭。</p>
+          </div>
         </body>
       </html>
     `;

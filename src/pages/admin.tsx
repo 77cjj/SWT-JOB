@@ -184,17 +184,54 @@ export default function AdminPage() {
         if (window.CMS && mountedRef.current) {
           // 确保根元素存在且是有效的
           if (element && element.parentNode) {
+            // 在初始化前，先清理可能存在的旧实例
+            try {
+              // 尝试清理 CMS 可能创建的 DOM 结构
+              const existingRoot = element.querySelector('.nc-root, [data-netlify-cms-root]');
+              if (existingRoot && existingRoot.parentNode === element) {
+                // 安全地移除旧实例
+                element.removeChild(existingRoot);
+              }
+            } catch (cleanupError) {
+              // 忽略清理错误，继续初始化
+              console.warn('[CMS] 清理旧实例时出错（可忽略）:', cleanupError);
+            }
+
             window.__CMS_INITIALIZED__ = true;
             window.__CMS_ROOT_ELEMENT__ = element;
-            window.CMS.init();
+            
+            // 包装 CMS.init() 调用，捕获可能的 DOM 操作错误
+            try {
+              window.CMS.init();
+              console.log('[CMS] 初始化成功');
+            } catch (initError: unknown) {
+              // 捕获初始化错误，特别是 removeChild 错误
+              const errorObj = initError as { message?: string };
+              if (errorObj.message && errorObj.message.includes('removeChild')) {
+                console.warn('[CMS] removeChild 错误（通常可忽略）:', errorObj.message);
+                // 尝试重新初始化
+                setTimeout(() => {
+                  if (window.CMS && element && element.parentNode) {
+                    try {
+                      window.CMS.init();
+                    } catch (retryError) {
+                      console.error('[CMS] 重试初始化失败:', retryError);
+                    }
+                  }
+                }, 1000);
+              } else {
+                throw initError;
+              }
+            }
+            
             delete window.__CMS_INIT_TIMEOUT__;
           } else {
-            console.warn('CMS root element is not valid');
+            console.warn('[CMS] Root element is not valid');
             delete window.__CMS_INIT_TIMEOUT__;
           }
         }
       } catch (error) {
-        console.error('CMS initialization error:', error);
+        console.error('[CMS] 初始化错误:', error);
         window.__CMS_INITIALIZED__ = false;
         delete window.__CMS_INIT_TIMEOUT__;
       }
@@ -223,10 +260,46 @@ export default function AdminPage() {
         strategy="lazyOnload"
         onLoad={() => {
           // 标记脚本已加载
+          console.log('[CMS] Decap CMS 脚本加载完成');
           setScriptLoaded(true);
         }}
         onError={(e) => {
-          console.error('Failed to load Decap CMS script:', e);
+          console.error('[CMS] 加载 Decap CMS 脚本失败:', e);
+        }}
+      />
+      {/* 全局错误处理：捕获 Decap CMS 内部的 removeChild 错误 */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              // 捕获全局错误，过滤掉 Decap CMS 的 removeChild 错误
+              const originalErrorHandler = window.onerror;
+              window.onerror = function(msg, url, line, col, error) {
+                // 如果是 removeChild 错误且来自 decap-cms，只记录警告而不抛出
+                if (msg && typeof msg === 'string' && 
+                    msg.includes('removeChild') && 
+                    (url && url.includes('decap-cms'))) {
+                  console.warn('[CMS] Decap CMS removeChild 错误（已忽略）:', msg);
+                  return true; // 阻止默认错误处理
+                }
+                // 其他错误正常处理
+                if (originalErrorHandler) {
+                  return originalErrorHandler.call(this, msg, url, line, col, error);
+                }
+                return false;
+              };
+              
+              // 捕获未处理的 Promise 拒绝
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && event.reason.message && 
+                    event.reason.message.includes('removeChild') &&
+                    event.reason.stack && event.reason.stack.includes('decap-cms')) {
+                  console.warn('[CMS] Decap CMS Promise 错误（已忽略）:', event.reason.message);
+                  event.preventDefault(); // 阻止默认错误处理
+                }
+              });
+            })();
+          `,
         }}
       />
     </>

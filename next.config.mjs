@@ -16,4 +16,18 @@ export default withNextra({
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  // 添加缓存控制，确保文档更新能及时生效
+  async headers() {
+    return [
+      {
+        source: '/docs/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
 })

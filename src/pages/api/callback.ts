@@ -5,15 +5,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
   if (error) {
     const errorContent = `
-      <script>
-        window.opener.postMessage(
-          'authorization:github:error:${JSON.stringify({ error })}',
-          '*'
-        );
-        window.close();
-      </script>
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>授权错误</title>
+        </head>
+        <body>
+          <script>
+            window.opener.postMessage(
+              'authorization:github:error:${JSON.stringify({ error })}',
+              '*'
+            );
+            window.close();
+          </script>
+        </body>
+      </html>
     `;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(errorContent);
   }
   
@@ -67,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         </body>
       </html>
     `;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(errorContent);
   }
 
@@ -134,15 +143,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     if (data.error) {
       const errorContent = `
-        <script>
-          window.opener.postMessage(
-            'authorization:github:error:${JSON.stringify({ error: data.error, error_description: data.error_description })}',
-            '*'
-          );
-          window.close();
-        </script>
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>授权错误</title>
+          </head>
+          <body>
+            <script>
+              window.opener.postMessage(
+                'authorization:github:error:${JSON.stringify({ error: data.error, error_description: data.error_description })}',
+                '*'
+              );
+              window.close();
+            </script>
+          </body>
+        </html>
       `;
-      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.send(errorContent);
     }
 
@@ -157,6 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <title>授权成功</title>
         </head>
         <body>
@@ -180,7 +199,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       </html>
     `;
 
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(content);
 
   } catch (error: unknown) {
@@ -263,7 +282,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         </body>
       </html>
     `;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(errorContent);
   }
 }

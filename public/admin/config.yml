@@ -2,7 +2,7 @@ backend:
   name: github
   repo: 77cjj/SWT-JOB
   branch: master
-  base_url: https://swt-job-picker.vercel.app
+  base_url: https://swtjob.vercel.app
   auth_endpoint: api/auth
   auth_scope: repo
   commit_messages:
@@ -15,7 +15,8 @@ backend:
 media_folder: "public/images"
 public_folder: "/images"
 
-# 本地开发时使用
+# 生产环境：使用 GitHub OAuth
+# 本地开发时，请使用 config.local.yml 或设置 local_backend: true
 local_backend: false
 
 # A list of collections the CMS should be able to edit
@@ -26,7 +27,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: mdx
-    format: frontmatter
+    format: yaml-frontmatter
     frontmatter_delimiter: "---"
     fields:
       - {label: "Title", name: "title", widget: "string", required: false}
@@ -38,7 +39,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: mdx
-    format: frontmatter
+    format: yaml-frontmatter
     frontmatter_delimiter: "---"
     fields:
       - {label: "Title", name: "title", widget: "string", required: false}
@@ -50,7 +51,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: mdx
-    format: frontmatter
+    format: yaml-frontmatter
     frontmatter_delimiter: "---"
     fields:
       - {label: "Title", name: "title", widget: "string", required: false}
@@ -62,7 +63,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: mdx
-    format: frontmatter
+    format: yaml-frontmatter
     frontmatter_delimiter: "---"
     fields:
       - {label: "Title", name: "title", widget: "string", required: false}
@@ -74,7 +75,7 @@ collections:
     create: true
     slug: "{{slug}}"
     extension: mdx
-    format: frontmatter
+    format: yaml-frontmatter
     frontmatter_delimiter: "---"
     fields:
       - {label: "Title", name: "title", widget: "string", required: false}

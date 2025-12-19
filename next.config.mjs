@@ -30,4 +30,22 @@ export default withNextra({
       },
     ];
   },
+  // 重写 admin 配置文件路径到 API 路由
+  async rewrites() {
+    return [
+      {
+        source: '/admin/config.yml',
+        destination: '/api/admin/config',
+      },
+      {
+        source: '/admin/config.local.yml',
+        destination: '/api/admin/config',
+      },
+      // 也处理直接请求 /config.yml 的情况
+      {
+        source: '/config.yml',
+        destination: '/api/admin/config',
+      },
+    ];
+  },
 })

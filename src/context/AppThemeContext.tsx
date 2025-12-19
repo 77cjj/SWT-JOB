@@ -33,30 +33,8 @@ function getSystemMode(): AppThemeMode {
 }
 
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
-  // 首次渲染：服务端使用 'light'，客户端会在 useEffect 中同步
-  const [mode, setModeState] = React.useState<AppThemeMode>(() => {
-    // SSR 时返回默认值
-    if (typeof window === 'undefined') return 'light';
-    // 客户端首次渲染时读取 localStorage 或系统主题
-    return readStoredMode() ?? getSystemMode();
-  });
-
-  // 客户端挂载后立即同步主题，确保与 localStorage 一致
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const stored = readStoredMode();
-    if (stored && stored !== mode) {
-      // 如果 localStorage 中的主题与当前状态不一致，立即同步
-      setModeState(stored);
-    } else if (!stored) {
-      // 如果没有存储的主题，使用系统主题
-      const systemMode = getSystemMode();
-      if (systemMode !== mode) {
-        setModeState(systemMode);
-      }
-    }
-  }, []); // 只在挂载时执行一次
+  // 首次渲染：优先 localStorage；没有则跟随系统主题
+  const [mode, setModeState] = React.useState<AppThemeMode>(() => readStoredMode() ?? getSystemMode());
 
   const setMode = React.useCallback((next: AppThemeMode) => {
     setModeState(next);
@@ -82,7 +60,6 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   // 仅当用户没有手动保存主题时，才跟随系统主题变化
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    // 如果已经有存储的主题，不跟随系统主题
     if (readStoredMode()) return;
 
     const mq = window.matchMedia?.('(prefers-color-scheme: dark)');

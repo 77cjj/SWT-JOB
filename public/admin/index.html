@@ -12,16 +12,13 @@
         padding: 0;
       }
     </style>
-    <!-- Include the script that builds the page and powers Decap CMS -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
   <body>
-    <script>
-      // 确保Decap CMS正确初始化
-      if (window.CMS) {
-        window.CMS.init();
-      }
-    </script>
+    <!-- Decap CMS 挂载点 -->
+    <div id="nc-root"></div>
+
+    <!-- Decap CMS 脚本（自行初始化，不再手动调用 CMS.init） -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </body>
 </html>
 

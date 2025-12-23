@@ -17,6 +17,33 @@
     <!-- Decap CMS 挂载点 -->
     <div id="nc-root"></div>
 
+    <!-- 监听 OAuth 回调消息，收到后刷新页面，便于 Decap 读取 token -->
+    <script>
+      (function () {
+        function handleAuthMessage(event) {
+          const msg = event.data;
+          if (typeof msg !== 'string') return;
+          if (!msg.startsWith('authorization:github:success:')) return;
+          try {
+            const payload = msg.replace('authorization:github:success:', '');
+            const data = JSON.parse(payload);
+            if (data?.token) {
+              // 备用存储，避免父窗口错过 popup 写入
+              localStorage.setItem('cms_token', data.token);
+              localStorage.setItem('cms_token_timestamp', Date.now().toString());
+            }
+          } catch (e) {
+            console.warn('[CMS] 解析授权消息失败:', e);
+          }
+          // 收到成功消息后刷新，让 Decap 重新初始化并读取 token
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
+        }
+        window.addEventListener('message', handleAuthMessage);
+      })();
+    </script>
+
     <!-- Decap CMS 脚本（自行初始化，不再手动调用 CMS.init） -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </body>

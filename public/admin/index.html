@@ -20,6 +20,21 @@
     <!-- 监听 OAuth 回调消息，收到后刷新页面，便于 Decap 读取 token -->
     <script>
       (function () {
+        // 将本地 fallback token 转成 Decap 认可的 localStorage 结构
+        function hydrateDecapUserFromFallback() {
+          const token = localStorage.getItem('cms_token');
+          if (!token) return;
+          const user = {
+            login: true,
+            token,
+            provider: 'github',
+            backendName: 'github',
+          };
+          localStorage.setItem('netlify-cms-user', JSON.stringify(user));
+        }
+
+        hydrateDecapUserFromFallback();
+
         function handleAuthMessage(event) {
           const msg = event.data;
           if (typeof msg !== 'string') return;
@@ -31,6 +46,13 @@
               // 备用存储，避免父窗口错过 popup 写入
               localStorage.setItem('cms_token', data.token);
               localStorage.setItem('cms_token_timestamp', Date.now().toString());
+              const user = {
+                login: true,
+                token: data.token,
+                provider: 'github',
+                backendName: 'github',
+              };
+              localStorage.setItem('netlify-cms-user', JSON.stringify(user));
             }
           } catch (e) {
             console.warn('[CMS] 解析授权消息失败:', e);

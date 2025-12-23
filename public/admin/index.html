@@ -20,20 +20,31 @@
     <!-- 监听 OAuth 回调消息，收到后刷新页面，便于 Decap 读取 token -->
     <script>
       (function () {
-        // 将本地 fallback token 转成 Decap 认可的 localStorage 结构
+        // 将本地 fallback token 转成 Decap 认可的 localStorage 结构（含 user 信息）
         function hydrateDecapUserFromFallback() {
           const token = localStorage.getItem('cms_token');
-          if (!token) return;
+          if (!token) return false;
           const user = {
             login: true,
             token,
             provider: 'github',
             backendName: 'github',
+            user: {
+              login: 'fallback',
+              name: 'GitHub User',
+              avatar_url: '',
+              html_url: 'https://github.com',
+            },
           };
           localStorage.setItem('netlify-cms-user', JSON.stringify(user));
+          return true;
         }
 
-        hydrateDecapUserFromFallback();
+        const hydrated = hydrateDecapUserFromFallback();
+        // 如果已写入登录态且当前在登录路由，刷新以触发 Decap 读取登录态
+        if (hydrated && window.location.hash.startsWith('#/login')) {
+          setTimeout(() => window.location.reload(), 150);
+        }
 
         function handleAuthMessage(event) {
           const msg = event.data;
@@ -51,6 +62,12 @@
                 token: data.token,
                 provider: 'github',
                 backendName: 'github',
+                user: {
+                  login: 'fallback',
+                  name: 'GitHub User',
+                  avatar_url: '',
+                  html_url: 'https://github.com',
+                },
               };
               localStorage.setItem('netlify-cms-user', JSON.stringify(user));
             }

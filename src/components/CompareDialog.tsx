@@ -23,6 +23,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { JobRecord } from '../types/job';
 import { computeIncome, getProjectDurationWeeks } from '../utils/jobMetrics';
+import { useI18n } from '../context/I18nContext';
 
 function formatShortDate(date: string) {
   // YYYY-MM-DD -> MM-DD
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) {
+  const { t, tWithParams } = useI18n();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const colWidth = fullScreen ? 220 : 280;
@@ -69,48 +71,48 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
   const rows = React.useMemo(
     () =>
       [
-        { label: '地点', render: (j: JobRecord) => `${j.state}` },
-        { label: '公司', render: (j: JobRecord) => j.company },
+        { label: t('compare.location'), render: (j: JobRecord) => `${j.state}` },
+        { label: t('compare.company'), render: (j: JobRecord) => j.company },
         {
-          label: '项目日期',
+          label: t('compare.projectDate'),
           render: (j: JobRecord) => {
             const w = getProjectDurationWeeks(j);
             const range = `${formatShortDate(j.projectStartDate)} ~ ${formatShortDate(j.projectEndDate)}`;
-            return w > 0 ? `${range}（约${w}周）` : range;
+            return w > 0 ? `${range} (${t('savedJobCard.about')}${w}${t('jobForm.perWeek')})` : range;
           },
         },
-        { label: '基础时薪', render: (j: JobRecord) => `$${j.hourlyWage.toFixed(2)}/h` },
-        { label: '平均工时', render: (j: JobRecord) => `${j.avgHoursPerWeek}h/周` },
+        { label: t('jobForm.hourlyWage'), render: (j: JobRecord) => `$${j.hourlyWage.toFixed(2)}/h` },
+        { label: t('compare.avgHours'), render: (j: JobRecord) => `${j.avgHoursPerWeek}h/${t('jobForm.perWeek')}` },
         {
-          label: '预估州税率',
+          label: t('compare.estimatedStateTax'),
           render: (_j: JobRecord, i: number) => percent(items[i]!.income.stateTaxRateEffective),
         },
         {
-          label: '住宿',
+          label: t('jobForm.housing'),
           render: (j: JobRecord) =>
-            j.hasHousing ? `宿舍 ${money(j.housingCostPerWeek)}/周 · ${j.housingDistanceKm}km` : '需自找',
+            j.hasHousing ? `${t('compare.housing')} ${money(j.housingCostPerWeek)}/${t('jobForm.perWeek')} · ${j.housingDistanceKm}km` : t('historicalJobs.needsOwnHousing'),
         },
         {
-          label: '二工',
+          label: t('jobForm.secondJob'),
           render: (j: JobRecord) =>
-            `${j.secondJobPossible} · +${j.secondJobHours}h/周${j.secondJobIndustry ? ` · ${j.secondJobIndustry}` : ''}`,
+            `${j.secondJobPossible} · +${j.secondJobHours}h/${t('jobForm.perWeek')}${j.secondJobIndustry ? ` · ${j.secondJobIndustry}` : ''}`,
         },
         {
-          label: '小费',
-          render: (j: JobRecord) => (j.tipped && j.averageTip ? `有 · $${j.averageTip[0]}~${j.averageTip[1]}/h` : '无'),
+          label: t('compare.tip'),
+          render: (j: JobRecord) => (j.tipped && j.averageTip ? `${t('compare.hasTip')} · $${j.averageTip[0]}~${j.averageTip[1]}/h` : t('savedJobCard.noTip')),
         },
-        { label: '每周净收入（含二工）', render: (_j: JobRecord, i: number) => money(items[i]!.income.netIncomeWithSecondJob) + '/周' },
+        { label: t('compare.weeklyNetIncome'), render: (_j: JobRecord, i: number) => money(items[i]!.income.netIncomeWithSecondJob) + `/${t('jobForm.perWeek')}` },
         {
-          label: '项目总收入（含二工）',
+          label: t('compare.projectTotalIncome'),
           render: (_j: JobRecord, i: number) => {
             const it = items[i]!;
-            if (it.total === null || it.totalRmb === null) return '—';
-            return `${money(it.total)}（¥${Math.round(it.totalRmb)}）`;
+            if (it.total === null || it.totalRmb === null) return t('compare.na');
+            return `${money(it.total)} (¥${Math.round(it.totalRmb)})`;
           },
         },
-        { label: '备注', render: (j: JobRecord) => (j.description ? j.description : '—') },
+        { label: t('compare.notes'), render: (j: JobRecord) => (j.description ? j.description : t('compare.na')) },
       ] as const,
-    [items],
+    [items, t],
   );
 
   return (
@@ -133,15 +135,15 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              岗位对比
+              {t('compare.title')}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              每列一个岗位，每行一个字段（最多 3 个岗位）
+              {t('compare.subtitle')}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Chip label={`${jobs.length}/3`} size="small" variant="outlined" />
-            <IconButton onClick={onClose} size="small" aria-label="关闭对比">
+            <IconButton onClick={onClose} size="small" aria-label={t('compare.closeAria')}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -159,7 +161,7 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
         {items.length === 0 ? (
           <Box sx={{ p: 3 }}>
             <Typography variant="body2" color="text.secondary">
-              还没有加入对比的岗位。请在“我的岗位”卡片上点击“加入对比”。
+              {t('compare.emptyMessage')}
             </Typography>
           </Box>
         ) : (
@@ -191,7 +193,7 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    字段
+                    {t('compare.field')}
                   </TableCell>
                   {items.map(({ job }) => (
                     <TableCell
@@ -212,11 +214,11 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
                             {job.company}
                           </Typography>
                         </Box>
-                        <Tooltip title="移出对比">
+                        <Tooltip title={t('home.removeFromCompare')}>
                           <IconButton
                             size="small"
                             onClick={() => onRemove(job.jobId)}
-                            aria-label={`移出对比：${job.jobTitle}`}
+                            aria-label={tWithParams('compare.removeAria', { jobTitle: job.jobTitle })}
                           >
                             <DeleteOutlineIcon fontSize="small" />
                           </IconButton>
@@ -276,7 +278,7 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
 
       <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
         <Button onClick={onClose} variant="contained">
-          关闭
+          {t('common.close')}
         </Button>
       </Box>
     </Dialog>

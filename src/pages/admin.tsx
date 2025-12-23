@@ -398,7 +398,7 @@ export default function AdminPage() {
     <>
       <Head>
         <meta name="robots" content="noindex" />
-        <title>SWT Job Picker - 内容管理</title>
+        <title>SWT Helper - 内容管理</title>
         <style>{`
           html, body {
             margin: 0;

@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import type { PropsWithChildren } from 'react';
-import { IconButton, Tooltip } from '@mui/material';
-import { DarkMode, LightMode } from '@mui/icons-material';
+import React, { type PropsWithChildren } from 'react';
+import { IconButton, Tooltip, Menu, MenuItem } from '@mui/material';
+import { DarkMode, LightMode, Language as LanguageIcon } from '@mui/icons-material';
 import { useAppTheme } from '../../context/AppThemeContext';
+import { useI18n } from '../../context/I18nContext';
+import { SUPPORTED_LANGUAGES, type Language } from '../../i18n/types';
 
 interface DesktopLayoutProps extends PropsWithChildren {
   /**
@@ -17,6 +19,8 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
   const router = useRouter();
   const pathname = router.pathname;
   const { mode, toggleMode } = useAppTheme();
+  const { language, setLanguage, t } = useI18n();
+  const [langMenuAnchor, setLangMenuAnchor] = React.useState<null | HTMLElement>(null);
 
   const isDark = mode === 'dark';
   const rootClass = isDark
@@ -27,18 +31,37 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
   const linkHoverClass = isDark ? 'hover:text-neutral-100' : 'hover:text-neutral-900';
   const linkActiveClass = isDark ? 'text-neutral-100 font-semibold' : 'text-neutral-900 font-semibold';
 
+  const handleLangMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setLangMenuAnchor(event.currentTarget);
+  };
+
+  const handleLangMenuClose = () => {
+    setLangMenuAnchor(null);
+  };
+
+  const handleLanguageChange = (lang: string) => {
+    setLanguage(lang as Language);
+    handleLangMenuClose();
+  };
+
   return (
     <div className={rootClass}>
       <header className={`border-b px-8 py-5 ${headerBorderClass}`}>
         <div className={`mx-auto flex ${maxWidthClassName} items-center justify-between`}>
-          <h1 className="text-2xl font-semibold tracking-wide">SWT Job Picker</h1>
+          <h1 className="text-2xl font-semibold tracking-wide">SWT Helper</h1>
           <div className="flex items-center gap-4">
             <nav className={`flex gap-6 text-sm uppercase ${navTextClass}`}>
               <Link
                 href="/"
                 className={`transition-colors ${linkHoverClass} ${pathname === '/' ? linkActiveClass : ''}`}
               >
-                选岗模拟对比
+                {t('nav.home')}
+              </Link>
+              <Link
+                href="/jobs"
+                className={`transition-colors ${linkHoverClass} ${pathname === '/jobs' ? linkActiveClass : ''}`}
+              >
+                {t('nav.jobs')}
               </Link>
               <Link
                 href="/docs"
@@ -46,28 +69,61 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
                   pathname.startsWith('/docs') ? linkActiveClass : ''
                 }`}
               >
-                SWT文档
+                {t('nav.docs')}
               </Link>
             </nav>
 
-            <Tooltip title={isDark ? '切换到亮色' : '切换到暗色'}>
-              <IconButton
-                size="small"
-                onClick={toggleMode}
-                color="inherit"
-                sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 999,
-                }}
+            <div className="flex items-center gap-2">
+              <Tooltip title={t('theme.switchToLight')}>
+                <IconButton
+                  size="small"
+                  onClick={handleLangMenuOpen}
+                  color="inherit"
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 999,
+                  }}
+                >
+                  <LanguageIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Menu
+                anchorEl={langMenuAnchor}
+                open={Boolean(langMenuAnchor)}
+                onClose={handleLangMenuClose}
               >
-                {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
-              </IconButton>
-            </Tooltip>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <MenuItem
+                    key={lang.code}
+                    selected={language === lang.code}
+                    onClick={() => handleLanguageChange(lang.code)}
+                  >
+                    <span className="mr-2">{lang.flag}</span>
+                    {lang.nativeName}
+                  </MenuItem>
+                ))}
+              </Menu>
+
+              <Tooltip title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}>
+                <IconButton
+                  size="small"
+                  onClick={toggleMode}
+                  color="inherit"
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 999,
+                  }}
+                >
+                  {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            </div>
           </div>
         </div>
       </header>
-      <main className={`mx-auto ${maxWidthClassName} px-8 py-10`}>{children}</main>
+      <main className={`mx-auto ${maxWidthClassName} px-8 py-10 pt-5`}>{children}</main>
     </div>
   );
 }

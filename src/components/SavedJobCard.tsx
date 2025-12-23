@@ -20,6 +20,7 @@ import {
   computeIncome,
   getProjectDurationWeeks,
 } from '../utils/jobMetrics';
+import { useI18n } from '../context/I18nContext';
 
 function formatShortDate(date: string) {
   // 期望输入：YYYY-MM-DD -> MM-DD（不包含年份）
@@ -44,6 +45,7 @@ export default function SavedJobCard({
   onToggleCompare,
   isCompared,
 }: SavedJobCardProps) {
+  const { t, tWithParams } = useI18n();
   const income = computeIncome(job);
   const projectWeeks = getProjectDurationWeeks(job);
   const totalIncome = projectWeeks > 0 ? income.netIncomeWithSecondJob * projectWeeks : null;
@@ -106,7 +108,7 @@ export default function SavedJobCard({
           <Chip
             label={
               totalIncome !== null
-                ? `总收入 $${Math.round(totalIncome)}`
+                ? `${t('income.totalGross')} $${Math.round(totalIncome)}`
                 : `$${Math.round(income.netIncomeWithSecondJob)}/w`
             }
             size="small"
@@ -115,7 +117,7 @@ export default function SavedJobCard({
           />
           <Chip
             label={`${formatShortDate(job.projectStartDate)} ~ ${formatShortDate(job.projectEndDate)}${
-              projectWeeks > 0 ? `（约${projectWeeks}周）` : ''
+              projectWeeks > 0 ? ` (${t('savedJobCard.about')}${projectWeeks}${t('jobForm.perWeek')})` : ''
             }`}
             size="small"
             variant="outlined"
@@ -133,35 +135,35 @@ export default function SavedJobCard({
         >
           <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(33.333% - 16px)', minWidth: 0 } }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              基础时薪
+              {t('jobForm.hourlyWage')}
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               ${job.hourlyWage.toFixed(2)}
             </Typography>
             {job.tipped && job.averageTip ? (
               <Typography variant="caption" color="text.secondary">
-                小费 ${job.averageTip[0]}~{job.averageTip[1]}/h
+                {t('jobForm.averageTip')} ${job.averageTip[0]}~{job.averageTip[1]}/h
               </Typography>
             ) : (
               <Typography variant="caption" color="text.secondary">
-                无小费
+                {t('savedJobCard.noTip')}
               </Typography>
             )}
           </Box>
           <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(33.333% - 16px)', minWidth: 0 } }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              住宿
+              {t('jobForm.housing')}
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {job.hasHousing ? `$${job.housingCostPerWeek}/w` : '需自找'}
+              {job.hasHousing ? `$${job.housingCostPerWeek}/w` : t('historicalJobs.needsOwnHousing')}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              距离 {job.housingDistanceKm} km
+              {t('jobForm.housingDistanceKm')} {job.housingDistanceKm} km
             </Typography>
           </Box>
           <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(33.333% - 16px)', minWidth: 0 } }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              项目总收入（含二工）
+              {t('savedJobCard.projectTotalIncome')}
             </Typography>
             {totalIncome !== null && totalIncomeRmb !== null ? (
               <>
@@ -169,7 +171,7 @@ export default function SavedJobCard({
                   ${Math.round(totalIncome)}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  ¥{Math.round(totalIncomeRmb)}（每周约 ${Math.round(income.netIncomeWithSecondJob)}/w）
+                  ¥{Math.round(totalIncomeRmb)} ({t('savedJobCard.weeklyAbout')} ${Math.round(income.netIncomeWithSecondJob)}/w)
                 </Typography>
               </>
             ) : (
@@ -200,19 +202,19 @@ export default function SavedJobCard({
           onClick={() => onSelect(job)}
           sx={{ minWidth: 'auto', px: 1.5 }}
         >
-          查看详情
+          {t('home.viewDetails')}
         </Button>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="编辑">
+          <Tooltip title={t('common.edit')}>
             <IconButton size="small" onClick={() => onEdit(job)} color="primary">
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="删除">
+          <Tooltip title={t('common.delete')}>
             <IconButton
               size="small"
               onClick={() => {
-                if (window.confirm(`确定要删除 "${job.jobTitle}" 吗？`)) {
+                if (window.confirm(tWithParams('savedJobCard.confirmDelete', { jobTitle: job.jobTitle }))) {
                   onDelete(job.jobId);
                 }
               }}
@@ -229,7 +231,7 @@ export default function SavedJobCard({
             color={isCompared ? 'primary' : 'inherit'}
             sx={{ minWidth: 'auto', px: 1.5 }}
           >
-            {isCompared ? '移出对比' : '加入对比'}
+            {isCompared ? t('home.removeFromCompare') : t('home.addToCompare')}
           </Button>
         </Box>
       </CardActions>

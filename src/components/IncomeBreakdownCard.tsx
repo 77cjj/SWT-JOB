@@ -1,5 +1,6 @@
 import { Box, Divider, Paper, Typography } from '@mui/material';
 import type { IncomeSummary } from '../utils/jobMetrics';
+import { useI18n } from '../context/I18nContext';
 
 function fmtMoney(value: number) {
   return Math.round(value).toLocaleString('en-US');
@@ -29,7 +30,7 @@ function BreakdownRow({
 export default function IncomeBreakdownCard({
   income,
   projectWeeks,
-  title = '收入拆解',
+  title,
   showNet = true,
 }: {
   income: IncomeSummary | null;
@@ -37,10 +38,12 @@ export default function IncomeBreakdownCard({
   title?: string;
   showNet?: boolean;
 }) {
+  const { t, tWithParams } = useI18n();
   const safeWeeks = Number.isFinite(projectWeeks) ? projectWeeks : 0;
-  // 这个卡片默认以“项目周期合计”为口径；如果日期无效，就提示用户修正日期
+  // 这个卡片默认以"项目周期合计"为口径；如果日期无效，就提示用户修正日期
   const isProjectValid = safeWeeks > 0;
   const scale = safeWeeks;
+  const displayTitle = title || t('income.title');
 
   return (
     <Paper
@@ -54,22 +57,22 @@ export default function IncomeBreakdownCard({
       }}
     >
       <Typography variant="subtitle2" color="primary" sx={{ mb: 1.5, fontWeight: 700 }}>
-        {title}
+        {displayTitle}
       </Typography>
 
       {!income ? (
         <Typography variant="body2" color="text.secondary">
-          先填写时薪/工时等信息，才会显示预估拆解。
+          {t('income.fillInfoFirst')}
         </Typography>
       ) : !isProjectValid ? (
         <Typography variant="body2" color="text.secondary">
-          请先设置有效的项目开始/结束日期（结束日期需要晚于开始日期），才能显示项目总额。
+          {t('income.setValidDates')}
         </Typography>
       ) : (
         <>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              项目税前总收入 Gross
+              {t('income.projectTotalGross')}
             </Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               +${fmtMoney(income.totalGross * scale)}
@@ -87,17 +90,19 @@ export default function IncomeBreakdownCard({
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.1 }}>
             <BreakdownRow
-              label="联邦税 (Fed 10%)"
+              label={t('income.federalTaxLabel')}
               value={`-$${fmtMoney(income.federalTax * scale)}`}
               valueColor="error.main"
             />
             <BreakdownRow
-              label={`州税 (State ${(income.stateTaxRateEffective * 100).toFixed(2)}%)`}
+              label={tWithParams('income.stateTaxLabel', {
+                rate: (income.stateTaxRateEffective * 100).toFixed(2),
+              })}
               value={`-$${fmtMoney(income.stateTax * scale)}`}
               valueColor="error.main"
             />
             <BreakdownRow
-              label="总住宿费 Housing"
+              label={t('income.totalHousing')}
               value={`-$${fmtMoney(income.housing * scale)}`}
               valueColor="error.main"
             />
@@ -115,7 +120,7 @@ export default function IncomeBreakdownCard({
               />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  预计到手 Net
+                  {t('income.estimatedNet')}
                 </Typography>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.main' }}>
                   +${fmtMoney(income.netIncomeWithSecondJob * scale)}
@@ -125,7 +130,7 @@ export default function IncomeBreakdownCard({
           )}
 
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
-            *按项目周期约 {safeWeeks} 周合计；FICA 默认按 J-1 免除，税费为简化预估
+            {tWithParams('income.footerNote', { weeks: safeWeeks })}
           </Typography>
         </>
       )}

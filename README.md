@@ -1,4 +1,4 @@
-# SWT Job Picker
+# SWT Helper
 
 > 一个专为 Summer Work & Travel (SWT) 项目参与者设计的智能工作选择工具
 
@@ -8,7 +8,7 @@
 
 ## 📖 项目简介
 
-SWT Job Picker 是一个帮助参加美国 Summer Work & Travel 项目的学生选择、比较和管理工作机会的 Web 应用。通过智能的收入计算、多维度对比和完整的项目指南，帮助参与者做出更明智的决策。
+SWT Helper 是一个帮助参加美国 Summer Work & Travel 项目的学生选择、比较和管理工作机会的 Web 应用。通过智能的收入计算、多维度对比和完整的项目指南，帮助参与者做出更明智的决策。
 
 ### 核心功能
 

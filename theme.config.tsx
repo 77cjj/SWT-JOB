@@ -10,7 +10,7 @@ const config = {
   },
   docsRepositoryBase: 'https://github.com/77cjj/SWT-JOB',
   footer: {
-    text: 'SWT Job Picker Documentation © 2024',
+    text: 'SWT Helper Documentation © 2024',
   },
   sidebar: {
     defaultMenuCollapseLevel: 1,

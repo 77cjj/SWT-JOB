@@ -16,4 +16,27 @@ body {
   font-weight: 500;
 }
 
+/* 修复 Nextra 主题切换开关的滑块位置 */
+body[data-app='docs'] [role="switch"] {
+  direction: ltr;
+}
+
+/* 将文档页面的蓝色改为黑白灰（仅 light 模式） */
+body[data-app='docs'] {
+  /* 覆盖 Nextra 的 CSS 变量，将蓝色改为灰色 */
+  --nextra-primary-hue: 0deg !important;
+  --nextra-primary-saturation: 0% !important;
+}
+
+/* 直接覆盖 Nextra primary 颜色类，使用更高的明确性 */
+body[data-app='docs'] .nx-text-primary-600 {
+  color: #000000 !important; /* gray-700 */
+}
+
+
+
+body[data-app='docs'] a:hover {
+  color: #000000 !important; /* gray-900 */
+}
+
 

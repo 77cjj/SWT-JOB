@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import React from 'react';
 import { AppThemeProvider, useAppTheme } from '../context/AppThemeContext';
+import { I18nProvider } from '../context/I18nContext';
 import { createAppTheme } from '../theme/theme';
 import '../index.css';
 import 'nextra-theme-docs/style.css';
@@ -57,10 +58,12 @@ export default function App({ Component, pageProps }: AppProps) {
   }
 
   return (
-    <AppThemeProvider>
-      {/* @ts-expect-error - router is provided by Next.js internally */}
-      <SWTApp Component={Component} pageProps={pageProps} />
-    </AppThemeProvider>
+    <I18nProvider>
+      <AppThemeProvider>
+        {/* @ts-expect-error - router is provided by Next.js internally */}
+        <SWTApp Component={Component} pageProps={pageProps} />
+      </AppThemeProvider>
+    </I18nProvider>
   );
 }
 

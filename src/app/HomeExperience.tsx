@@ -7,10 +7,12 @@ import JobDetailPanel from '../components/JobDetailPanel';
 import JobEditDialog from '../components/JobEditDialog';
 import IncomeBreakdownCard from '../components/IncomeBreakdownCard';
 import { useSavedJobs } from '../hooks/useSavedJobs';
+import { useI18n } from '../context/I18nContext';
 import type { JobRecord } from '../types/job';
 import type { IncomeSummary } from '../utils/jobMetrics';
 
 export default function HomeExperience() {
+  const { t, tWithParams } = useI18n();
   const { jobs, addJob, updateJob, deleteJob } = useSavedJobs();
   const [detailJob, setDetailJob] = useState<JobRecord | null>(null);
   const [editingJob, setEditingJob] = useState<JobRecord | null>(null);
@@ -91,10 +93,10 @@ export default function HomeExperience() {
               >
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="overline" color="primary" sx={{ letterSpacing: '0.1em' }}>
-                    新建岗位表单
+                    {t('home.addJob')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    填写岗位信息，保存后出现在右侧“我的岗位”
+                    {t('jobForm.createSubtitle')}
                   </Typography>
                 </Box>
                 <JobForm
@@ -113,7 +115,7 @@ export default function HomeExperience() {
               >
                 <Box sx={{ mb: 2 }}>
                   <IncomeBreakdownCard
-                    title="收入拆解预览"
+                    title={t('income.title')}
                     income={preview?.income ?? null}
                     projectWeeks={preview?.projectWeeks ?? 0}
                   />
@@ -130,10 +132,10 @@ export default function HomeExperience() {
                 >
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="overline" color="primary" sx={{ letterSpacing: '0.1em' }}>
-                      我的岗位
+                      {t('home.title')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      已保存 {jobs.length} 个岗位，在卡片上点击“加入对比”，再打开对比弹窗查看
+                      {tWithParams('home.compareSelected', { count: jobs.length })}
                     </Typography>
                   </Box>
                   <Button
@@ -142,7 +144,7 @@ export default function HomeExperience() {
                     disabled={!compareIds.length}
                     onClick={() => setCompareOpen(true)}
                   >
-                    打开对比（{compareIds.length}/3）
+                    {t('home.compare')} ({compareIds.length}/3)
                   </Button>
                 </Box>
 
@@ -158,10 +160,10 @@ export default function HomeExperience() {
                     }}
                   >
                     <Alert severity="info" sx={{ mb: 2 }}>
-                      还没有保存任何岗位
+                      {t('home.noJobs')}
                     </Alert>
                     <Typography variant="body2" color="text.secondary">
-                      在左侧表单填写信息并点击“保存岗位”
+                      {t('home.noJobsDescription')}
                     </Typography>
                   </Paper>
                 ) : (

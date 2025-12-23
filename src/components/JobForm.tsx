@@ -24,6 +24,7 @@ import type { JobRecord, SecondJobDifficulty } from '../types/job';
 import taxTable from '../data/tax.json';
 import { computeIncome, type IncomeSummary } from '../utils/jobMetrics';
 import { getStateMaxMarginalRate } from '../utils/stateTax';
+import { useI18n } from '../context/I18nContext';
 
 const JOB_TITLE_OPTIONS = [
   'Host',
@@ -50,6 +51,7 @@ interface Props {
 }
 
 export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChange }: Props) {
+  const { t, tWithParams } = useI18n();
   const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState<Partial<JobRecord>>(
     initialData ?? {
@@ -157,7 +159,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
 
     // 岗位名/公司名允许为空：保存时兜底为默认占位文案
     if (!formData.state) {
-      setError('请选择州');
+      setError(t('errors.selectState'));
       return;
     }
 
@@ -229,8 +231,8 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
         }}
       >
       <CardHeader
-        title={initialData ? '编辑岗位信息' : '创建新岗位'}
-        subheader={initialData ? '修改岗位信息并保存' : '填写岗位信息，保存后出现在右侧面板'}
+        title={initialData ? t('jobForm.editTitle') : t('jobForm.createTitle')}
+        subheader={initialData ? t('jobForm.editSubtitle') : t('jobForm.createSubtitle')}
         titleTypographyProps={{ variant: 'h5', fontWeight: 600 }}
       />
       <Divider />
@@ -265,8 +267,8 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="岗位名称"
-                    placeholder="请选择或输入岗位名称"
+                    label={t('jobForm.jobTitle')}
+                    placeholder={t('jobForm.jobTitle')}
                   />
                 )}
               />
@@ -275,10 +277,10 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 220px' }, minWidth: 200 }}>
               <TextField
                 fullWidth
-                label="公司名称"
+                label={t('jobForm.company')}
                 value={formData.company ?? ''}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                placeholder="雇主公司名"
+                placeholder={t('jobForm.company')}
               />
             </Box>
 
@@ -287,7 +289,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                 fullWidth
                 required
                 select
-                label="州"
+                label={t('jobForm.state')}
                 value={formData.state ?? 'CA'}
                 onChange={(e) => {
                   const state = e.target.value;
@@ -299,7 +301,9 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
               >
                 {STATE_OPTIONS.map((s) => {
                   const maxRate = getStateMaxMarginalRate(s);
-                  const suffix = maxRate > 0 ? `（最高税率 ${(maxRate * 100).toFixed(2)}%）` : '（免州税）';
+                  const suffix = maxRate > 0 
+                    ? tWithParams('jobForm.stateTaxSuffix', { rate: (maxRate * 100).toFixed(2) })
+                    : t('jobForm.noStateTax');
                   return (
                   <MenuItem key={s} value={s}>
                     {s} {suffix}
@@ -327,14 +331,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             >
               <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  基础时薪 ($/h)
+                  {t('jobForm.hourlyWage')}
                   <Typography
                     component="span"
                     variant="body2"
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
-                    当前 {(formData.hourlyWage ?? 15).toFixed(2)} $/h
+                    {t('jobForm.current')} {(formData.hourlyWage ?? 15).toFixed(2)} $/h
                   </Typography>
                 </Typography>
                 <Slider
@@ -353,14 +357,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
 
               <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  平均周工时
+                  {t('jobForm.avgHoursPerWeek')}
                   <Typography
                     component="span"
                     variant="body2"
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
-                    当前 {formData.avgHoursPerWeek ?? 40} h/周
+                    {t('jobForm.current')} {formData.avgHoursPerWeek ?? 40} h/{t('jobForm.perWeek')}
                   </Typography>
                 </Typography>
                 <Slider
@@ -387,14 +391,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             >
               <Box sx={{ flex: 1, minWidth: 220 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  二工工时 (h/周)
+                  {t('jobForm.secondJobHours')} (h/{t('jobForm.perWeek')})
                   <Typography
                     component="span"
                     variant="body2"
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
-                    当前 {formData.secondJobHours ?? 15} h/周
+                    {t('jobForm.current')} {formData.secondJobHours ?? 15} h/{t('jobForm.perWeek')}
                   </Typography>
                 </Typography>
                 <Slider
@@ -427,14 +431,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     onChange={(e) => setFormData({ ...formData, tipped: e.target.checked })}
                   />
                 }
-                label="是否为小费岗位"
+                label={t('jobForm.tipped')}
               />
               {formData.tipped && (
                 <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 200px' }, minWidth: 200 }}>
                   <TextField
                     fullWidth
                     type="number"
-                    label="平均小费 ($/h)"
+                    label={t('jobForm.averageTip')}
                     value={formData.averageTip?.[0] ?? 10}
                     onChange={(e) => {
                       const value = Number(e.target.value);
@@ -466,7 +470,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     onChange={(e) => setFormData({ ...formData, hasHousing: e.target.checked })}
                   />
                 }
-                label="是否提供住宿"
+                label={t('jobForm.hasHousing')}
               />
               {formData.hasHousing && (
                 <>
@@ -483,14 +487,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                   >
                     <Box sx={{ flex: '0 0 190px', minWidth: 170 }}>
                       <Typography variant="subtitle2" sx={{ mb: 1, whiteSpace: 'nowrap' }}>
-                        费用
+                        {t('jobForm.housingCostPerWeek')}
                         <Typography
                           component="span"
                           variant="body2"
                           color="text.secondary"
                           sx={{ ml: 1 }}
                         >
-                          当前 ${formData.housingCostPerWeek ?? 120}/周
+                          {t('jobForm.current')} ${formData.housingCostPerWeek ?? 120}/{t('jobForm.perWeek')}
                         </Typography>
                       </Typography>
                       <Slider
@@ -508,14 +512,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     </Box>
                     <Box sx={{ flex: '0 0 190px', minWidth: 170 }}>
                       <Typography variant="subtitle2" sx={{ mb: 1, whiteSpace: 'nowrap' }}>
-                        距离
+                        {t('jobForm.housingDistanceKm')}
                         <Typography
                           component="span"
                           variant="body2"
                           color="text.secondary"
                           sx={{ ml: 1 }}
                         >
-                          当前 {formData.housingDistanceKm ?? 2} km
+                          {t('jobForm.current')} {formData.housingDistanceKm ?? 2} km
                         </Typography>
                       </Typography>
                       <Slider
@@ -545,7 +549,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             >
               <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 220px' }, minWidth: 0 }}>
                 <DatePicker
-                  label="项目开始日期"
+                  label={t('jobForm.projectStartDate')}
                   value={projectStartDate}
                   format="YYYY-MM-DD"
                   maxDate={projectEndDate}
@@ -564,7 +568,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
               </Box>
               <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 220px' }, minWidth: 0 }}>
                 <DatePicker
-                  label="项目结束日期"
+                  label={t('jobForm.projectEndDate')}
                   value={projectEndDate}
                   format="YYYY-MM-DD"
                   minDate={projectStartDate}
@@ -588,10 +592,10 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                 fullWidth
                 multiline
                 rows={3}
-                label="岗位描述"
+                label={t('jobForm.description')}
                 value={formData.description ?? ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="简要描述岗位特点..."
+                placeholder={t('jobForm.descriptionPlaceholder')}
               />
             </Box>
           </Box>
@@ -627,7 +631,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                 startIcon={<CancelIcon />}
                 onClick={onCancel}
               >
-                取消
+                {t('common.cancel')}
               </Button>
             )}
             <Button
@@ -636,7 +640,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
               startIcon={<SaveIcon />}
               sx={{ minWidth: 140 }}
             >
-              {initialData ? '更新岗位' : '保存岗位'}
+              {initialData ? t('jobForm.updateJob') : t('jobForm.saveJob')}
             </Button>
           </Box>
         </Box>

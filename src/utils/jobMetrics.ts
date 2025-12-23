@@ -59,7 +59,8 @@ export function computeIncome(job: JobRecord, options: IncomeOptions = {}): Inco
     : 0;
 
   const primaryGross = regularIncome + overtimeIncome + tipIncome;
-  const secondJobIncome = secondHours * SECOND_JOB_DEFAULT_WAGE;
+  const secondJobWage = job.secondJobHourlyWage ?? SECOND_JOB_DEFAULT_WAGE;
+  const secondJobIncome = secondHours * secondJobWage;
   const totalGross = primaryGross + secondJobIncome;
 
   const taxableBase = Math.max(primaryGross - 150, 0);

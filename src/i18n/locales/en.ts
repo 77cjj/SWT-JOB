@@ -33,6 +33,12 @@ export const en = {
     dark: 'Dark',
     switchToLight: 'Switch to light mode',
     switchToDark: 'Switch to dark mode',
+    toggle: 'Toggle theme',
+  },
+
+  // Language
+  language: {
+    switch: 'Switch language',
   },
 
   // Home
@@ -184,6 +190,10 @@ export const en = {
     totalHousing: 'Total Housing Cost',
     estimatedNet: 'Estimated Net Income',
     footerNote: '*Total for approximately {weeks} weeks of project period; FICA exempted for J-1, taxes are simplified estimates',
+    projectSummaryTitle: 'Estimated project total income',
+    projectSummaryLine: 'From {start} to {end}, about {weeks} weeks',
+    projectSummaryTotal: 'Total about ${amount}',
+    projectSummaryWeekly: 'Based on weekly net income ${weekly} (primary job {primary})',
   },
 
 

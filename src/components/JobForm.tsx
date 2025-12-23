@@ -68,7 +68,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
       housingCostPerWeek: 120,
       housingDistanceKm: 2,
       secondJobPossible: '中',
-      secondJobHours: 15,
+      secondJobHours: 0,
       secondJobIndustry: '',
       workStability: 3,
       costOfLivingIndex: 100,
@@ -108,6 +108,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
       secondJobPossible: (formData.secondJobPossible ?? '中') as SecondJobDifficulty,
       secondJobHours: formData.secondJobHours ?? 0,
       secondJobIndustry: formData.secondJobIndustry ?? '',
+      secondJobHourlyWage: formData.secondJobHourlyWage ?? undefined,
       workStability: (formData.workStability ?? 3) as 1 | 2 | 3 | 4 | 5,
       costOfLivingIndex: formData.costOfLivingIndex ?? 100,
       safetyLevel: (formData.safetyLevel ?? 3) as 1 | 2 | 3 | 4 | 5,
@@ -210,6 +211,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
         secondJobPossible: '中',
         secondJobHours: 15,
         secondJobIndustry: '',
+        secondJobHourlyWage: undefined,
         workStability: 3,
         costOfLivingIndex: 100,
         safetyLevel: 3,
@@ -338,14 +340,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
-                    {t('jobForm.current')} {(formData.hourlyWage ?? 15).toFixed(2)} $/h
+                     {(formData.hourlyWage ?? 15).toFixed(2)} $/h
                   </Typography>
                 </Typography>
                 <Slider
                   size="small"
                   value={formData.hourlyWage ?? 15}
-                  min={5}
-                  max={35}
+                  min={0}
+                  max={40}
                   step={0.25}
                   valueLabelDisplay="auto"
                   onChange={(_, value) => {
@@ -364,7 +366,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
-                    {t('jobForm.current')} {formData.avgHoursPerWeek ?? 40} h/{t('jobForm.perWeek')}
+                     {formData.avgHoursPerWeek ?? 40} h/{t('jobForm.perWeek')}
                   </Typography>
                 </Typography>
                 <Slider
@@ -385,11 +387,38 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             <Box
               sx={{
                 display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
+                flexDirection: { xs: 'column', sm: 'row' },
                 gap: 3,
               }}
             >
-              <Box sx={{ flex: 1, minWidth: 220 }}>
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%' } }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {t('jobForm.secondJobHourlyWage')} ($)
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ml: 1 }}
+                  >
+                    {' '}
+                    {(formData.secondJobHourlyWage ?? 13).toFixed(2)} $/h
+                  </Typography>
+                </Typography>
+                <Slider
+                  size="small"
+                  value={formData.secondJobHourlyWage ?? 13}
+                  min={5}
+                  max={30}
+                  step={0.5}
+                  valueLabelDisplay="auto"
+                  onChange={(_, value) => {
+                    const next = Array.isArray(value) ? value[0] : value;
+                    setFormData({ ...formData, secondJobHourlyWage: next });
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                   {t('jobForm.secondJobHours')} (h/{t('jobForm.perWeek')})
                   <Typography
@@ -398,7 +427,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
-                    {t('jobForm.current')} {formData.secondJobHours ?? 15} h/{t('jobForm.perWeek')}
+                     {formData.secondJobHours ?? 15} h/{t('jobForm.perWeek')}
                   </Typography>
                 </Typography>
                 <Slider
@@ -494,7 +523,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                           color="text.secondary"
                           sx={{ ml: 1 }}
                         >
-                          {t('jobForm.current')} ${formData.housingCostPerWeek ?? 120}/{t('jobForm.perWeek')}
+                           ${formData.housingCostPerWeek ?? 120}/{t('jobForm.perWeek')}
                         </Typography>
                       </Typography>
                       <Slider
@@ -519,7 +548,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                           color="text.secondary"
                           sx={{ ml: 1 }}
                         >
-                          {t('jobForm.current')} {formData.housingDistanceKm ?? 2} km
+                           {formData.housingDistanceKm ?? 2} km
                         </Typography>
                       </Typography>
                       <Slider
@@ -611,16 +640,28 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             justifyContent: estimatedIncome && totalProjectIncome ? 'space-between' : 'flex-end',
           }}
         >
-          {estimatedIncome && totalProjectIncome && (
+          {estimatedIncome && totalProjectIncome && projectDurationWeeks > 0 && (
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="body2" color="text.secondary">
-                项目总收入预估（{projectStartDate.format('YYYY-MM-DD')} ~ {projectEndDate.format('YYYY-MM-DD')}，约 {projectDurationWeeks} 周）
+                {t('income.projectSummaryTitle')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {tWithParams('income.projectSummaryLine', {
+                  start: projectStartDate.format('YYYY-MM-DD'),
+                  end: projectEndDate.format('YYYY-MM-DD'),
+                  weeks: projectDurationWeeks,
+                })}
               </Typography>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                总收入约 ${totalProjectIncome.toFixed(0)}
+                {tWithParams('income.projectSummaryTotal', {
+                  amount: totalProjectIncome.toFixed(0),
+                })}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                按每周净收入 ${estimatedIncome.netIncomeWithSecondJob.toFixed(0)}（一工 {estimatedIncome.netIncomePrimary.toFixed(0)}）
+                {tWithParams('income.projectSummaryWeekly', {
+                  weekly: estimatedIncome.netIncomeWithSecondJob.toFixed(0),
+                  primary: estimatedIncome.netIncomePrimary.toFixed(0),
+                })}
               </Typography>
             </Box>
           )}

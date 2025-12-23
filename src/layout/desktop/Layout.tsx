@@ -74,7 +74,7 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
             </nav>
 
             <div className="flex items-center gap-2">
-              <Tooltip title={t('theme.switchToLight')}>
+              <Tooltip title={t('language.switch')}>
                 <IconButton
                   size="small"
                   onClick={handleLangMenuOpen}

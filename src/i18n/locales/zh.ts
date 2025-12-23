@@ -33,6 +33,12 @@ export const zh = {
     dark: '暗色',
     switchToLight: '切换到亮色',
     switchToDark: '切换到暗色',
+    toggle: '切换主题',
+  },
+
+  // 语言
+  language: {
+    switch: '切换语言',
   },
 
   // 首页
@@ -65,7 +71,7 @@ export const zh = {
     salary: '薪资信息',
     hourlyWage: '时薪 ($)',
     overtimeRate: '加班倍率',
-    tipped: '有小费',
+    tipped: '是否有小费',
     averageTip: '平均小费',
     tipRange: '小费范围 ($/h)',
     workHours: '工作时间',
@@ -73,12 +79,13 @@ export const zh = {
     workHoursRange: '工时范围',
     overtimeAvailable: '可加班',
     housing: '住宿信息',
-    hasHousing: '提供住宿',
+    hasHousing: '是否提供住宿',
     housingCostPerWeek: '每周房租 ($)',
     housingDistanceKm: '住宿距离 (km)',
     housingCondition: '住宿情况',
     secondJob: '第二份工作',
     secondJobPossible: '二工机会',
+    secondJobHourlyWage: '二工时薪',
     secondJobHours: '二工工时/周',
     secondJobIndustry: '二工行业',
     evaluation: '评估指标',
@@ -146,6 +153,19 @@ export const zh = {
     totalHousing: '总住宿费 Housing',
     estimatedNet: '预计到手 Net',
     footerNote: '*按项目周期约 {weeks} 周合计；FICA 默认按 J-1 免除，税费为简化预估',
+    projectSummaryTitle: '项目总收入预估',
+    projectSummaryLine: '{start} ~ {end}，约 {weeks} 周',
+    projectSummaryTotal: '总收入约 ${amount}',
+    projectSummaryWeekly: '按每周净收入 ${weekly}（一工 {primary}）',
+  },
+
+  // 已保存岗位卡片
+  savedJobCard: {
+    confirmDelete: '确定要删除「{jobTitle}」吗？',
+    noTip: '无小费',
+    projectTotalIncome: '项目总收入（含二工）',
+    weeklyAbout: '约每周',
+    about: '约',
   },
 
   // 对比
@@ -215,4 +235,5 @@ export const zh = {
     selectState: '请选择州',
   },
 };
+
 

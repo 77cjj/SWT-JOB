@@ -94,7 +94,7 @@ export default function MobileLayout({ children }: PropsWithChildren) {
               </MenuItem>
             ))}
           </Menu>
-          <Tooltip title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}>
+          <Tooltip title={t('theme.toggle')}>
             <IconButton
               size="small"
               onClick={toggleMode}

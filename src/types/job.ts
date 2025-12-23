@@ -27,6 +27,8 @@ export interface JobRecord {
   secondJobPossible: SecondJobDifficulty;
   secondJobHours: number;
   secondJobIndustry: string;
+  // 二工时薪（可选，不填则使用默认预估值）
+  secondJobHourlyWage?: number;
 
   workStability: 1 | 2 | 3 | 4 | 5;
   costOfLivingIndex: number;

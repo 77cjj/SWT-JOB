@@ -17,6 +17,7 @@
     "@mui/material": "^7.3.5",
     "@mui/x-date-pickers": "^8.21.0",
     "@reduxjs/toolkit": "^2.10.1",
+    "@vercel/analytics": "^1.6.1",
     "dayjs": "^1.11.19",
     "next": "latest",
     "nextra": "^2.13.4",

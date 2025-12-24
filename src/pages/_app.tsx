@@ -8,6 +8,7 @@ import { createAppTheme } from '../theme/theme';
 import '../index.css';
 import 'nextra-theme-docs/style.css';
 import '../nextra-overrides.css';
+import { Analytics } from '@vercel/analytics/next';
 
 function SWTApp({ Component, pageProps }: AppProps) {
   const { mode } = useAppTheme();
@@ -22,6 +23,7 @@ function SWTApp({ Component, pageProps }: AppProps) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Component {...pageProps} />
+      <Analytics />
     </ThemeProvider>
   );
 }
@@ -49,12 +51,18 @@ export default function App({ Component, pageProps }: AppProps) {
     return (
       <React.Fragment>
         <Component {...pageProps} />
+        <Analytics />
       </React.Fragment>
     );
   }
   
   if (isDocs) {
-    return <Component {...pageProps} />;
+    return (
+      <>
+        <Component {...pageProps} />
+        <Analytics />
+      </>
+    );
   }
 
   return (

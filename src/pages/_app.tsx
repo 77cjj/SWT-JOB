@@ -1,6 +1,7 @@
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import { ThemeProvider, CssBaseline } from '@mui/material';
+import { Analytics } from '@vercel/analytics/next';
 import React from 'react';
 import { AppThemeProvider, useAppTheme } from '../context/AppThemeContext';
 import { I18nProvider } from '../context/I18nContext';
@@ -49,12 +50,18 @@ export default function App({ Component, pageProps }: AppProps) {
     return (
       <React.Fragment>
         <Component {...pageProps} />
+        <Analytics />
       </React.Fragment>
     );
   }
   
   if (isDocs) {
-    return <Component {...pageProps} />;
+    return (
+      <>
+        <Component {...pageProps} />
+        <Analytics />
+      </>
+    );
   }
 
   return (
@@ -62,6 +69,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <AppThemeProvider>
         {/* @ts-expect-error - router is provided by Next.js internally */}
         <SWTApp Component={Component} pageProps={pageProps} />
+        <Analytics />
       </AppThemeProvider>
     </I18nProvider>
   );

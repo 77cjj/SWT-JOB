@@ -9,6 +9,7 @@ import '../index.css';
 import 'nextra-theme-docs/style.css';
 import '../nextra-overrides.css';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 function SWTApp({ Component, pageProps }: AppProps) {
   const { mode } = useAppTheme();
@@ -24,6 +25,7 @@ function SWTApp({ Component, pageProps }: AppProps) {
       <CssBaseline />
       <Component {...pageProps} />
       <Analytics />
+      <SpeedInsights />
     </ThemeProvider>
   );
 }
@@ -52,6 +54,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <React.Fragment>
         <Component {...pageProps} />
         <Analytics />
+        <SpeedInsights />
       </React.Fragment>
     );
   }
@@ -61,6 +64,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <>
         <Component {...pageProps} />
         <Analytics />
+        <SpeedInsights />
       </>
     );
   }

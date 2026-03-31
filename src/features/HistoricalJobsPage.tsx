@@ -30,13 +30,11 @@ export default function HistoricalJobsPage() {
   const [stateFilter, setStateFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
-  // 获取所有州列表
   const states = useMemo(() => {
     const stateSet = new Set(historicalJobsData.map((job) => job.state));
     return Array.from(stateSet).sort();
   }, []);
 
-  // 过滤岗位
   const filteredJobs = useMemo(() => {
     return historicalJobsData.filter((job) => {
       const matchesSearch =
@@ -120,27 +118,11 @@ export default function HistoricalJobsPage() {
                   </Typography>
                 )}
               </TableCell>
+              <TableCell>{job.housingCondition ? <Chip label={job.housingCondition} size="small" /> : '—'}</TableCell>
               <TableCell>
-                {job.housingCondition ? (
-                  <Chip label={job.housingCondition} size="small" />
-                ) : (
-                  '—'
-                )}
+                {job.culture ? <Chip label={job.culture} size="small" variant="outlined" /> : '—'}
               </TableCell>
-              <TableCell>
-                {job.culture ? (
-                  <Chip label={job.culture} size="small" variant="outlined" />
-                ) : (
-                  '—'
-                )}
-              </TableCell>
-              <TableCell>
-                {job.employerAttitude ? (
-                  <Typography variant="body2">{job.employerAttitude}</Typography>
-                ) : (
-                  '—'
-                )}
-              </TableCell>
+              <TableCell>{job.employerAttitude ? <Typography variant="body2">{job.employerAttitude}</Typography> : '—'}</TableCell>
               <TableCell>
                 {job.employeeBenefits ? (
                   <Typography variant="body2" sx={{ maxWidth: 200 }}>
@@ -234,9 +216,7 @@ export default function HistoricalJobsPage() {
                     color="success"
                   />
                 )}
-                {job.housingCondition && (
-                  <Chip label={`住宿: ${job.housingCondition}`} size="small" />
-                )}
+                {job.housingCondition && <Chip label={`住宿: ${job.housingCondition}`} size="small" />}
               </Box>
 
               {job.culture && (
@@ -329,4 +309,3 @@ export default function HistoricalJobsPage() {
     </Box>
   );
 }
-

@@ -31,31 +31,16 @@ function SWTApp({ Component, pageProps }: AppProps) {
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isDocs = router.pathname.startsWith('/docs');
-  const isAdmin = router.pathname === '/admin';
 
   React.useEffect(() => {
     // 让全局 CSS 可以区分 docs 与非 docs 页面，避免覆盖 Nextra 的 light/dark 主题样式
     if (isDocs) {
       document.body.dataset.app = 'docs';
       delete document.body.dataset.theme;
-    } else if (isAdmin) {
-      // Admin 页面不使用任何主题
-      document.body.dataset.app = 'admin';
-      delete document.body.dataset.theme;
     }
-  }, [isDocs, isAdmin]);
+  }, [isDocs]);
 
-  // Admin 和 Docs 页面不应用 MUI 主题
-  // Admin 页面需要禁用 StrictMode 以避免与 Decap CMS 的 DOM 操作冲突
-  if (isAdmin) {
-    return (
-      <React.Fragment>
-        <Component {...pageProps} />
-        <Analytics />
-      </React.Fragment>
-    );
-  }
-  
+  // Docs 页面不应用 MUI 主题
   if (isDocs) {
     return (
       <>

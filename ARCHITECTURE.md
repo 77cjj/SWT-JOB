@@ -62,13 +62,7 @@ swt-job-picker/
 │   │   ├── _app.tsx              # 应用入口（主题、布局控制）
 │   │   ├── index.tsx             # 首页 (/)
 │   │   ├── swt.tsx               # SWT 页面
-│   │   ├── admin.tsx             # CMS 管理后台 (/admin)
-│   │   │
 │   │   ├── api/                  # API 路由
-│   │   │   ├── auth.ts           # GitHub OAuth 认证入口
-│   │   │   ├── callback.ts       # OAuth 回调处理
-│   │   │   └── admin/
-│   │   │       └── config.ts     # CMS 配置动态加载
 │   │   │
 │   │   └── docs/                 # 文档系统（Nextra）
 │   │       ├── index.mdx         # 文档首页
@@ -108,12 +102,6 @@ swt-job-picker/
 │   │
 │   ├── index.css                 # 全局样式
 │   └── nextra-overrides.css     # Nextra 样式覆盖
-│
-├── public/
-│   └── admin/                    # CMS 配置
-│       ├── config.yml            # 生产环境配置
-│       ├── config.local.yml      # 本地开发配置
-│       └── index.html            # CMS 入口（未使用）
 │
 ├── next.config.mjs               # Next.js 配置（集成 Nextra）
 ├── tailwind.config.ts            # Tailwind 配置
@@ -169,11 +157,6 @@ swt-job-picker/
    - 独立的样式系统
    - 不支持 MUI 主题
 
-3. **管理后台** (`/admin`)
-   - 使用 Decap CMS
-   - 无主题系统
-   - 禁用 React StrictMode
-
 ## 🔧 核心模块
 
 ### 1. 工作管理模块
@@ -218,29 +201,14 @@ User Input → JobForm → useSavedJobs Hook → localStorage → UI Update
 
 **位置**: `src/pages/docs/`, `next.config.mjs`
 
-**技术**: Nextra + MDX
+**技术**: Nextra + MDX + TinaCMS（本地编辑）
 
 **功能**:
 - 基于文件的路由（每个 `.mdx` 文件是一个页面）
 - 自动生成侧边栏导航
 - 支持 Markdown 和 React 组件
-
-### 5. 内容管理系统
-
-**位置**: `src/pages/admin.tsx`, `public/admin/config.yml`
-
-**技术**: Decap CMS + GitHub OAuth
-
-**功能**:
-- 可视化编辑文档（MDX 文件）
-- 通过 GitHub API 直接提交到仓库
-- 自动部署（Vercel）
-
-**认证流程**:
-```
-用户点击登录 → GitHub OAuth → 获取 Token → 
-postMessage 通信 → CMS 初始化 → 编辑界面
-```
+- 通过 TinaCMS 在本地编辑 `src/pages/docs/**/*.mdx`
+- `_meta.json` 继续手工维护导航结构
 
 ## 📊 数据流
 
@@ -278,33 +246,6 @@ postMessage 通信 → CMS 初始化 → 编辑界面
        └──► IncomeSummary (结果)
 ```
 
-### 认证数据流
-
-```
-┌─────────────┐
-│  /admin     │ 访问管理后台
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  /api/auth  │ 重定向到 GitHub
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  GitHub     │ 用户授权
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│/api/callback│ 获取 Token
-└──────┬──────┘
-       │
-       ├──► postMessage (发送给 CMS)
-       │
-       └──► localStorage (fallback)
-```
-
 ## 🗺️ 路由系统
 
 ### Next.js 文件路由
@@ -313,30 +254,11 @@ postMessage 通信 → CMS 初始化 → 编辑界面
 src/pages/
 ├── index.tsx          → /
 ├── swt.tsx            → /swt
-├── admin.tsx          → /admin
 └── docs/
     ├── index.mdx      → /docs
     ├── intro/
     │   └── guide.mdx  → /docs/intro/guide
     └── ...
-```
-
-### API 路由
-
-```
-src/pages/api/
-├── auth.ts            → /api/auth?provider=github
-├── callback.ts        → /api/callback?code=...
-└── admin/
-    └── config.ts      → /api/admin/config
-```
-
-### 路由重写（next.config.mjs）
-
-```javascript
-/admin/config.yml → /api/admin/config
-/admin/config.local.yml → /api/admin/config
-/config.yml → /api/admin/config
 ```
 
 ## 🔄 状态管理
@@ -390,8 +312,8 @@ src/pages/api/
 通过 `_app.tsx` 中的条件渲染，实现不同页面的主题隔离：
 
 ```typescript
-// 主应用页面：MUI 主题
-if (isAdmin || isDocs) {
+// 文档页面：不应用 MUI 主题
+if (isDocs) {
   return <Component {...pageProps} />; // 无主题
 }
 
@@ -415,8 +337,9 @@ return (
 
 ```bash
 npm run dev          # 启动开发服务器
-npm run dev:cms      # 启动开发服务器 + CMS 代理（已废弃）
 ```
+
+本地开发时，`npm run dev` 会同时启动 Tina 的本地编辑层与 Next 开发服务器。
 
 ### 生产构建
 
@@ -435,38 +358,6 @@ npm start            # 启动生产服务器
 - 自动部署（GitHub 推送触发）
 - 环境变量管理
 - 预览部署（每个 PR）
-
-### 环境变量
-
-**开发环境** (`.env.local`):
-```env
-OAUTH_CLIENT_ID=...
-OAUTH_CLIENT_SECRET=...
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-```
-
-**生产环境** (Vercel):
-- `OAUTH_CLIENT_ID`
-- `OAUTH_CLIENT_SECRET`
-- `NEXT_PUBLIC_BASE_URL` (可选)
-
-## 🔐 安全与认证
-
-### GitHub OAuth 流程
-
-1. 用户访问 `/admin`
-2. 点击登录 → `/api/auth?provider=github`
-3. 重定向到 GitHub 授权页面
-4. 授权后回调 → `/api/callback?code=...`
-5. 获取 access_token
-6. 通过 postMessage 发送给 CMS
-7. CMS 使用 token 访问 GitHub API
-
-### 安全措施
-
-- Token 不存储在客户端（仅用于 API 调用）
-- postMessage 通信验证
-- 环境变量保护敏感信息
 
 ## 📈 性能优化
 
@@ -517,7 +408,6 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ### 2. 为什么分离三种页面类型？
 
 - 文档系统（Nextra）需要独立的样式
-- CMS 需要避免 React StrictMode 冲突
 - 主应用需要 MUI 主题支持
 
 ### 3. 为什么使用 Nextra 而不是自定义文档？
@@ -525,12 +415,6 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 - Nextra 提供完整的文档功能
 - 自动生成导航和搜索
 - 支持 MDX（Markdown + React）
-
-### 4. 为什么使用 Decap CMS？
-
-- 无服务器架构
-- 直接提交到 GitHub
-- 与 Vercel 自动部署集成
 
 ## 📝 扩展建议
 

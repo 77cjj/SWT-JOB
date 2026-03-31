@@ -1,4 +1,4 @@
-import HomeExperience from '../app/HomeExperience'
+import HomeExperience from '../features/HomeExperience'
 import DesktopLayout from '../layout/desktop/Layout'
 import MobileLayout from '../layout/mobile/Layout'
 import useDevice from '../hooks/useDevice'

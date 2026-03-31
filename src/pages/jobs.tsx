@@ -1,4 +1,4 @@
-import HistoricalJobsPage from '../app/HistoricalJobsPage';
+import HistoricalJobsPage from '../features/HistoricalJobsPage';
 import DesktopLayout from '../layout/desktop/Layout';
 import MobileLayout from '../layout/mobile/Layout';
 import useDevice from '../hooks/useDevice';

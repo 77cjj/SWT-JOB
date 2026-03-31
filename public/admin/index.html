@@ -1,90 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex" />
-    <title>SWT Helper - 内容管理</title>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-    </style>
+    <title>TinaCMS</title>
   </head>
-  <body>
-    <!-- Decap CMS 挂载点 -->
-    <div id="nc-root"></div>
 
-    <!-- 监听 OAuth 回调消息，收到后刷新页面，便于 Decap 读取 token -->
-    <script>
-      (function () {
-        // 将本地 fallback token 转成 Decap 认可的 localStorage 结构（含 user 信息）
-        function hydrateDecapUserFromFallback() {
-          const token = localStorage.getItem('cms_token');
-          if (!token) return false;
-          const user = {
-            login: true,
-            token,
-            provider: 'github',
-            backendName: 'github',
-            user: {
-              login: 'fallback',
-              name: 'GitHub User',
-              avatar_url: '',
-              html_url: 'https://github.com',
-            },
-          };
-          localStorage.setItem('netlify-cms-user', JSON.stringify(user));
-          return true;
-        }
-
-        const hydrated = hydrateDecapUserFromFallback();
-        // 如果已写入登录态且当前在登录路由，刷新以触发 Decap 读取登录态
-        if (hydrated && window.location.hash.startsWith('#/login')) {
-          setTimeout(() => window.location.reload(), 150);
-        }
-
-        function handleAuthMessage(event) {
-          const msg = event.data;
-          if (typeof msg !== 'string') return;
-          if (!msg.startsWith('authorization:github:success:')) return;
-          try {
-            const payload = msg.replace('authorization:github:success:', '');
-            const data = JSON.parse(payload);
-            if (data?.token) {
-              // 备用存储，避免父窗口错过 popup 写入
-              localStorage.setItem('cms_token', data.token);
-              localStorage.setItem('cms_token_timestamp', Date.now().toString());
-              const user = {
-                login: true,
-                token: data.token,
-                provider: 'github',
-                backendName: 'github',
-                user: {
-                  login: 'fallback',
-                  name: 'GitHub User',
-                  avatar_url: '',
-                  html_url: 'https://github.com',
-                },
-              };
-              localStorage.setItem('netlify-cms-user', JSON.stringify(user));
-            }
-          } catch (e) {
-            console.warn('[CMS] 解析授权消息失败:', e);
-          }
-          // 收到成功消息后刷新，让 Decap 重新初始化并读取 token
-          setTimeout(() => {
-            window.location.reload();
-          }, 300);
-        }
-        window.addEventListener('message', handleAuthMessage);
-      })();
-    </script>
-
-    <!-- Decap CMS 脚本（自行初始化，不再手动调用 CMS.init） -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <!-- if development -->
+  <script type="module">
+    import RefreshRuntime from 'http://localhost:4001/@react-refresh'
+    RefreshRuntime.injectIntoGlobalHook(window)
+    window.$RefreshReg$ = () => {}
+    window.$RefreshSig$ = () => (type) => type
+    window.__vite_plugin_react_preamble_installed__ = true
+  </script>
+  <script type="module" src="http://localhost:4001/@vite/client"></script>
+  <script>
+  function handleLoadError() {
+    // Assets have failed to load
+    document.getElementById('root').innerHTML = '<style type="text/css"> #no-assets-placeholder body { font-family: sans-serif; font-size: 16px; line-height: 1.4; color: #333; background-color: #f5f5f5; } #no-assets-placeholder { max-width: 600px; margin: 0 auto; padding: 40px; text-align: center; background-color: #fff; box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1); } #no-assets-placeholder h1 { font-size: 24px; margin-bottom: 20px; } #no-assets-placeholder p { margin-bottom: 10px; } #no-assets-placeholder a { color: #0077cc; text-decoration: none; } #no-assets-placeholder a:hover { text-decoration: underline; } </style> <div id="no-assets-placeholder"> <h1>Failed loading TinaCMS assets</h1> <p> Your TinaCMS configuration may be misconfigured, and we could not load the assets for this page. </p> <p> Please visit <a href="https://tina.io/docs/r/FAQ/#13-how-do-i-resolve-failed-loading-tinacms-assets-error">this doc</a> for help. </p> </div> </div>';
+  }
+  </script>
+  <script
+    type="module"
+    src="http://localhost:4001/src/main.tsx"
+    onerror="handleLoadError()"
+  ></script>
+  <body class="tina-tailwind">
+    <div id="root"></div>
   </body>
 </html>
-

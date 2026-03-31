@@ -33,7 +33,6 @@ export default function HomeExperience() {
   const comparedJobs = jobs.filter((job) => compareIds.includes(job.jobId));
 
   const toggleCompare = (jobId: string) => {
-    // 如果正在打开对比弹窗，且当前只剩最后一个对比项，那么移除后自动关窗（避免空对比弹窗）
     if (compareOpen && compareIds.length === 1 && compareIds[0] === jobId) {
       setCompareOpen(false);
     }
@@ -70,7 +69,6 @@ export default function HomeExperience() {
   return (
     <Container maxWidth="xl" sx={{ pt: 0, pb: 4 }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {/* 两列区域整体居中：外层居中，内层限制最大宽度 */}
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           <Box sx={{ width: '100%', maxWidth: '110rem' }}>
             <Box
@@ -84,7 +82,6 @@ export default function HomeExperience() {
                 gap: { xs: 3, md: 4 },
               }}
             >
-              {/* 左侧：新建岗位表单 */}
               <Box
                 sx={{
                   gridColumn: { xs: '1', md: '1' },
@@ -99,13 +96,9 @@ export default function HomeExperience() {
                     {t('jobForm.createSubtitle')}
                   </Typography>
                 </Box>
-                <JobForm
-                  onSubmit={handleSubmit}
-                  onPreviewChange={handlePreviewChange}
-                />
+                <JobForm onSubmit={handleSubmit} onPreviewChange={handlePreviewChange} />
               </Box>
 
-              {/* 右侧：我的岗位 */}
               <Box
                 sx={{
                   gridColumn: { xs: '1', md: '2' },
@@ -178,7 +171,6 @@ export default function HomeExperience() {
                       <Box
                         key={job.jobId}
                         sx={{
-                          // 一行只显示一个岗位卡片
                           flex: { xs: '1 1 100%' },
                           minWidth: 240,
                         }}
@@ -208,7 +200,7 @@ export default function HomeExperience() {
           onClose={() => setCompareOpen(false)}
           onRemove={toggleCompare}
         />
-        
+
         <JobEditDialog
           open={editingJob !== null}
           job={editingJob}
@@ -219,4 +211,3 @@ export default function HomeExperience() {
     </Container>
   );
 }
-

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "rm -rf .next && TINA_PUBLIC_IS_LOCAL=true tinacms dev -c \"HOSTNAME=127.0.0.1 next dev --webpack -H 127.0.0.1\"",
+    "dev": "rm -rf .next && TINA_PUBLIC_IS_LOCAL=true tinacms dev -c \"HOSTNAME=127.0.0.1 next dev -H 127.0.0.1\"",
     "build": "TINA_PUBLIC_IS_LOCAL=true tinacms build && next build",
     "start": "next start",
     "lint": "eslint .",

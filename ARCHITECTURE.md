@@ -15,11 +15,13 @@
 ## 🛠️ 技术栈
 
 ### 核心框架
+
 - **Next.js** (latest) - React 全栈框架，提供 SSR、路由、API 路由
 - **React** (latest) - UI 库
 - **TypeScript** (5.9.3) - 类型安全
 
 ### UI 库与样式
+
 - **Material-UI (MUI)** (v7) - React 组件库
   - `@mui/material` - 核心组件
   - `@mui/icons-material` - 图标
@@ -28,18 +30,22 @@
 - **Emotion** - CSS-in-JS（MUI 依赖）
 
 ### 文档系统
-- **Nextra** (v2.13.4) - 基于 Next.js 的文档框架
-- **nextra-theme-docs** - 文档主题
+
+- **Sanity Studio** - 在线文档编辑后台
+- **自定义 `/docs` 渲染层** - 负责导航生成、正文展示与缓存刷新
 
 ### 内容管理
-- **Decap CMS** (v3.0.0) - 无头内容管理系统（原 Netlify CMS）
+
+- **Sanity** - 托管式内容平台
 
 ### 状态管理
+
 - **Redux Toolkit** (v2.10.1) - 状态管理（已安装但未使用）
 - **React Context API** - 主题管理
 - **localStorage** - 本地数据持久化
 
 ### 工具库
+
 - **Day.js** (v1.11.19) - 日期处理
 
 ## 📁 项目结构
@@ -64,13 +70,9 @@ swt-job-picker/
 │   │   ├── swt.tsx               # SWT 页面
 │   │   ├── api/                  # API 路由
 │   │   │
-│   │   └── docs/                 # 文档系统（Nextra）
-│   │       ├── index.mdx         # 文档首页
-│   │       ├── intro/            # 项目介绍
-│   │       ├── preparation/      # 行前准备
-│   │       ├── experience/      # 行中指南
-│   │       ├── after/            # 行后归国
-│   │       └── basics/           # 基础指南
+│   │   └── docs/                 # 文档系统（Sanity 数据驱动）
+│   │       ├── index.tsx         # 文档首页
+│   │       └── [...slug].tsx     # 文档详情页
 │   │
 │   ├── hooks/                     # 自定义 Hooks
 │   │   ├── useDevice.ts          # 设备检测（移动/桌面）
@@ -148,14 +150,13 @@ swt-job-picker/
 项目包含三种不同类型的页面，每种有不同的渲染策略：
 
 1. **主应用页面** (`/`, `/swt`)
-   - 使用 MUI 主题
-   - 响应式布局（桌面/移动）
-   - 支持暗色模式
-
-2. **文档页面** (`/docs/*`)
-   - 使用 Nextra 主题
-   - 独立的样式系统
-   - 不支持 MUI 主题
+  - 使用 MUI 主题
+  - 响应式布局（桌面/移动）
+  - 支持暗色模式
+2. **文档页面** (`/docs/`*)
+  - 使用独立内容站样式
+  - 数据优先从 Sanity 读取
+  - 无 Sanity 内容时回退到仓库内 MDX
 
 ## 🔧 核心模块
 
@@ -164,11 +165,13 @@ swt-job-picker/
 **位置**: `src/components/JobForm.tsx`, `src/hooks/useSavedJobs.ts`
 
 **功能**:
+
 - 工作信息录入（职位、公司、薪资、住宿等）
 - 工作数据持久化（localStorage）
 - 工作编辑和删除
 
 **数据流**:
+
 ```
 User Input → JobForm → useSavedJobs Hook → localStorage → UI Update
 ```
@@ -178,12 +181,14 @@ User Input → JobForm → useSavedJobs Hook → localStorage → UI Update
 **位置**: `src/utils/jobMetrics.ts`, `src/utils/stateTax.ts`
 
 **功能**:
+
 - 计算税前总收入（基本工资 + 小费 + 加班费 + 第二份工作）
 - 计算税收（联邦税 + 州税，基于真实税率数据）
 - 计算净收入（扣除税收和住宿）
 - 汇率转换（美元 → 人民币）
 
 **计算流程**:
+
 ```
 工作数据 → 收入计算 → 税收计算 → 净收入 → 人民币转换
 ```
@@ -193,22 +198,23 @@ User Input → JobForm → useSavedJobs Hook → localStorage → UI Update
 **位置**: `src/components/CompareDialog.tsx`
 
 **功能**:
+
 - 最多同时对比 3 个工作
 - 多维度对比（收入、成本、评分等）
 - 可视化展示
 
 ### 4. 文档系统
 
-**位置**: `src/pages/docs/`, `next.config.mjs`
+**位置**: `src/pages/docs/`, `src/lib/docs/`, `sanity/`
 
-**技术**: Nextra + MDX + TinaCMS（本地编辑）
+**技术**: Sanity + 自定义 `/docs` 路由 + Markdown / Portable Text
 
 **功能**:
-- 基于文件的路由（每个 `.mdx` 文件是一个页面）
-- 自动生成侧边栏导航
-- 支持 Markdown 和 React 组件
-- 通过 TinaCMS 在本地编辑 `src/pages/docs/**/*.mdx`
-- `_meta.json` 继续手工维护导航结构
+
+- 为非技术用户提供在线文档后台
+- 通过 `section`、`order` 等结构化字段生成导航
+- 支持 Sanity 正文渲染，并保留本地 MDX 兜底能力
+- 通过 `/api/revalidate` 触发按需刷新
 
 ## 📊 数据流
 
@@ -272,6 +278,7 @@ src/pages/
 **持久化**: localStorage (`swt-theme-mode`)
 
 **功能**:
+
 - 亮色/暗色模式切换
 - 跟随系统主题（首次访问）
 - 跨页面状态同步
@@ -285,6 +292,7 @@ src/pages/
 **持久化**: localStorage (`swt-saved-jobs`)
 
 **功能**:
+
 - 工作列表管理
 - 添加/更新/删除工作
 - 自动同步到 localStorage
@@ -339,7 +347,7 @@ return (
 npm run dev          # 启动开发服务器
 ```
 
-本地开发时，`npm run dev` 会同时启动 Tina 的本地编辑层与 Next 开发服务器。
+本地开发时，`npm run dev` 仅启动 Next.js 站点；内容后台通过 `npm run sanity` 单独启动，或直接在 `/studio` 嵌入访问。
 
 ### 生产构建
 
@@ -355,6 +363,7 @@ npm start            # 启动生产服务器
 **配置**: `vercel.json`
 
 **特性**:
+
 - 自动部署（GitHub 推送触发）
 - 环境变量管理
 - 预览部署（每个 PR）
@@ -407,36 +416,32 @@ npm start            # 启动生产服务器
 
 ### 2. 为什么分离三种页面类型？
 
-- 文档系统（Nextra）需要独立的样式
+- 文档系统需要独立的样式与内容数据层
 - 主应用需要 MUI 主题支持
 
-### 3. 为什么使用 Nextra 而不是自定义文档？
+### 3. 为什么改为 Sanity 驱动的自定义文档？
 
-- Nextra 提供完整的文档功能
-- 自动生成导航和搜索
-- 支持 MDX（Markdown + React）
+- 便于非技术用户在线协作
+- 能用结构化字段生成导航、摘要与状态流
+- 与 Vercel webhook / ISR 集成更顺畅
 
 ## 📝 扩展建议
 
 ### 未来可能的改进
 
 1. **数据同步**
-   - 添加云端同步功能
-   - 支持多设备访问
-
+  - 添加云端同步功能
+  - 支持多设备访问
 2. **更多计算功能**
-   - 添加更多收入场景
-   - 支持自定义税率
-
+  - 添加更多收入场景
+  - 支持自定义税率
 3. **导出功能**
-   - 导出工作对比为 PDF
-   - 导出数据为 Excel
-
+  - 导出工作对比为 PDF
+  - 导出数据为 Excel
 4. **用户系统**
-   - 添加用户账户
-   - 数据云端存储
+  - 添加用户账户
+  - 数据云端存储
 
 ---
 
 **最后更新**: 2024年
-

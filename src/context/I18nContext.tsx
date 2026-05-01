@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { Language } from '../i18n/types';
 import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../i18n/types';
 import { getTranslation } from '../i18n';
@@ -43,11 +44,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     (key: string): string => {
       const translation = getTranslation(language);
       const keys = key.split('.');
-      let value: any = translation;
+      let value: unknown = translation;
 
       for (const k of keys) {
         if (value && typeof value === 'object' && k in value) {
-          value = value[k as keyof typeof value];
+          value = (value as Record<string, unknown>)[k];
         } else {
           return key; // 如果找不到翻译，返回 key
         }

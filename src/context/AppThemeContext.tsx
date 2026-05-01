@@ -91,6 +91,12 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     [mode, setMode, toggleMode]
   );
 
+  // 与 Tailwind `dark:` 变体对齐（聊天/管理子模块内大量 shadcn 样式依赖 html.dark）
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+  }, [mode]);
+
   return <AppThemeContext.Provider value={value}>{children}</AppThemeContext.Provider>;
 }
 

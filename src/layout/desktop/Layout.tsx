@@ -3,9 +3,17 @@ import { useRouter } from 'next/router';
 import React, { type PropsWithChildren } from 'react';
 import { IconButton, Tooltip, Menu, MenuItem } from '@mui/material';
 import { DarkMode, LightMode, Language as LanguageIcon } from '@mui/icons-material';
+import dynamic from 'next/dynamic';
+
+const RagentChatUserMenu = dynamic(
+  () =>
+    import('../../components/ragent/RagentChatUserMenu').then((m) => m.RagentChatUserMenu),
+  { ssr: false },
+);
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
 import { SUPPORTED_LANGUAGES, type Language } from '../../i18n/types';
+import { cn } from '../../ragent/lib/utils';
 
 interface DesktopLayoutProps extends PropsWithChildren {
   /**
@@ -13,9 +21,18 @@ interface DesktopLayoutProps extends PropsWithChildren {
    * 例如：'max-w-6xl' | 'max-w-7xl' | 'max-w-[90rem]'
    */
   maxWidthClassName?: string;
+  /** 合并到 <main>，托管聊天页需 overflow-hidden + flex 以把高度传给侧栏/消息区 */
+  mainClassName?: string;
+  /** 合并到根节点；聊天页用 h-screen overflow-hidden 禁止整页滚动 */
+  rootClassName?: string;
 }
 
-export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl' }: DesktopLayoutProps) {
+export default function DesktopLayout({
+  children,
+  maxWidthClassName = 'max-w-6xl',
+  mainClassName,
+  rootClassName
+}: DesktopLayoutProps) {
   const router = useRouter();
   const pathname = router.pathname;
   const { mode, toggleMode } = useAppTheme();
@@ -24,8 +41,9 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
 
   const isDark = mode === 'dark';
   const rootClass = isDark
-    ? 'min-h-screen bg-neutral-950 text-neutral-100'
-    : 'min-h-screen bg-white text-neutral-900';
+    ? 'bg-neutral-950 text-neutral-100'
+    : 'bg-white text-neutral-900';
+  const rootMinH = rootClassName?.includes('h-') ? '' : 'min-h-screen';
   const headerBorderClass = isDark ? 'border-neutral-800/60' : 'border-neutral-200';
   const navTextClass = isDark ? 'text-neutral-400' : 'text-neutral-600';
   const linkHoverClass = isDark ? 'hover:text-neutral-100' : 'hover:text-neutral-900';
@@ -45,10 +63,10 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
   };
 
   return (
-    <div className={rootClass}>
-      <header className={`border-b px-8 py-5 ${headerBorderClass}`}>
+    <div className={cn(rootClass, 'flex flex-col', rootMinH, rootClassName)}>
+      <header className={`shrink-0 border-b px-8 py-3 ${headerBorderClass}`}>
         <div className={`mx-auto flex ${maxWidthClassName} items-center justify-between`}>
-          <h1 className="text-2xl font-semibold tracking-wide">SWT Helper</h1>
+          <h1 className="text-xl font-semibold tracking-wide">SWT Helper</h1>
           <div className="flex items-center gap-4">
             <nav className={`flex gap-6 text-sm uppercase ${navTextClass}`}>
               <Link
@@ -70,6 +88,14 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
                 }`}
               >
                 {t('nav.docs')}
+              </Link>
+              <Link
+                href="/chat"
+                className={`transition-colors ${linkHoverClass} ${
+                  pathname.startsWith('/chat') ? linkActiveClass : ''
+                }`}
+              >
+                {t('nav.chat')}
               </Link>
             </nav>
 
@@ -119,11 +145,21 @@ export default function DesktopLayout({ children, maxWidthClassName = 'max-w-6xl
                   {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
                 </IconButton>
               </Tooltip>
+              {pathname !== '/login' ? <RagentChatUserMenu /> : null}
             </div>
           </div>
         </div>
       </header>
-      <main className={`mx-auto ${maxWidthClassName} px-8 py-10 pt-5`}>{children}</main>
+      <main
+        className={cn(
+          'mx-auto w-full flex-1 min-h-0 px-8',
+          maxWidthClassName,
+          mainClassName ??
+            'overflow-y-auto pt-5 pb-10'
+        )}
+      >
+        {children}
+      </main>
     </div>
   );
 }

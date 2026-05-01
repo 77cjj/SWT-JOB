@@ -18,6 +18,7 @@ export const en = {
     noData: 'No data',
     select: 'Select',
     all: 'All',
+    logout: 'Log out',
   },
 
   // Navigation
@@ -25,6 +26,8 @@ export const en = {
     home: 'Job Comparison',
     jobs: 'Historical Jobs',
     docs: 'SWT Docs',
+    chat: 'AI Chat',
+    admin: 'Admin',
   },
 
   // Theme

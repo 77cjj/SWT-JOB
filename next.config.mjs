@@ -1,22 +1,27 @@
-import nextra from 'nextra'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const withNextra = nextra({
-  theme: 'nextra-theme-docs',
-  themeConfig: './theme.config.tsx',
-  defaultShowCopyCode: true,
-})
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-export default withNextra({
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  pageExtensions: ['ts', 'tsx', 'mdx'],
+  experimental: {
+    externalDir: true,
+  },
+  pageExtensions: ['ts', 'tsx'],
+  transpilePackages: ['sanity'],
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(__dirname, 'src/ragent'),
+    }
+    return config
+  },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: true,
   },
-  // 添加缓存控制，确保文档更新能及时生效
   async headers() {
     return [
       {
@@ -28,6 +33,8 @@ export default withNextra({
           },
         ],
       },
-    ];
+    ]
   },
-})
+}
+
+export default nextConfig

@@ -1,6 +1,0 @@
-export default {
-  intro: "项目介绍",
-  preparation: "行前准备",
-  experience: "行中指南",
-  after: "行后与归国",
-};

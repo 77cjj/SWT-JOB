@@ -5,7 +5,7 @@ const STORAGE_KEY = 'swt-saved-jobs';
 const DEFAULT_PROJECT_START = '2026-06-01';
 const DEFAULT_PROJECT_END = '2026-09-15';
 
-function normalizeJob(job: any): JobRecord {
+function normalizeJob(job: Record<string, unknown>): JobRecord {
   // 兼容旧 localStorage 数据：补齐项目日期字段
   const projectStartDate =
     typeof job?.projectStartDate === 'string' && job.projectStartDate

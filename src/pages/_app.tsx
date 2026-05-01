@@ -6,9 +6,12 @@ import { AppThemeProvider, useAppTheme } from '../context/AppThemeContext';
 import { I18nProvider } from '../context/I18nContext';
 import { createAppTheme } from '../theme/theme';
 import '../index.css';
+import '../ragent-local.css';
 import 'nextra-theme-docs/style.css';
+import '../docs.css';
 import '../nextra-overrides.css';
 import { Analytics } from '@vercel/analytics/next';
+import { DocsRouteLoadingProvider } from '../context/DocsRouteLoadingContext';
 
 function SWTApp({ Component, pageProps }: AppProps) {
   const { mode } = useAppTheme();
@@ -31,32 +34,43 @@ function SWTApp({ Component, pageProps }: AppProps) {
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isDocs = router.pathname.startsWith('/docs');
+  const [docsRouteLoading, setDocsRouteLoading] = React.useState(false);
 
   React.useEffect(() => {
-    // 让全局 CSS 可以区分 docs 与非 docs 页面，避免覆盖 Nextra 的 light/dark 主题样式
     if (isDocs) {
-      document.body.dataset.app = 'docs';
-      delete document.body.dataset.theme;
+      document.body.dataset.page = 'docs';
+    } else {
+      delete document.body.dataset.page;
     }
   }, [isDocs]);
 
-  // Docs 页面不应用 MUI 主题
-  if (isDocs) {
-    return (
-      <>
-        <Component {...pageProps} />
-        <Analytics />
-      </>
-    );
-  }
+  React.useEffect(() => {
+    const onStart = (url: string) => {
+      setDocsRouteLoading(url.startsWith('/docs'));
+    };
+    const onEnd = () => setDocsRouteLoading(false);
+
+    router.events.on('routeChangeStart', onStart);
+    router.events.on('routeChangeComplete', onEnd);
+    router.events.on('routeChangeError', onEnd);
+    return () => {
+      router.events.off('routeChangeStart', onStart);
+      router.events.off('routeChangeComplete', onEnd);
+      router.events.off('routeChangeError', onEnd);
+    };
+  }, [router.events]);
 
   return (
     <I18nProvider>
       <AppThemeProvider>
-        {/* @ts-expect-error - router is provided by Next.js internally */}
-        <SWTApp Component={Component} pageProps={pageProps} />
+        <DocsRouteLoadingProvider value={docsRouteLoading}>
+          {/* @ts-expect-error - router is provided by Next.js internally */}
+          <SWTApp Component={Component} pageProps={pageProps} />
+          {docsRouteLoading ? (
+            <div className="docs-route-progress" aria-hidden />
+          ) : null}
+        </DocsRouteLoadingProvider>
       </AppThemeProvider>
     </I18nProvider>
   );
 }
-

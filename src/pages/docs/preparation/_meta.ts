@@ -1,7 +1,0 @@
-export default {
-  agency: "机构与费用",
-  timeline: "全流程与签证",
-  interview: "面试准备",
-  flights: "机票购买",
-  packing: "行李清单",
-};

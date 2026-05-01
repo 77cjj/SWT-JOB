@@ -1,4 +1,23 @@
 @import "tailwindcss";
+@source "./ragent/**/*.{ts,tsx}";
+
+/* 菜单栏切换明暗时 AppThemeContext 在 documentElement 上 toggle `dark`；Tailwind v4 默认 dark: 跟系统 prefers-color-scheme，会导致聊天区等 dark: 不随手动切换。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Ragent 聊天区曾用 animate-fade-up（Vite 子项目 tailwind 里定义）；主站需补全，否则 opacity-0 永不解除 */
+@theme {
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  --animate-fade-up: fade-up 0.4s ease-out forwards;
+}
 
 @layer base {
   :root {
@@ -25,10 +44,16 @@
   /* 非 docs 页面（首页/选岗模拟）由我们自己控制 light/dark；docs 页面交给 Nextra 主题控制 */
   body[data-app='swt'][data-theme='dark'] {
     @apply bg-neutral-950 text-neutral-100;
+    overflow: auto;
   }
 
   body[data-app='swt'][data-theme='light'] {
     @apply bg-white text-neutral-900;
+    overflow: auto;
+  }
+
+  body[data-app='docs'] {
+    overflow: auto;
   }
 
   body[data-app='swt'][data-theme='dark'] a {

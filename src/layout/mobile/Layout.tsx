@@ -1,6 +1,7 @@
 import React, { type PropsWithChildren } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic';
 import { IconButton, Tooltip, Menu, MenuItem } from '@mui/material';
 import {
   DarkMode,
@@ -9,12 +10,25 @@ import {
   BarChartRounded,
   HistoryRounded,
   MenuBookRounded,
+  SmartToyRounded,
+  AdminPanelSettingsRounded,
 } from '@mui/icons-material';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
 import { SUPPORTED_LANGUAGES, type Language } from '../../i18n/types';
+import { cn } from '../../ragent/lib/utils';
 
-export default function MobileLayout({ children }: PropsWithChildren) {
+const RagentChatUserMenu = dynamic(
+  () =>
+    import('../../components/ragent/RagentChatUserMenu').then((m) => m.RagentChatUserMenu),
+  { ssr: false },
+);
+
+interface MobileLayoutProps extends PropsWithChildren {
+  mainClassName?: string;
+}
+
+export default function MobileLayout({ children, mainClassName }: MobileLayoutProps) {
   const { mode, toggleMode } = useAppTheme();
   const { language, setLanguage, t } = useI18n();
   const router = useRouter();
@@ -48,7 +62,7 @@ export default function MobileLayout({ children }: PropsWithChildren) {
     }`;
   };
 
-  const navLabel = (key: 'home' | 'jobs' | 'docs') => {
+  const navLabel = (key: 'home' | 'jobs' | 'docs' | 'chat' | 'admin') => {
     const full = t(`nav.${key}`);
     // 中文保留前两个字，英文/其他语言取第一个单词，避免在小屏溢出
     if (language === 'zh') {
@@ -104,9 +118,14 @@ export default function MobileLayout({ children }: PropsWithChildren) {
               {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
             </IconButton>
           </Tooltip>
+          {pathname !== '/login' ? <RagentChatUserMenu /> : null}
         </div>
       </header>
-      <main className="flex-1 px-4 py-6 pb-20">{children}</main>
+      <main
+        className={cn('min-h-0 flex-1 px-4 py-6 pb-20', mainClassName)}
+      >
+        {children}
+      </main>
       <nav
         className={`fixed bottom-0 left-0 right-0 border-t ${
           isDark ? 'border-neutral-800/60 bg-neutral-950' : 'border-neutral-200 bg-white'
@@ -125,6 +144,16 @@ export default function MobileLayout({ children }: PropsWithChildren) {
             <MenuBookRounded fontSize="small" />
             <span>{navLabel('docs')}</span>
           </Link>
+          <Link href="/chat" className={navLinkClass('/chat')}>
+            <SmartToyRounded fontSize="small" />
+            <span>{navLabel('chat')}</span>
+          </Link>
+          {!pathname.startsWith('/chat') ? (
+            <Link href="/admin/dashboard" className={navLinkClass('/admin')}>
+              <AdminPanelSettingsRounded fontSize="small" />
+              <span>{navLabel('admin')}</span>
+            </Link>
+          ) : null}
         </div>
       </nav>
     </div>

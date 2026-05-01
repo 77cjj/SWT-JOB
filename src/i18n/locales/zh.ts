@@ -18,6 +18,7 @@ export const zh = {
     noData: '暂无数据',
     select: '选择',
     all: '全部',
+    logout: '退出登录',
   },
 
   // 导航
@@ -25,6 +26,8 @@ export const zh = {
     home: '选岗模拟对比',
     jobs: '历年岗位',
     docs: 'SWT文档',
+    chat: 'AI问答',
+    admin: '管理后台',
   },
 
   // 主题

@@ -16,11 +16,11 @@ export function getTranslation(lang: Language): typeof zh {
 export function t(key: TranslationKey, lang: Language = 'zh'): string {
   const translation = getTranslation(lang);
   const keys = key.split('.');
-  let value: any = translation;
+  let value: unknown = translation;
 
   for (const k of keys) {
     if (value && typeof value === 'object' && k in value) {
-      value = value[k as keyof typeof value];
+      value = (value as Record<string, unknown>)[k];
     } else {
       return key; // 如果找不到翻译，返回 key
     }

@@ -1,0 +1,668 @@
+body[data-app='ragent'] {
+  margin: 0;
+  background: #f3f4f6;
+  color: #0f172a;
+  overflow: hidden;
+}
+
+body[data-app='ragent'] #__next {
+  height: 100vh;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout {
+  --admin-bg: #f7f8fb;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f8fafc;
+  --admin-border: #e5e7eb;
+  --admin-border-strong: #d1d5db;
+  --admin-foreground: #0f172a;
+  --admin-muted: #64748b;
+  --admin-accent: #2563eb;
+  --admin-accent-soft: #dbeafe;
+  display: flex;
+  height: 100vh;
+  background: var(--admin-bg);
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar {
+  width: 270px;
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-surface);
+  border-right: 1px solid var(--admin-border);
+  color: var(--admin-foreground);
+  transition: width 0.2s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar--collapsed {
+  width: 72px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__brand {
+  padding: 20px 16px 14px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 18px -10px rgba(59, 130, 246, 0.9);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__group-title {
+  padding: 0 12px 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 6px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: var(--admin-muted);
+  text-decoration: none;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item:hover {
+  background: var(--admin-surface-2);
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--active {
+  background: var(--admin-accent-soft);
+  color: #1d4ed8;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--group-active {
+  background: var(--admin-surface-2);
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-indicator {
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 999px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-indicator.is-active,
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-indicator.is-group-active {
+  background: var(--admin-accent);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-icon {
+  width: 16px;
+  height: 16px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__footer {
+  margin-top: auto;
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--admin-border);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__collapse {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-2);
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: var(--admin-bg);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--admin-border);
+  background: color-mix(in srgb, var(--admin-surface) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-inner {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-search {
+  position: relative;
+  width: min(520px, 62vw);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--admin-muted);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-2);
+  border-radius: 6px;
+  padding: 2px 6px;
+  pointer-events: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 32px -18px rgba(15, 23, 42, 0.4);
+  max-height: 360px;
+  overflow: auto;
+  padding: 8px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-section + .admin-topbar-suggest-section {
+  border-top: 1px solid var(--admin-border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-group {
+  font-size: 11px;
+  color: var(--admin-muted);
+  margin: 0 8px 6px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--admin-foreground);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-item:hover {
+  background: var(--admin-surface-2);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-content {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px 24px 28px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs {
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs a {
+  color: var(--admin-muted);
+  text-decoration: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs a:hover {
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-theme-btn {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page {
+  display: grid;
+  gap: 20px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-title {
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card {
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-border) 68%, transparent);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-description {
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-content {
+  padding: 0 24px 22px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-wrap {
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  overflow-x: auto;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card .ui-table-wrap {
+  margin-left: -24px;
+  margin-right: -24px;
+  width: calc(100% + 48px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--admin-foreground) 88%, #ffffff);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-header {
+  background: var(--admin-surface-2);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-border) 66%, transparent);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-row:hover {
+  background: color-mix(in srgb, var(--admin-surface-2) 85%, transparent);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head {
+  height: 54px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-muted);
+  text-align: left;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell {
+  padding: 12px 16px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head:first-child,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell:first-child {
+  padding-left: 24px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head:last-child,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell:last-child {
+  padding-right: 24px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-caption {
+  padding: 12px 16px;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-input,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-textarea,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-select-trigger {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-foreground);
+  box-shadow: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-select-content {
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='outline'] {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+  color: color-mix(in srgb, var(--admin-foreground) 86%, #fff);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='outline']:hover {
+  background: var(--admin-surface-2);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='ghost'] {
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='ghost']:hover {
+  color: var(--admin-foreground);
+  background: var(--admin-surface-2);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-badge[data-variant='default'] {
+  border-color: color-mix(in srgb, var(--admin-accent) 24%, var(--admin-border));
+  background: color-mix(in srgb, var(--admin-accent-soft) 70%, transparent);
+  color: color-mix(in srgb, var(--admin-accent) 82%, #fff);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .ui-dialog-overlay,
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .ui-alert-dialog-overlay {
+  background: color-mix(in srgb, #0f172a 22%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .ui-dialog-content,
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .ui-alert-dialog-content {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-foreground);
+  border-radius: 16px;
+  box-shadow: 0 24px 50px -28px rgba(2, 8, 23, 0.45);
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-layout {
+  --admin-bg: #09090b;
+  --admin-surface: #111217;
+  --admin-surface-2: #181a20;
+  --admin-border: #252a33;
+  --admin-border-strong: #334155;
+  --admin-foreground: #f1f5f9;
+  --admin-muted: #94a3b8;
+  --admin-accent: #60a5fa;
+  --admin-accent-soft: rgba(59, 130, 246, 0.18);
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-sidebar__title {
+  color: #f8fafc;
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-sidebar__item--active {
+  color: #bfdbfe;
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-topbar,
+body[data-app='swt'][data-theme='dark'] .admin-topbar-theme-btn {
+  background: color-mix(in srgb, var(--admin-surface) 92%, transparent);
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-topbar-suggest-item {
+  color: var(--admin-foreground);
+}
+
+body[data-app='swt'][data-theme='dark'] .ui-card,
+body[data-app='swt'][data-theme='dark'] .ui-table-wrap,
+body[data-app='swt'][data-theme='dark'] .ui-input,
+body[data-app='swt'][data-theme='dark'] .ui-textarea,
+body[data-app='swt'][data-theme='dark'] .ui-select-trigger,
+body[data-app='swt'][data-theme='dark'] .ui-select-content,
+body[data-app='swt'][data-theme='dark'] .ui-button[data-variant='outline'] {
+  background: var(--admin-surface);
+}
+
+body[data-app='swt'][data-theme='dark'] .ui-table-header {
+  background: color-mix(in srgb, var(--admin-surface-2) 88%, transparent);
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-layout .ui-dialog-overlay,
+body[data-app='swt'][data-theme='dark'] .admin-layout .ui-alert-dialog-overlay {
+  background: color-mix(in srgb, #020617 58%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+body[data-app='swt'][data-theme='dark'] .admin-layout .ui-dialog-content,
+body[data-app='swt'][data-theme='dark'] .admin-layout .ui-alert-dialog-content {
+  background: color-mix(in srgb, var(--admin-surface) 95%, #000);
+  border-color: color-mix(in srgb, var(--admin-border) 92%, #111827);
+  box-shadow: 0 26px 56px -30px rgba(0, 0, 0, 0.75);
+}
+
+body[data-app='swt'][data-theme='dark'] .ui-table-row:hover,
+body[data-app='swt'][data-theme='dark'] .ui-button[data-variant='ghost']:hover {
+  background: var(--admin-surface-2);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .dashboard-scroll-shell {
+  scrollbar-width: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .dashboard-scroll-shell::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .chat-surface {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .user-message {
+  background: #f5f5f5;
+  color: #333;
+  padding: 10px 16px;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 80%;
+  width: fit-content;
+  margin-left: auto;
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .user-message {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #999;
+  font-size: 13px;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .ai-wait {
+  color: #94a3b8;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 14px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ccc;
+  animation: ai-wait-bounce 1.2s ease-in-out infinite;
+}
+
+body[data-app='ragent'] .ai-wait-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ai-wait-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* 撤销主站全局 button 样式对 Ragent 聊天区内原生 button 的影响（由组件自身 class 控制） */
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell button:not(.MuiButtonBase-root),
+body[data-app='swt'][data-theme='light'] .chat-hosted-shell button:not(.MuiButtonBase-root) {
+  all: revert-layer;
+}
+
+/* Hosted chat in SWT layout: color adaptation */
+body[data-app='swt'] .chat-hosted-shell {
+  color: #0f172a;
+}
+
+body[data-app='swt'] .chat-hosted-shell .bg-\[\#FAFAFA\] {
+  background-color: #f8fafc !important;
+}
+
+body[data-app='swt'] .chat-hosted-shell .bg-white,
+body[data-app='swt'] .chat-hosted-shell .bg-\[\#F8FAFC\],
+body[data-app='swt'] .chat-hosted-shell .bg-\[\#F5F5F5\],
+body[data-app='swt'] .chat-hosted-shell .bg-neutral-50 {
+  background-color: #ffffff !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell {
+  color: #e5e7eb;
+}
+
+/* 深色：托管聊天区与主站 html.dark + bg-neutral-950 一致，侧栏与主列同色 */
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-\[\#FAFAFA\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-\[\#F8FAFC\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-white,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-\[\#F5F5F5\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-50,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-800,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-900,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-950 {
+  background-color: #0a0a0a !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#F0F0F0\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#E6EEF6\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#E5E7EB\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#E5E5E5\] {
+  border-color: #334155 !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#1A1A1A\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#1F2937\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#111827\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#333333\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-gray-900 {
+  color: #f3f4f6 !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#999999\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#9CA3AF\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#94A3B8\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#6B7280\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell input,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell textarea {
+  color: #e5e7eb !important;
+  background-color: transparent !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell input::placeholder,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell textarea::placeholder {
+  color: #64748b !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell kbd {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}

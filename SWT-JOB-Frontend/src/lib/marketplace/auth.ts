@@ -1,0 +1,45 @@
+import type { NextApiRequest } from 'next';
+
+import type { MarketUser } from './types';
+
+function resolveRagentApiBase() {
+  const raw = process.env.NEXT_PUBLIC_RAGENT_API_BASE_URL?.trim().replace(/\/$/, '');
+  if (raw) return raw;
+  if (process.env.NODE_ENV !== 'production') return 'https://ragent.nageoffer.com';
+  return null;
+}
+
+export async function getMarketUserFromRequest(req: NextApiRequest): Promise<MarketUser | null> {
+  const bypass = process.env.NEXT_PUBLIC_RAGENT_BYPASS_AUTH === 'true';
+  if (bypass && process.env.NODE_ENV !== 'production') {
+    const auth = req.headers.authorization;
+    if (auth?.includes('local-dev-token')) {
+      return { userId: 'local-admin', username: 'admin', role: 'admin' };
+    }
+  }
+
+  const auth = req.headers.authorization;
+  if (!auth) return null;
+
+  const base = resolveRagentApiBase();
+  if (!base) return null;
+
+  try {
+    const res = await fetch(`${base}/user/me`, {
+      headers: { Authorization: auth },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as MarketUser;
+  } catch {
+    return null;
+  }
+}
+
+export function displayName(user: MarketUser) {
+  const fallback = user.username || user.userId || '用户';
+  return /^\d+$/.test(fallback) ? '用户' : fallback;
+}
+
+export function isAdmin(user: MarketUser) {
+  return user.role === 'admin';
+}

@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://127.0.0.1:5432/ragent?client_encoding=UTF8
+    username: postgres
+    password: postgres
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: 123456
+
+ai:
+  providers:
+    bailian:
+      url: https://dashscope.aliyuncs.com
+      api-key: ${BAILIAN_API_KEY:}
+      endpoints:
+        chat: /compatible-mode/v1/chat/completions
+        embedding: /compatible-mode/v1/embeddings
+        rerank: /api/v1/services/rerank/text-rerank/text-rerank
+    siliconflow:
+      url: https://api.siliconflow.cn
+      api-key: ${SILICONFLOW_API_KEY:}
+
+rustfs:
+  url: http://localhost:9000
+  access-key-id: rustfsadmin
+  secret-access-key: rustfsadmin

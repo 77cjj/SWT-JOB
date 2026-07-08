@@ -1,0 +1,1067 @@
+body[data-app='ragent'] {
+  margin: 0;
+  background: #f3f4f6;
+  color: #0f172a;
+  overflow: hidden;
+}
+
+body[data-app='ragent'] #__next {
+  height: 100vh;
+}
+
+/* 对齐 SWT-JOB-Backend/frontend globals.css `.admin-layout`：浅灰工作台 + 深色渐变侧栏；html.dark 下整套深色壳 */
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout {
+  --admin-bg: #f3f4f6;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f9fafb;
+  --admin-border: #e5e7eb;
+  --admin-border-strong: #d1d5db;
+  --admin-foreground: #0f172a;
+  --admin-muted: #64748b;
+  --admin-accent: #6366f1;
+  --admin-accent-strong: #4f46e5;
+  --admin-accent-soft: rgba(99, 102, 241, 0.18);
+
+  --ring: 224 76% 48%;
+
+  /* Radix Portal 出去的 Dialog/Popover 读到的是 html.dark 下全局令牌；此项让主工作台内表单与卡片仍与 admin 调色一致 */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+
+  display: flex;
+  height: 100vh;
+  background: var(--admin-bg);
+  color: var(--admin-foreground);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .text-muted-foreground {
+  color: rgb(100 116 139);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar {
+  width: 16rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1a1f2e 0%, #252d3d 100%);
+  color: rgb(255 255 255 / 0.7);
+  border-right: 1px solid rgb(255 255 255 / 0.06);
+  transition: width 0.2s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar--collapsed {
+  width: 4rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__brand {
+  padding: 1.5rem 1.25rem 1rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 8px 22px -10px rgb(76 29 149 / 0.55);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.58);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__group-title {
+  padding: 0 1rem 0.5rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.4);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 4px;
+  padding: 8px 12px;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.7);
+  text-decoration: none;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--group {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--group:focus,
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--group:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--active {
+  background: rgb(99 102 241 / 0.2);
+  color: #fff;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--group-active {
+  background: rgb(255 255 255 / 0.05);
+  color: rgb(255 255 255 / 0.9);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-indicator {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-indicator.is-active {
+  background: #818cf8;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-indicator.is-group-active {
+  background: rgb(255 255 255 / 0.28);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item-icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: rgb(255 255 255 / 0.5);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--active .admin-sidebar__item-icon {
+  color: #a5b4fc;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__item--group-active .admin-sidebar__item-icon {
+  color: rgb(255 255 255 / 0.7);
+}
+
+/* 嵌入 SWT 的全局 <a> 紫色链样式会盖侧栏文字；提高 specificity，与浅色侧栏可读性对齐 */
+body[data-app='swt'][data-theme='light'] .admin-layout .admin-sidebar a.admin-sidebar__item,
+body[data-app='swt'][data-theme='dark'] .admin-layout .admin-sidebar a.admin-sidebar__item {
+  color: rgb(255 255 255 / 0.7);
+  font-weight: 500;
+}
+
+body[data-app='swt'][data-theme='light'] .admin-layout .admin-sidebar a.admin-sidebar__item:hover,
+body[data-app='swt'][data-theme='dark'] .admin-layout .admin-sidebar a.admin-sidebar__item:hover {
+  color: #fff;
+}
+
+body[data-app='swt'][data-theme='light'] .admin-layout .admin-sidebar a.admin-sidebar__item--active,
+body[data-app='swt'][data-theme='dark'] .admin-layout .admin-sidebar a.admin-sidebar__item--active {
+  color: #fff;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__footer {
+  margin-top: auto;
+  padding: 0 1rem 1.25rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__collapse {
+  width: 100%;
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: transparent;
+  font-size: 12px;
+  color: rgb(255 255 255 / 0.55);
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__collapse:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: rgb(255 255 255 / 0.85);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: var(--admin-bg);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid rgb(226 232 240 / 0.75);
+  background: rgb(255 255 255 / 0.82);
+  backdrop-filter: blur(12px);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-inner {
+  min-height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 32px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-search {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-kbd {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  pointer-events: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--admin-surface);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow:
+    0 10px 40px -12px rgb(15 23 42 / 0.2),
+    0 4px 12px -8px rgb(15 23 42 / 0.12);
+  max-height: 360px;
+  overflow: auto;
+  padding: 6px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-section + .admin-topbar-suggest-section {
+  border-top: 1px solid var(--admin-border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-group {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 0 12px 6px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 0.875rem;
+  border-radius: 9px;
+  padding: 8px 11px;
+  transition: background-color 0.12s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-item:hover {
+  background: #f3f4f6;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-content {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 32px 32px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs {
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs a {
+  color: #64748b;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs a:hover {
+  color: #334155;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-theme-btn {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page {
+  display: grid;
+  gap: 22px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+@media (min-width: 1024px) {
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-page-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-subtitle {
+  margin-top: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-page-actions {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 表格内知识库名称等文案链（对齐 Backend globals .admin-link；Next 未引入 ragent/styles/globals.css） */
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: none;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: none;
+  transition: color 0.15s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgb(199 210 254 / 0.95);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link {
+  color: #a5b4fc;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link:hover {
+  color: #e0e7ff;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link:focus-visible {
+  box-shadow: 0 0 0 2px rgb(129 140 248 / 0.45);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-description {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card-content {
+  padding: 0 1.5rem 1.5rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow-x: auto;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-card .ui-table-wrap {
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  width: calc(100% + 3rem);
+  border-width: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #334155;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-header {
+  background: #f9fafb;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-body tr:nth-child(even) {
+  background: rgb(248 250 252 / 0.52);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.12s ease;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-row:hover {
+  background: #f9fafb;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head {
+  height: 3.5rem;
+  padding: 0 1rem;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+  color: #64748b;
+  text-align: left;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell {
+  padding: 0.875rem 1rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head:first-child,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell:first-child {
+  padding-left: 1.5rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head:last-child,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell:last-child {
+  padding-right: 1.5rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-table-caption {
+  padding: 12px 16px;
+  color: #64748b;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-select-item {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .ui-button[data-variant='default'],
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout button.ui-button[data-variant='default'] {
+  border-radius: 0.5rem;
+  border: none;
+  background: #4f46e5 !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: none !important;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt'])
+  .admin-layout
+  .ui-button[data-variant='default']:hover:not(:disabled),
+:where(body[data-app='ragent'], body[data-app='swt'])
+  .admin-layout
+  button.ui-button[data-variant='default']:hover:not(:disabled) {
+  background: #4338ca !important;
+  color: #fff !important;
+}
+
+/* 各页「新建」「上传」等主要操作按钮（对齐 Backend globals .admin-primary-gradient） */
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout button.ui-button.admin-primary-gradient {
+  border: none !important;
+  background: transparent !important;
+  background-image: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt'])
+  .admin-layout
+  button.ui-button.admin-primary-gradient:hover:not(:disabled) {
+  background: transparent !important;
+  background-image: linear-gradient(90deg, #4338ca 0%, #6d28d9 100%) !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt'])
+  .admin-layout
+  button.ui-button.admin-primary-gradient:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-input,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-textarea,
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-select-trigger {
+  border-radius: 0.5rem;
+  border-color: #e2e8f0 !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-select-content {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 12px 32px -12px rgb(15 23 42 / 0.18);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='outline'],
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-layout button.ui-button[data-variant='outline'] {
+  border-radius: 0.5rem;
+  border-color: #e2e8f0 !important;
+  background: #fff !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt'])
+  .ui-button[data-variant='outline']:hover:not(:disabled),
+:where(body[data-app='ragent'], body[data-app='swt'])
+  .admin-layout
+  button.ui-button[data-variant='outline']:hover:not(:disabled) {
+  background: #f9fafb !important;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='ghost'] {
+  color: #64748b;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='ghost']:hover {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ui-badge[data-variant='default'] {
+  border: 1px solid #c7d2fe !important;
+  background: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+/* Portal 渲染在 body 下；用 data-app 限定 Ragent/SWT，避免与其它 Next 路由的弹窗误伤（如有再收紧） */
+body[data-app='ragent'] .ui-dialog-overlay,
+body[data-app='ragent'] .ui-alert-dialog-overlay,
+body[data-app='swt'] .ui-dialog-overlay,
+body[data-app='swt'] .ui-alert-dialog-overlay {
+  background: rgb(15 23 42 / 0.45);
+  backdrop-filter: blur(4px);
+}
+
+body[data-app='ragent'] .ui-dialog-content,
+body[data-app='ragent'] .ui-alert-dialog-content,
+body[data-app='swt'] .ui-dialog-content,
+body[data-app='swt'] .ui-alert-dialog-content {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 1rem !important;
+  background: #fff !important;
+  box-shadow:
+    0 24px 48px -20px rgb(15 23 42 / 0.25),
+    0 0 0 1px rgb(15 23 42 / 0.04);
+}
+
+/* 「暗色工作台」：与 `<html class="dark">`（AppTheme 切换）对齐，重写 admin 令牌与表单/对话框基底 */
+html.dark body[data-app='ragent'] .admin-layout,
+html.dark body[data-app='swt'] .admin-layout {
+  --admin-bg: #020617;
+  --admin-surface: #0f172a;
+  --admin-surface-2: #1e293b;
+  --admin-border: #334155;
+  --admin-border-strong: #475569;
+  --admin-foreground: #f1f5f9;
+  --admin-muted: #94a3b8;
+  --admin-accent: #818cf8;
+  --admin-accent-strong: #6366f1;
+  --admin-accent-soft: rgba(99, 102, 241, 0.2);
+
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 41% 12%;
+  --popover-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 16% 65%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  --border: 217 33% 24%;
+  --input: 217 33% 24%;
+
+  background: var(--admin-bg);
+  color: var(--admin-foreground);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .text-muted-foreground {
+  color: #94a3b8 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar {
+  background: linear-gradient(180deg, #020617 0%, #0f172a 55%, #1e293b 100%);
+  color: rgb(248 250 252 / 0.78);
+  border-right-color: rgb(148 163 184 / 0.22);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__title {
+  color: #fff;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__subtitle {
+  color: rgb(255 255 255 / 0.55);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__group-title {
+  color: rgb(255 255 255 / 0.38);
+}
+
+html.dark body[data-app='swt'] .admin-layout .admin-sidebar a.admin-sidebar__item,
+html.dark body[data-app='swt'] .admin-layout .admin-sidebar a.admin-sidebar__item:hover {
+  color: inherit;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__collapse {
+  border-color: rgb(248 250 252 / 0.18);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-main {
+  background: var(--admin-bg);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar {
+  border-bottom-color: rgb(148 163 184 / 0.25);
+  background: rgb(15 23 42 / 0.78);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-kbd {
+  border-color: #475569;
+  background: rgb(30 41 59 / 0.9);
+  color: #94a3b8;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest {
+  background: rgb(15 23 42 / 0.98);
+  border-color: #334155;
+  box-shadow: 0 18px 50px -20px rgb(0 0 0 / 0.65);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-item {
+  color: #f1f5f9 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-item:hover {
+  background: rgb(30 41 59 / 0.85);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-page-title {
+  color: #f8fafc;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-page-subtitle {
+  color: #94a3b8;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs a {
+  color: #94a3b8;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs a:hover {
+  color: #e2e8f0;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-theme-btn {
+  border-color: #475569 !important;
+  background: rgb(30 41 59 / 0.8) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-card {
+  border-color: #334155;
+  background: var(--admin-surface);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.35),
+    0 24px 40px -32px rgb(0 0 0 / 0.55);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-card-header {
+  border-bottom-color: rgb(148 163 184 / 0.15);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-card-title {
+  color: #f8fafc;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-card-description {
+  color: #94a3b8;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-wrap {
+  border-color: #334155;
+  background: var(--admin-surface);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table {
+  color: #e2e8f0 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-header {
+  background: rgb(30 41 59 / 0.55);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-body tr:nth-child(even) {
+  background: rgb(255 255 255 / 0.03);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-row {
+  border-bottom-color: rgb(148 163 184 / 0.12);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-row:hover {
+  background: rgb(30 41 59 / 0.45);
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head {
+  color: #94a3b8 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-input,
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-textarea,
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-select-trigger {
+  border-color: #475569 !important;
+  background: rgb(15 23 42 / 0.85) !important;
+  color: #f8fafc !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-select-content {
+  background: rgb(15 23 42 / 0.98);
+  border-color: #475569;
+  color: #e2e8f0 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-suggest-group {
+  color: #64748b !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='outline'],
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .admin-layout button.ui-button[data-variant='outline'] {
+  border-color: #475569 !important;
+  background: rgb(15 23 42 / 0.75) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt'])
+  .ui-button[data-variant='outline']:hover:not(:disabled),
+html.dark :where(body[data-app='ragent'], body[data-app='swt'])
+  .admin-layout
+  button.ui-button[data-variant='outline']:hover:not(:disabled) {
+  background: rgb(30 41 59 / 0.9) !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='ghost'] {
+  color: #94a3b8 !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-button[data-variant='ghost']:hover {
+  background: rgb(255 255 255 / 0.06) !important;
+  color: #f8fafc !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-badge[data-variant='default'] {
+  border-color: rgb(165 180 252 / 0.45) !important;
+  background: rgb(79 70 229 / 0.25) !important;
+  color: #e0e7ff !important;
+}
+
+html.dark :where(body[data-app='ragent'], body[data-app='swt']) .ui-badge[data-variant='secondary'] {
+  border-color: #475569 !important;
+  background: rgb(51 65 85 / 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark body[data-app='ragent'] .ui-dialog-overlay,
+html.dark body[data-app='ragent'] .ui-alert-dialog-overlay,
+html.dark body[data-app='swt'] .ui-dialog-overlay,
+html.dark body[data-app='swt'] .ui-alert-dialog-overlay {
+  background: rgb(2 6 23 / 0.72);
+  backdrop-filter: blur(8px);
+}
+
+html.dark body[data-app='ragent'] .ui-dialog-content,
+html.dark body[data-app='ragent'] .ui-alert-dialog-content,
+html.dark body[data-app='swt'] .ui-dialog-content,
+html.dark body[data-app='swt'] .ui-alert-dialog-content {
+  border-color: #475569 !important;
+  background: rgb(15 23 42 / 0.98) !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 28px 64px -24px rgb(0 0 0 / 0.75);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .dashboard-scroll-shell {
+  scrollbar-width: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .dashboard-scroll-shell::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .chat-surface {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .user-message {
+  background: #f5f5f5;
+  color: #333;
+  padding: 10px 16px;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 80%;
+  width: fit-content;
+  margin-left: auto;
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .user-message {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #999;
+  font-size: 13px;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .ai-wait {
+  color: #94a3b8;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 14px;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ccc;
+  animation: ai-wait-bounce 1.2s ease-in-out infinite;
+}
+
+body[data-app='ragent'] .ai-wait-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .ai-wait-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ai-wait-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* 撤销主站全局 button 样式对 Ragent 聊天区内原生 button 的影响（由组件自身 class 控制） */
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell button:not(.MuiButtonBase-root),
+body[data-app='swt'][data-theme='light'] .chat-hosted-shell button:not(.MuiButtonBase-root) {
+  all: revert-layer;
+}
+
+/* Hosted chat in SWT layout: color adaptation */
+body[data-app='swt'] .chat-hosted-shell {
+  color: #0f172a;
+}
+
+body[data-app='swt'] .chat-hosted-shell .bg-\[\#FAFAFA\] {
+  background-color: #f8fafc !important;
+}
+
+body[data-app='swt'] .chat-hosted-shell .bg-white,
+body[data-app='swt'] .chat-hosted-shell .bg-\[\#F8FAFC\],
+body[data-app='swt'] .chat-hosted-shell .bg-\[\#F5F5F5\],
+body[data-app='swt'] .chat-hosted-shell .bg-neutral-50 {
+  background-color: #ffffff !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell {
+  color: #e5e7eb;
+}
+
+/* 深色：托管聊天区与主站 html.dark + bg-neutral-950 一致，侧栏与主列同色 */
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-\[\#FAFAFA\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-\[\#F8FAFC\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-white,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-\[\#F5F5F5\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-50,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-800,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-900,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .bg-neutral-950 {
+  background-color: #0a0a0a !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#F0F0F0\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#E6EEF6\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#E5E7EB\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .border-\[\#E5E5E5\] {
+  border-color: #334155 !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#1A1A1A\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#1F2937\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#111827\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#333333\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-gray-900 {
+  color: #f3f4f6 !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#999999\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#9CA3AF\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#94A3B8\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-\[\#6B7280\],
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell input,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell textarea {
+  color: #e5e7eb !important;
+  background-color: transparent !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell input::placeholder,
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell textarea::placeholder {
+  color: #64748b !important;
+}
+
+body[data-app='swt'][data-theme='dark'] .chat-hosted-shell kbd {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}

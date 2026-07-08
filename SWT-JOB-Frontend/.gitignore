@@ -1,0 +1,13 @@
+
+.next/
+.vercel/
+*.log
+.env.local
+.data/
+node_modules
+**/node_modules/
+node_modules/
+public/admin/
+shadcn-admin/
+ragent-main/
+.vercel

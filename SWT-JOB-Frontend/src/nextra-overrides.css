@@ -1,0 +1,37 @@
+/* Keep Nextra typography while matching product brand tone. */
+html {
+  font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei",
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans",
+    "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  font-size: clamp(13.5px, 0.8vw + 10.5px, 15.5px);
+}
+
+body {
+  font-weight: 500;
+}
+
+body[data-page='docs'] [role="switch"] {
+  direction: ltr;
+}
+
+body[data-page='docs'] {
+  --nextra-primary-hue: 0deg !important;
+  --nextra-primary-saturation: 0% !important;
+}
+
+body[data-page='docs'] .nx-text-primary-600 {
+  color: #000000 !important;
+}
+
+body[data-page='docs'] a:hover {
+  color: #000000 !important;
+}
+
+html.dark body[data-page='docs'] .nx-text-primary-600 {
+  color: #fafafa !important;
+}
+
+html.dark body[data-page='docs'] a:hover {
+  color: #fafafa !important;
+}

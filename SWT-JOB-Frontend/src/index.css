@@ -1,0 +1,191 @@
+@import "tailwindcss";
+@source "./ragent/**/*.{ts,tsx}";
+
+/* 菜单栏切换明暗时 AppThemeContext 在 documentElement 上 toggle `dark`；Tailwind v4 默认 dark: 跟系统 prefers-color-scheme，会导致聊天区等 dark: 不随手动切换。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Ragent / shadcn：与 SWT-JOB-Backend/frontend 的 :root + tailwind.config 语义色一致。
+ * 此前未注入这些变量时，bg-background、border-border、shadow-soft、font-display 等在 Tailwind v4 下无法正确解析，登录页与后台 Dialog 会「缺样式」。
+ */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 210 40% 98%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 214 32% 91%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 239 84% 67%;
+  --chat-user: 239 84% 96%;
+  --chat-assistant: 0 0% 100%;
+  --glow: 239 84% 67%;
+}
+
+.dark {
+  --background: 222 47% 7%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --ring: 239 84% 67%;
+  --chat-user: 239 84% 20%;
+  --chat-assistant: 222 47% 9%;
+}
+
+/* Ragent 聊天区 animate-fade-up；Tailwind v4 @theme + shadcn 颜色映射（对齐 Backend/frontend/tailwind.config.cjs） */
+@theme {
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  --animate-fade-up: fade-up 0.4s ease-out forwards;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui;
+  --font-body: "DM Sans", ui-sans-serif, system-ui;
+
+  --shadow-soft: 0 24px 60px -30px rgba(10, 10, 15, 0.65);
+  --shadow-glow:
+    0 0 0 1px rgba(59, 130, 246, 0.2), 0 16px 40px rgba(59, 130, 246, 0.25);
+  --shadow-neon: 0 0 30px rgba(59, 130, 246, 0.35);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-chat-user: hsl(var(--chat-user));
+  --color-chat-assistant: hsl(var(--chat-assistant));
+}
+
+@layer base {
+  :root {
+    font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei",
+      system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    font-weight: 500;
+    color-scheme: light dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply min-h-screen antialiased;
+  }
+
+  /* Next.js 根节点 */
+  #__next {
+    @apply min-h-screen;
+  }
+
+  /* 非 docs 页面（首页/选岗模拟）由我们自己控制 light/dark；docs 页面交给 Nextra 主题控制 */
+  body[data-app='swt'][data-theme='dark'] {
+    @apply bg-neutral-950 text-neutral-100;
+    overflow: auto;
+  }
+
+  body[data-app='swt'][data-theme='light'] {
+    @apply bg-white text-neutral-900;
+    overflow: auto;
+  }
+
+  body[data-app='docs'] {
+    overflow: auto;
+  }
+
+  body[data-app='swt'][data-theme='dark'] a:not(.admin-sidebar__item) {
+    @apply font-medium text-indigo-400 transition-colors hover:text-indigo-300;
+  }
+
+  body[data-app='swt'][data-theme='light'] a:not(.admin-sidebar__item) {
+    @apply font-medium text-indigo-600 transition-colors hover:text-indigo-500;
+  }
+
+  /* 避免影响 MUI Button/IconButton（它们会带 .MuiButtonBase-root） */
+  body[data-app='swt'][data-theme='dark'] button:not(.MuiButtonBase-root) {
+    @apply rounded-lg border border-transparent bg-neutral-900 px-5 py-2 font-medium text-white transition-colors hover:border-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500;
+  }
+
+  body[data-app='swt'][data-theme='light'] button:not(.MuiButtonBase-root) {
+    @apply rounded-lg border border-neutral-200 bg-neutral-50 px-5 py-2 font-medium text-neutral-900 transition-colors hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500;
+  }
+
+  /*
+   * Ragent：取消主站对原生 button 的全局样式，但若用 `all: revert-layer` 会回落到 UA 默认，
+   * 浏览器会画出灰黑「立体边框」（左上浅、右下深）。改为显式剥壳 + appearance:none，
+   * 再由 Tailwind utilities（.ui-button 等）与 ragent-local 接管。
+   */
+  body[data-app='swt'][data-theme='dark'] .ragent-login-scope button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='light'] .ragent-login-scope button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='dark'] .admin-layout button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='light'] .admin-layout button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='dark'] [role='dialog'] button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='light'] [role='dialog'] button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='dark'] [role='alertdialog'] button:not(.MuiButtonBase-root),
+  body[data-app='swt'][data-theme='light'] [role='alertdialog'] button:not(.MuiButtonBase-root) {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    border-width: 0;
+    border-style: solid;
+    border-color: transparent;
+    padding: 0;
+    background-image: none;
+    background-color: transparent;
+    box-shadow: none;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-decoration: none;
+    vertical-align: middle;
+  }
+}

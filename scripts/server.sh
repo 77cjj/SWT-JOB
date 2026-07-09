@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# SWT-JOB 服务器一键启停脚本（Docker 基础设施 + 后端 + Nginx）
+# SWT-JOB 服务器一键启停脚本（Podman/Docker 基础设施 + 后端 + Nginx）
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND="$ROOT/SWT-JOB-Backend"
-COMPOSE_FILE="$ROOT/scripts/docker-compose.server.yaml"
 STATE_DIR="$ROOT/.server"
 PID_DIR="$STATE_DIR/pids"
 LOG_DIR="$STATE_DIR/logs"
@@ -13,9 +12,26 @@ BACKEND_PORT="${BACKEND_PORT:-9090}"
 ENV_FILE="${SERVER_ENV_FILE:-$ROOT/.env}"
 NGINX_CONF="${NGINX_CONF:-/etc/nginx/conf.d/swt-job.conf}"
 USE_SUDO="${USE_SUDO:-auto}"
+CONTAINER_RT="${CONTAINER_RT:-}"
 
 INFRA_SERVICES=(postgres redis rmqnamesrv rmqbroker rustfs)
-INFRA_CONTAINERS=(swt-server-pg swt-server-redis swt-server-rmqnamesrv swt-server-rmqbroker swt-server-rustfs)
+declare -A INFRA_PORTS=(
+  [postgres]=5432
+  [redis]=6379
+  [rmqnamesrv]=9876
+  [rmqbroker]=10911
+  [rustfs]=9000
+)
+declare -A INFRA_CONTAINERS=(
+  [postgres]=ragent-postgres
+  [redis]=ragent-redis
+  [rmqnamesrv]=rmqnamesrv
+  [rmqbroker]=rmqbroker
+  [rustfs]=ragent-rustfs
+)
+
+CT_CMD=""
+CT_RT_LABEL=""
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -36,15 +52,20 @@ SWT-JOB 服务器一键启停脚本
   ./server.sh [命令] [选项]
 
 命令:
-  all         启动 Docker + 后端 + Nginx 重载（默认）
-  infra       仅启动 Docker 基础设施
-  backend     启动 Docker + Spring Boot 后端
+  all         启动基础设施 + 后端 + Nginx 重载（默认）
+  infra       仅启动缺失的基础设施（Podman/Docker）
+  rustfs      仅启动 RustFS（创建知识库必需）
+  backend     启动基础设施 + Spring Boot 后端
   nginx       Nginx 子命令：start | reload | stop | install-conf
   build       编译后端 jar 包
   stop        停止后端（默认保留 Docker / Nginx）
   restart     重启后端，或 restart all 重启全部
-  status      查看 Docker / 后端 / Nginx 状态
-  logs        查看日志（backend | nginx | docker:<服务名>）
+  status      查看容器 / 后端 / Nginx 状态
+  logs        查看日志（backend | nginx | rustfs | postgres | redis）
+
+说明:
+  基础设施使用 podman run 直接启动，不依赖 compose / yaml 文件。
+  端口已占用时自动跳过（兼容已有的 ragent-postgres 等容器）。
 
 选项:
   --infra     stop / restart 时包含 Docker 容器
@@ -57,6 +78,7 @@ SWT-JOB 服务器一键启停脚本
   NGINX_CONF           Nginx 站点配置路径
   BACKEND_PORT         后端端口（默认 9090）
   USE_SUDO=yes|no|auto 操作 Nginx 时是否 sudo（默认 auto）
+  CONTAINER_RT=podman|docker  强制指定容器运行时（默认自动检测）
 
 示例:
   ./server.sh                    # 全量启动
@@ -159,34 +181,188 @@ resolve_java17() {
   fail "未找到 Java 17，请先安装（后端需要 Java 17）。"
 }
 
-ensure_docker() {
-  if ! command -v docker >/dev/null 2>&1; then
-    fail "未找到 docker，请先安装 Docker。"
+resolve_container_runtime() {
+  if [[ -n "$CT_CMD" ]]; then
+    return 0
   fi
-  if ! docker info >/dev/null 2>&1; then
-    fail "Docker 未运行，请先启动 Docker 服务。"
+
+  local rt="${CONTAINER_RT}"
+  if [[ -z "$rt" ]]; then
+    if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+      rt="podman"
+    elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+      rt="docker"
+    fi
   fi
+
+  case "$rt" in
+    podman|docker)
+      CT_CMD="$rt"
+      CT_RT_LABEL="$rt"
+      ;;
+    *)
+      fail "未找到 podman。请安装: dnf install -y podman"
+      ;;
+  esac
 }
 
-container_running() {
-  docker ps --format '{{.Names}}' | grep -Fxq "$1"
+ensure_container_runtime() {
+  resolve_container_runtime
+}
+
+ct_exists() {
+  local name="$1"
+  ensure_container_runtime
+  $CT_CMD ps -a --format '{{.Names}}' | grep -Fxq "$name"
+}
+
+ct_running() {
+  local name="$1"
+  ensure_container_runtime
+  $CT_CMD ps --format '{{.Names}}' | grep -Fxq "$name"
+}
+
+ct_start_postgres() {
+  local name="${INFRA_CONTAINERS[postgres]}"
+  local schema="$BACKEND/resources/database/schema_pg.sql"
+  ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  [[ -f "$schema" ]] || fail "未找到数据库初始化脚本: $schema"
+  $CT_CMD run -d --name "$name" --restart unless-stopped \
+    -p 127.0.0.1:5432:5432 \
+    -e POSTGRES_USER=postgres \
+    -e POSTGRES_PASSWORD=postgres \
+    -e POSTGRES_DB=ragent \
+    -v ragent-pg-data:/var/lib/postgresql/data \
+    -v "$schema:/docker-entrypoint-initdb.d/01-schema.sql:ro" \
+    docker.io/pgvector/pgvector:pg16
+}
+
+ct_start_redis() {
+  local name="${INFRA_CONTAINERS[redis]}"
+  ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  $CT_CMD run -d --name "$name" --restart unless-stopped \
+    -p 127.0.0.1:6379:6379 \
+    docker.io/library/redis:7 \
+    redis-server --requirepass 123456
+}
+
+ct_start_rmqnamesrv() {
+  local name="${INFRA_CONTAINERS[rmqnamesrv]}"
+  ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  $CT_CMD run -d --name "$name" --restart unless-stopped \
+    -p 127.0.0.1:9876:9876 \
+    -e JAVA_OPT_EXT="-Xms256m -Xmx400m" \
+    docker.io/apache/rocketmq:5.2.0 \
+    sh mqnamesrv
+}
+
+ct_start_rmqbroker() {
+  local name="${INFRA_CONTAINERS[rmqbroker]}"
+  ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  $CT_CMD run -d --name "$name" --restart unless-stopped \
+    -p 127.0.0.1:10909:10909 \
+    -p 127.0.0.1:10911:10911 \
+    -e NAMESRV_ADDR="rmqnamesrv:9876" \
+    -e JAVA_OPT_EXT="-Xms256m -Xmx400m" \
+    --add-host rmqnamesrv:127.0.0.1 \
+    docker.io/apache/rocketmq:5.2.0 \
+    sh -c 'cat > /home/rocketmq/rocketmq-5.2.0/conf/broker.conf << EOF
+brokerClusterName = DefaultCluster
+brokerName = broker-a
+brokerId = 0
+deleteWhen = 04
+fileReservedTime = 48
+brokerRole = ASYNC_MASTER
+flushDiskType = ASYNC_FLUSH
+brokerIP1 = 127.0.0.1
+timerMaxDelaySec = 31622400
+EOF
+sh mqbroker --enable-proxy -c /home/rocketmq/rocketmq-5.2.0/conf/broker.conf'
+}
+
+ct_start_rustfs() {
+  local name="${INFRA_CONTAINERS[rustfs]}"
+  ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  $CT_CMD run -d --name "$name" --restart unless-stopped \
+    -p 127.0.0.1:9000:9000 \
+    -p 127.0.0.1:9001:9001 \
+    -v ragent-rustfs-data:/data \
+    docker.io/rustfs/rustfs:1.0.0-alpha.72 \
+    --address :9000 \
+    --console-enable \
+    --access-key rustfsadmin \
+    --secret-key rustfsadmin \
+    /data
+}
+
+start_infra_service() {
+  local svc="$1"
+  case "$svc" in
+    postgres) ct_start_postgres ;;
+    redis) ct_start_redis ;;
+    rmqnamesrv) ct_start_rmqnamesrv ;;
+    rmqbroker) ct_start_rmqbroker ;;
+    rustfs) ct_start_rustfs ;;
+    *) fail "未知服务: $svc" ;;
+  esac
+}
+
+infra_services_to_start() {
+  local svc
+  for svc in "${INFRA_SERVICES[@]}"; do
+    local port="${INFRA_PORTS[$svc]}"
+    if port_open "$port"; then
+      warn "端口 ${port} 已占用，跳过 ${svc}"
+    else
+      echo "$svc"
+    fi
+  done
 }
 
 start_infra() {
-  ensure_docker
-  info "启动 Docker 基础设施..."
-  docker compose -f "$COMPOSE_FILE" up -d "${INFRA_SERVICES[@]}"
+  ensure_container_runtime
+  local to_start=()
+  while IFS= read -r svc; do
+    [[ -n "$svc" ]] && to_start+=("$svc")
+  done < <(infra_services_to_start)
+
+  if [[ ${#to_start[@]} -eq 0 ]]; then
+    ok "基础设施端口均已就绪，无需启动新容器"
+  else
+    info "使用 ${CT_RT_LABEL} 启动: ${to_start[*]}"
+    local svc
+    for svc in "${to_start[@]}"; do
+      start_infra_service "$svc"
+    done
+  fi
+
   wait_for_port 5432 "PostgreSQL" 90
   wait_for_port 6379 "Redis" 30
   wait_for_port 9876 "RocketMQ NameServer" 120
-  ok "Docker 基础设施已启动"
+  wait_for_port 9000 "RustFS" 30
+  ok "基础设施检查完成"
+}
+
+start_rustfs_only() {
+  ensure_container_runtime
+  if port_open 9000; then
+    warn "RustFS 端口 9000 已在监听，无需启动"
+    return 0
+  fi
+  info "使用 ${CT_RT_LABEL} 启动 RustFS..."
+  ct_start_rustfs
+  wait_for_port 9000 "RustFS" 30
+  ok "RustFS 已启动"
 }
 
 stop_infra() {
-  ensure_docker
-  info "停止 Docker 基础设施..."
-  docker compose -f "$COMPOSE_FILE" down
-  ok "Docker 基础设施已停止"
+  ensure_container_runtime
+  info "停止脚本管理的 RustFS 容器（不影响已有 postgres/redis/rocketmq）..."
+  local name="${INFRA_CONTAINERS[rustfs]}"
+  if ct_exists "$name"; then
+    $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  fi
+  ok "RustFS 已停止"
 }
 
 find_backend_jar() {
@@ -351,8 +527,12 @@ show_status() {
   echo ""
   echo "=== SWT-JOB 服务器状态 ==="
   echo ""
+  resolve_container_runtime 2>/dev/null || true
   echo "  环境文件: ${ENV_FILE}"
   echo "  日志目录: ${LOG_DIR}"
+  if [[ -n "$CT_RT_LABEL" ]]; then
+    echo "  容器运行时: ${CT_RT_LABEL}"
+  fi
   echo ""
 
   local svc
@@ -394,12 +574,15 @@ show_logs() {
         fail "未找到 /var/log/nginx/error.log"
       fi
       ;;
-    docker:*)
-      local service="${target#docker:}"
-      docker compose -f "$COMPOSE_FILE" logs -f "$service"
+    docker:*|podman:*|ct:*|rustfs|postgres|redis|rmqnamesrv|rmqbroker)
+      local service="${target#*:}"
+      [[ "$target" == "rustfs" || "$target" == "postgres" || "$target" == "redis" || "$target" == "rmqnamesrv" || "$target" == "rmqbroker" ]] && service="$target"
+      local name="${INFRA_CONTAINERS[$service]:-$service}"
+      ensure_container_runtime
+      $CT_CMD logs -f "$name"
       ;;
     *)
-      fail "请指定: ./server.sh logs backend|nginx|docker:<服务名>"
+      fail "请指定: ./server.sh logs backend|nginx|rustfs"
       ;;
   esac
 }
@@ -464,10 +647,10 @@ restart_services() {
       start_backend
       ok "后端已重启"
       ;;
-    infra|docker)
+    infra|docker|podman)
       stop_infra
       start_infra
-      ok "Docker 已重启"
+      ok "基础设施已重启"
       ;;
     *)
       fail "未知重启目标: ${target}（可用: all | backend | infra）"
@@ -500,8 +683,12 @@ main() {
       nginx_cmd reload
       print_ready
       ;;
-    infra|docker)
+    infra|docker|podman)
       start_infra
+      show_status
+      ;;
+    rustfs)
+      start_rustfs_only
       show_status
       ;;
     backend|be)

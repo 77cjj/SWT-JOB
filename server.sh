@@ -10,7 +10,8 @@ LOG_DIR="$STATE_DIR/logs"
 
 BACKEND_PORT="${BACKEND_PORT:-9090}"
 ENV_FILE="${SERVER_ENV_FILE:-$ROOT/.env}"
-SERVER_CONFIG="${SERVER_CONFIG:-$BACKEND/bootstrap/config/application-server.yaml}"
+SERVER_CONFIG="${SERVER_CONFIG:-$BACKEND/bootstrap/config/application.yaml}"
+LEGACY_SERVER_CONFIG="$BACKEND/bootstrap/config/application-server.yaml"
 LAST_BUILD_SHA="$STATE_DIR/last-build.sha"
 NGINX_CONF="${NGINX_CONF:-/etc/nginx/conf.d/swt-job.conf}"
 USE_SUDO="${USE_SUDO:-auto}"
@@ -18,6 +19,7 @@ CONTAINER_RT="${CONTAINER_RT:-}"
 JAVA_MEM_OPTS="${JAVA_MEM_OPTS:--Xms256m -Xmx512m}"
 SKIP_UPDATE_CHECK=false
 AUTO_PULL_BUILD=false
+FORCE_BACKEND=false
 
 INFRA_SERVICES=(postgres redis rmqnamesrv rmqbroker rustfs)
 declare -A INFRA_PORTS=(
@@ -58,19 +60,23 @@ SWT-JOB 服务器一键启停脚本
 
 命令:
   all         启动基础设施 + 后端 + Nginx 重载（默认）
+  fix         一键修复：写配置、修 Broker、强杀卡死后端、重启并健康检查
   infra       仅启动缺失的基础设施（Podman/Docker）
   rustfs      仅启动 RustFS（创建知识库必需）
+  broker      强制重建 RocketMQ Broker（2G 机器稳定配置）
   backend     检查基础设施 + 启动 Spring Boot 后端
   nginx       Nginx 子命令：start | reload | stop | install-conf
   build       编译后端 jar 包
   stop        停止后端（默认保留 Docker / Nginx）
   restart     重启后端，或 restart all 重启全部
   status      查看容器 / 后端 / Nginx 状态
+  doctor      诊断 502 / 启动卡住原因
   logs        查看日志（backend | nginx | rustfs | postgres | redis）
 
 说明:
   基础设施使用 podman run 直接启动，不依赖 compose / yaml 文件。
   端口已占用时自动跳过（兼容已有的 ragent-postgres 等容器）。
+  生产默认关闭 MCP + MQ 消费者，避免 Broker 不稳时后端卡死导致 Nginx 502。
 
 选项:
   --infra     stop / restart 时包含 Docker 容器
@@ -78,11 +84,12 @@ SWT-JOB 服务器一键启停脚本
   --build     backend / all / restart 前先编译 jar
   --pull      检测到更新时自动拉取并重新编译（非交互）
   --skip-update-check  跳过后端更新检测，直接启动
+  --force     backend / fix 时强制杀掉旧进程再启
 
 环境变量（可写入项目根 .env）:
   BAILIAN_API_KEY      AI 功能必填
   SERVER_ENV_FILE      环境变量文件路径（默认 <项目根>/.env）
-  SERVER_CONFIG        服务器 Spring 覆盖配置（默认 bootstrap/config/application-server.yaml）
+  SERVER_CONFIG        服务器 Spring 覆盖配置（默认 bootstrap/config/application.yaml）
   NGINX_CONF           Nginx 站点配置路径
   BACKEND_PORT         后端端口（默认 9090）
   JAVA_MEM_OPTS        JVM 内存参数（默认 -Xms256m -Xmx512m）
@@ -90,19 +97,16 @@ SWT-JOB 服务器一键启停脚本
   CONTAINER_RT=podman|docker  强制指定容器运行时（默认自动检测）
 
 智能行为:
-  - 自动加载 application-server.yaml，生产环境默认关闭 MCP
-  - 启动后端前检测 Git 远程/本地 Java 变更，交互询问是否拉取并编译
+  - 每次启动强制写入 bootstrap/config/application.yaml（关 MCP + 关 MQ 消费者）
+  - 端口占用但健康检查失败时，自动杀掉卡死进程再启
+  - 等待「端口 + HTTP 可达」才算启动成功
 
 示例:
+  ./server.sh fix                # 推荐：一键修好 502 / 启动卡住
+  ./server.sh doctor             # 只诊断，不改动
   ./server.sh                    # 检查中间件 + 启动后端 + 重载 Nginx
-  ./server.sh infra              # 只检查/补启中间件
-  ./server.sh backend            # 检查中间件 + 只启后端
-  ./server.sh nginx install-conf # 安装 Nginx 配置模板
-  ./server.sh nginx reload       # 校验并重载 Nginx
-  ./server.sh stop               # 只停后端
-  ./server.sh stop --infra       # 停后端 + Docker
-  ./server.sh restart backend    # 重启后端（会重新加载 .env）
-  ./server.sh restart all --build
+  ./server.sh broker             # 重建稳定的 RocketMQ Broker
+  ./server.sh backend --force    # 强杀后重启后端
   ./server.sh status
   ./server.sh logs backend
 
@@ -110,7 +114,7 @@ SWT-JOB 服务器一键启停脚本
   1. cp .env.example .env 并填入 BAILIAN_API_KEY
   2. ./server.sh build
   3. ./server.sh nginx install-conf  # 编辑域名后
-  4. ./server.sh all
+  4. ./server.sh fix
 EOF
 }
 
@@ -153,16 +157,42 @@ port_open() {
 
 wait_for_port() {
   local port="$1" label="$2" timeout="${3:-120}"
+  local log_hint="${4:-}"
+  local optional="${5:-false}"
   info "等待 ${label} (127.0.0.1:${port})..."
   local i=0
   while ! port_open "$port"; do
     sleep 1
     i=$((i + 1))
     if [[ $i -ge $timeout ]]; then
-      fail "${label} 在 ${timeout}s 内未就绪，请查看 ${LOG_DIR}/backend.log"
+      if [[ "$optional" == "true" ]]; then
+        warn "${label} 在 ${timeout}s 内未就绪（继续启动，但后端可能卡在 MQ）"
+        return 1
+      fi
+      if [[ -n "$log_hint" && -f "$log_hint" ]]; then
+        warn "最近日志 (${log_hint}):"
+        tail -n 30 "$log_hint" >&2 || true
+      fi
+      fail "${label} 在 ${timeout}s 内未就绪${log_hint:+，请查看 ${log_hint}}"
     fi
   done
   ok "${label} 已就绪"
+}
+
+warn_if_broker_unstable() {
+  if ! port_open 10911; then
+    warn "RocketMQ Broker 端口 10911 未监听，后端 MQ 消费者可能卡住启动"
+    warn "可先执行: podman logs rmqbroker --tail 30"
+    warn "或拉取最新 application-server.yaml（已默认禁用 MQ 消费者）"
+    return 0
+  fi
+  if command -v "$CT_CMD" >/dev/null 2>&1 && ct_exists rmqbroker; then
+    local status
+    status="$($CT_CMD inspect -f '{{.State.Status}}' rmqbroker 2>/dev/null || true)"
+    if [[ "$status" != "running" ]]; then
+      warn "RocketMQ Broker 容器状态异常: ${status:-unknown}"
+    fi
+  fi
 }
 
 pid_on_port() {
@@ -265,7 +295,7 @@ ct_start_rmqnamesrv() {
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
   $CT_CMD run -d --name "$name" --restart unless-stopped \
     -p 127.0.0.1:9876:9876 \
-    -e JAVA_OPT_EXT="-Xms256m -Xmx400m" \
+    -e JAVA_OPT_EXT="-Xms128m -Xmx256m" \
     docker.io/apache/rocketmq:5.2.0 \
     sh mqnamesrv
 }
@@ -273,14 +303,8 @@ ct_start_rmqnamesrv() {
 ct_start_rmqbroker() {
   local name="${INFRA_CONTAINERS[rmqbroker]}"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
-  $CT_CMD run -d --name "$name" --restart unless-stopped \
-    -p 127.0.0.1:10909:10909 \
-    -p 127.0.0.1:10911:10911 \
-    -e NAMESRV_ADDR="rmqnamesrv:9876" \
-    -e JAVA_OPT_EXT="-Xms256m -Xmx400m" \
-    --add-host rmqnamesrv:127.0.0.1 \
-    docker.io/apache/rocketmq:5.2.0 \
-    sh -c 'cat > /home/rocketmq/rocketmq-5.2.0/conf/broker.conf << EOF
+
+  local broker_script='cat > /tmp/broker.conf << EOF
 brokerClusterName = DefaultCluster
 brokerName = broker-a
 brokerId = 0
@@ -289,9 +313,63 @@ fileReservedTime = 48
 brokerRole = ASYNC_MASTER
 flushDiskType = ASYNC_FLUSH
 brokerIP1 = 127.0.0.1
-timerMaxDelaySec = 31622400
+namesrvAddr = 127.0.0.1:9876
+autoCreateTopicEnable = true
 EOF
-sh mqbroker --enable-proxy -c /home/rocketmq/rocketmq-5.2.0/conf/broker.conf'
+exec sh mqbroker -n 127.0.0.1:9876 -c /tmp/broker.conf'
+
+  # 优先 host 网络（NameServer 连通更稳）；失败则回退端口映射
+  if $CT_CMD run -d --name "$name" --restart unless-stopped \
+    --network host \
+    -e NAMESRV_ADDR="127.0.0.1:9876" \
+    -e JAVA_OPT_EXT="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m" \
+    docker.io/apache/rocketmq:5.2.0 \
+    sh -c "$broker_script" >/dev/null 2>&1; then
+    ok "Broker 已用 host 网络启动"
+    return 0
+  fi
+
+  warn "host 网络不可用，回退到端口映射模式"
+  ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+  $CT_CMD run -d --name "$name" --restart unless-stopped \
+    -p 127.0.0.1:10909:10909 \
+    -p 127.0.0.1:10911:10911 \
+    -e NAMESRV_ADDR="127.0.0.1:9876" \
+    -e JAVA_OPT_EXT="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m" \
+    --add-host=host.containers.internal:host-gateway \
+    docker.io/apache/rocketmq:5.2.0 \
+    sh -c 'cat > /tmp/broker.conf << EOF
+brokerClusterName = DefaultCluster
+brokerName = broker-a
+brokerId = 0
+deleteWhen = 04
+fileReservedTime = 48
+brokerRole = ASYNC_MASTER
+flushDiskType = ASYNC_FLUSH
+brokerIP1 = 127.0.0.1
+namesrvAddr = host.containers.internal:9876
+autoCreateTopicEnable = true
+EOF
+exec sh mqbroker -n host.containers.internal:9876 -c /tmp/broker.conf'
+}
+
+rebuild_rmqbroker() {
+  ensure_container_runtime
+  if ! port_open 9876; then
+    info "NameServer 未就绪，先启动 rmqnamesrv..."
+    if ! port_open 9876; then
+      start_infra_service rmqnamesrv
+      wait_for_port 9876 "RocketMQ NameServer" 120
+    fi
+  fi
+  info "强制重建 RocketMQ Broker（低内存稳定配置）..."
+  ct_start_rmqbroker
+  wait_for_port 10911 "RocketMQ Broker" 90 "" true || {
+    warn "Broker 仍未就绪。后端已默认禁用 MQ 消费者，API 仍可启动。"
+    warn "查看日志: $CT_CMD logs rmqbroker --tail 50"
+    return 0
+  }
+  ok "RocketMQ Broker 已重建"
 }
 
 ct_start_rustfs() {
@@ -358,6 +436,7 @@ start_infra() {
   wait_for_port 5432 "PostgreSQL" 90
   wait_for_port 6379 "Redis" 30
   wait_for_port 9876 "RocketMQ NameServer" 120
+  wait_for_port 10911 "RocketMQ Broker" 60 "" true || warn_if_broker_unstable
   wait_for_port 9000 "RustFS" 30
   ok "基础设施检查完成"
 }
@@ -390,17 +469,117 @@ find_backend_jar() {
     -print 2>/dev/null | head -1
 }
 
-ensure_server_config() {
-  if [[ -f "$SERVER_CONFIG" ]]; then
-    return 0
+backend_http_ok() {
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 5 \
+    -X POST "http://127.0.0.1:${BACKEND_PORT}/api/ragent/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"__health__","password":"__health__"}' 2>/dev/null || echo 000)"
+  # 能连上后端就算健康：401/400/200/403 都说明 Spring 已起来；000/502/503 不行
+  [[ "$code" =~ ^(200|400|401|403|404|405)$ ]]
+}
+
+nginx_proxy_ok() {
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 5 \
+    -X POST "http://127.0.0.1/api/ragent/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"__health__","password":"__health__"}' 2>/dev/null || echo 000)"
+  [[ "$code" =~ ^(200|400|401|403|404|405)$ ]]
+}
+
+wait_for_backend_ready() {
+  local timeout="${1:-180}"
+  local log_file="${2:-$LOG_DIR/backend.log}"
+  info "等待后端真正可用 (端口 ${BACKEND_PORT} + HTTP)..."
+  local i=0
+  while true; do
+    if port_open "$BACKEND_PORT" && backend_http_ok; then
+      ok "后端已就绪（HTTP 健康检查通过）"
+      return 0
+    fi
+    sleep 2
+    i=$((i + 2))
+    if [[ $i -ge $timeout ]]; then
+      warn "最近日志 (${log_file}):"
+      tail -n 40 "$log_file" 2>/dev/null >&2 || true
+      fail "后端在 ${timeout}s 内未通过健康检查。常见原因：MQ 消费者卡住 / OOM / 配置未生效。请执行: ./server.sh doctor"
+    fi
+    if (( i % 20 == 0 )); then
+      info "仍在等待后端... ${i}s/${timeout}s"
+      if [[ -f "$log_file" ]]; then
+        local last
+        last="$(tail -n 1 "$log_file" 2>/dev/null || true)"
+        [[ -n "$last" ]] && info "最新日志: ${last}"
+      fi
+    fi
+  done
+}
+
+kill_stale_backend() {
+  info "清理可能卡死的后端进程..."
+  local pid_file="$PID_DIR/backend.pid"
+  if [[ -f "$pid_file" ]]; then
+    local pid
+    pid="$(cat "$pid_file" 2>/dev/null || true)"
+    if [[ -n "$pid" ]]; then
+      kill "$pid" 2>/dev/null || true
+      sleep 1
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+    rm -f "$pid_file"
   fi
+  if port_open "$BACKEND_PORT"; then
+    local pid
+    pid="$(pid_on_port "$BACKEND_PORT")"
+    if [[ -n "$pid" ]]; then
+      kill "$pid" 2>/dev/null || true
+      sleep 1
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+  fi
+  pkill -f "bootstrap.*\.jar" 2>/dev/null || true
+  pkill -f "spring-boot:run" 2>/dev/null || true
+  pkill -f "ragent.*\.jar" 2>/dev/null || true
+  sleep 1
+  if port_open "$BACKEND_PORT"; then
+    fail "无法释放端口 ${BACKEND_PORT}，请手动: lsof -iTCP:${BACKEND_PORT} -sTCP:LISTEN"
+  fi
+  ok "旧后端进程已清理"
+}
+
+write_server_config() {
   mkdir -p "$(dirname "$SERVER_CONFIG")"
   cat >"$SERVER_CONFIG" <<'EOF'
+# 由 server.sh 自动写入（每次启动都会覆盖）
+# 目的：2G 小内存机器上避免 MCP / RocketMQ 消费者阻塞 Spring 启动，导致 Nginx 502
+
 rag:
   mcp:
     servers: []
+
+rocketmq:
+  consumer:
+    listeners:
+      knowledge-document-chunk_cg:
+        knowledge-document-chunk_topic:
+          enabled: false
+      message-feedback_cg:
+        message-feedback_topic:
+          enabled: false
+
+logging:
+  level:
+    org.apache.rocketmq: WARN
 EOF
-  warn "已生成服务器配置: ${SERVER_CONFIG}（默认关闭 MCP）"
+  # 兼容旧路径：有人可能还在用 application-server.yaml
+  mkdir -p "$(dirname "$LEGACY_SERVER_CONFIG")"
+  cp -f "$SERVER_CONFIG" "$LEGACY_SERVER_CONFIG"
+  ok "已写入服务器配置: ${SERVER_CONFIG}"
+}
+
+ensure_server_config() {
+  write_server_config
 }
 
 record_build_sha() {
@@ -581,22 +760,36 @@ start_backend() {
 
   local pid_file="$PID_DIR/backend.pid"
   local log_file="$LOG_DIR/backend.log"
+  ensure_dirs
 
-  if is_running "$pid_file"; then
-    warn "后端已在运行 (PID $(cat "$pid_file"))"
-    return 0
-  fi
-
-  if port_open "$BACKEND_PORT"; then
-    warn "端口 ${BACKEND_PORT} 已被占用，跳过后端启动"
-    return 0
+  # 已在跑且健康 → 跳过；否则强杀再启（解决「进程在但 502」）
+  if [[ "$FORCE_BACKEND" == "true" ]]; then
+    kill_stale_backend
+  elif port_open "$BACKEND_PORT"; then
+    if backend_http_ok; then
+      ok "后端已在运行且健康 (端口 ${BACKEND_PORT})"
+      local listener_pid
+      listener_pid="$(pid_on_port "$BACKEND_PORT")"
+      [[ -n "$listener_pid" ]] && echo "$listener_pid" >"$pid_file"
+      return 0
+    fi
+    warn "端口 ${BACKEND_PORT} 被占用，但 HTTP 健康检查失败（典型：启动卡在 MCP/MQ）"
+    kill_stale_backend
+  elif is_running "$pid_file"; then
+    warn "PID 文件存在但端口未监听，清理后重启"
+    kill_stale_backend
   fi
 
   local jar
   jar="$(find_backend_jar)"
+  [[ -n "$jar" ]] || fail "未找到 jar，请先执行: ./server.sh build"
+
   info "启动 Spring Boot 后端..."
   info "日志: ${log_file}"
-  info "服务器配置: ${SERVER_CONFIG}（已关闭 MCP 等待）"
+  info "配置: ${SERVER_CONFIG}（关 MCP + 关 MQ 消费者，避免卡死）"
+  warn_if_broker_unstable
+
+  : >"$log_file"
 
   local -a java_cmd=(java)
   # shellcheck disable=SC2206
@@ -606,22 +799,30 @@ start_backend() {
     java_cmd+=($JAVA_OPTS)
   fi
 
-  export SPRING_CONFIG_ADDITIONAL_LOCATION="file:${SERVER_CONFIG}"
+  # 关键：用 --spring.config.additional-location 指向目录，Spring 会加载其中的 application.yaml
+  local config_dir
+  config_dir="$(dirname "$SERVER_CONFIG")"
+  local spring_cfg="file:${config_dir}/"
 
   (
     cd "$BACKEND/bootstrap"
-    if [[ -n "$jar" ]]; then
-      nohup "${java_cmd[@]}" -jar "$jar" >>"$log_file" 2>&1 &
-    else
-      warn "未找到 jar，使用 mvnw spring-boot:run（建议先执行 ./server.sh build）"
-      nohup ../mvnw -q spring-boot:run -DskipTests >>"$log_file" 2>&1 &
-    fi
+    nohup "${java_cmd[@]}" -jar "$jar" \
+      --spring.config.additional-location="${spring_cfg}" \
+      >>"$log_file" 2>&1 &
+    echo $! >"$pid_file"
   )
 
-  wait_for_port "$BACKEND_PORT" "后端 API" 180
+  wait_for_backend_ready 180 "$log_file"
   local listener_pid
   listener_pid="$(pid_on_port "$BACKEND_PORT")"
   [[ -n "$listener_pid" ]] && echo "$listener_pid" >"$pid_file"
+
+  if nginx_proxy_ok; then
+    ok "Nginx → 后端代理正常"
+  else
+    warn "本机 Nginx 代理仍异常。若用 Vercel 反代，请执行: ./server.sh nginx reload"
+    warn "并确认 Nginx upstream 指向 127.0.0.1:${BACKEND_PORT}"
+  fi
 }
 
 nginx_running() {
@@ -708,6 +909,7 @@ show_status() {
   echo ""
   resolve_container_runtime 2>/dev/null || true
   echo "  环境文件: ${ENV_FILE}"
+  echo "  配置文件: ${SERVER_CONFIG}"
   echo "  日志目录: ${LOG_DIR}"
   if [[ -n "$CT_RT_LABEL" ]]; then
     echo "  容器运行时: ${CT_RT_LABEL}"
@@ -715,7 +917,7 @@ show_status() {
   echo ""
 
   local svc
-  for svc in "5432:PostgreSQL" "6379:Redis" "9876:RocketMQ" "9000:RustFS" "${BACKEND_PORT}:后端 API"; do
+  for svc in "5432:PostgreSQL" "6379:Redis" "9876:RMQ NameServer" "10911:RMQ Broker" "9000:RustFS" "${BACKEND_PORT}:后端端口"; do
     local port="${svc%%:*}"
     local label="${svc#*:}"
     if port_open "$port"; then
@@ -724,6 +926,18 @@ show_status() {
       echo -e "  ${RED}○${NC} ${label}  :${port}"
     fi
   done
+
+  echo ""
+  if backend_http_ok; then
+    echo -e "  ${GREEN}●${NC} 后端 HTTP 健康检查: 通过"
+  else
+    echo -e "  ${RED}○${NC} 后端 HTTP 健康检查: 失败（这就是 Vercel 502 的原因）"
+  fi
+  if nginx_proxy_ok; then
+    echo -e "  ${GREEN}●${NC} Nginx → 后端代理: 正常"
+  else
+    echo -e "  ${RED}○${NC} Nginx → 后端代理: 异常（502）"
+  fi
 
   echo ""
   nginx_cmd status
@@ -738,6 +952,84 @@ show_status() {
     echo -e "  ${YELLOW}○${NC} BAILIAN_API_KEY: 未配置"
   fi
   echo ""
+}
+
+run_doctor() {
+  echo ""
+  echo "=== SWT-JOB 诊断 (doctor) ==="
+  echo ""
+  resolve_container_runtime 2>/dev/null || true
+
+  echo "1) 端口与健康"
+  show_status
+
+  echo "2) 后端进程"
+  ps aux | grep -E '[j]ava.*bootstrap|[j]ava.*ragent|[s]pring-boot:run' || echo "  （未发现 Java 后端进程）"
+  echo ""
+
+  echo "3) 最近后端日志"
+  if [[ -f "$LOG_DIR/backend.log" ]]; then
+    tail -n 25 "$LOG_DIR/backend.log" || true
+  else
+    echo "  无日志文件: $LOG_DIR/backend.log"
+  fi
+  echo ""
+
+  echo "4) RocketMQ Broker"
+  if [[ -n "$CT_CMD" ]] && ct_exists rmqbroker; then
+    $CT_CMD ps -a --filter name=rmqbroker --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null || true
+    echo "--- broker 最近日志 ---"
+    $CT_CMD logs rmqbroker --tail 20 2>/dev/null || true
+  else
+    echo "  未找到 rmqbroker 容器"
+  fi
+  echo ""
+
+  echo "5) 内存"
+  free -h 2>/dev/null || true
+  echo ""
+
+  echo "6) 结论"
+  if backend_http_ok && nginx_proxy_ok; then
+    ok "本机链路正常。若浏览器仍 502，多半是 Vercel 缓存或旧部署，等 1 分钟再试。"
+  elif backend_http_ok && ! nginx_proxy_ok; then
+    warn "后端已起来，但 Nginx 代理失败 → 执行: ./server.sh nginx reload"
+  elif port_open "$BACKEND_PORT" && ! backend_http_ok; then
+    warn "端口在听但 HTTP 不通 → 后端卡在启动中。执行: ./server.sh fix"
+  else
+    warn "后端未就绪 → 执行: ./server.sh fix"
+  fi
+  echo ""
+}
+
+fix_all() {
+  info "=== 一键修复开始 ==="
+  ensure_dirs
+  load_env
+  ensure_server_config
+  FORCE_BACKEND=true
+
+  # 基础设施：缺啥补啥
+  start_infra || true
+
+  # Broker 在 2G 机器上常 OOM 反复重启：fix 时一律重建低内存版本
+  rebuild_rmqbroker || true
+
+  # 强杀卡死后端并重启
+  kill_stale_backend
+  maybe_prepare_backend false
+  start_backend
+  nginx_cmd reload || true
+
+  echo ""
+  if backend_http_ok && nginx_proxy_ok; then
+    ok "修复成功：本机登录接口已通，Vercel 502 应随之消失"
+  elif backend_http_ok; then
+    ok "后端已通，但 Nginx 仍异常，请检查 /etc/nginx/conf.d/ 里 upstream 是否指向 127.0.0.1:${BACKEND_PORT}"
+  else
+    fail "修复后后端仍不可用，请把 ./server.sh doctor 输出贴出来"
+  fi
+  print_ready
 }
 
 show_logs() {
@@ -851,6 +1143,7 @@ main() {
       --build) do_build=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
+      --force) FORCE_BACKEND=true ;;
       --infra|--nginx) extra_args+=("$arg") ;;
       -h|--help) usage; exit 0 ;;
       *) extra_args+=("$arg") ;;
@@ -867,12 +1160,22 @@ main() {
       nginx_cmd reload
       print_ready
       ;;
+    fix|repair)
+      fix_all
+      ;;
+    doctor|diag|diagnose)
+      run_doctor
+      ;;
     infra|docker|podman)
       start_infra
       show_status
       ;;
     rustfs)
       start_rustfs_only
+      show_status
+      ;;
+    broker|rmqbroker)
+      rebuild_rmqbroker
       show_status
       ;;
     backend|be)
@@ -891,6 +1194,7 @@ main() {
       stop_all "${extra_args[@]}"
       ;;
     restart)
+      FORCE_BACKEND=true
       restart_services "${extra_args[0]:-backend}" "${extra_args[@]:1}"
       ;;
     status|ps)

@@ -1,4 +1,5 @@
-# 兼容旧路径；内容与 application.yaml 相同（由 server.sh 同步覆盖）
+# 由 server.sh 自动写入（每次启动都会覆盖）
+# 目的：2G 小内存机器上避免 MCP / RocketMQ 消费者阻塞 Spring 启动，导致 Nginx 502
 
 rag:
   mcp:

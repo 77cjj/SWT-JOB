@@ -10,9 +10,14 @@ LOG_DIR="$STATE_DIR/logs"
 
 BACKEND_PORT="${BACKEND_PORT:-9090}"
 ENV_FILE="${SERVER_ENV_FILE:-$ROOT/.env}"
+SERVER_CONFIG="${SERVER_CONFIG:-$BACKEND/bootstrap/config/application-server.yaml}"
+LAST_BUILD_SHA="$STATE_DIR/last-build.sha"
 NGINX_CONF="${NGINX_CONF:-/etc/nginx/conf.d/swt-job.conf}"
 USE_SUDO="${USE_SUDO:-auto}"
 CONTAINER_RT="${CONTAINER_RT:-}"
+JAVA_MEM_OPTS="${JAVA_MEM_OPTS:--Xms256m -Xmx512m}"
+SKIP_UPDATE_CHECK=false
+AUTO_PULL_BUILD=false
 
 INFRA_SERVICES=(postgres redis rmqnamesrv rmqbroker rustfs)
 declare -A INFRA_PORTS=(
@@ -71,14 +76,22 @@ SWT-JOB 服务器一键启停脚本
   --infra     stop / restart 时包含 Docker 容器
   --nginx     stop / restart 时包含 Nginx（stop 会停整个 Nginx 服务）
   --build     backend / all / restart 前先编译 jar
+  --pull      检测到更新时自动拉取并重新编译（非交互）
+  --skip-update-check  跳过后端更新检测，直接启动
 
 环境变量（可写入项目根 .env）:
   BAILIAN_API_KEY      AI 功能必填
   SERVER_ENV_FILE      环境变量文件路径（默认 <项目根>/.env）
+  SERVER_CONFIG        服务器 Spring 覆盖配置（默认 bootstrap/config/application-server.yaml）
   NGINX_CONF           Nginx 站点配置路径
   BACKEND_PORT         后端端口（默认 9090）
+  JAVA_MEM_OPTS        JVM 内存参数（默认 -Xms256m -Xmx512m）
   USE_SUDO=yes|no|auto 操作 Nginx 时是否 sudo（默认 auto）
   CONTAINER_RT=podman|docker  强制指定容器运行时（默认自动检测）
+
+智能行为:
+  - 自动加载 application-server.yaml，生产环境默认关闭 MCP
+  - 启动后端前检测 Git 远程/本地 Java 变更，交互询问是否拉取并编译
 
 示例:
   ./server.sh                    # 检查中间件 + 启动后端 + 重载 Nginx
@@ -377,6 +390,153 @@ find_backend_jar() {
     -print 2>/dev/null | head -1
 }
 
+ensure_server_config() {
+  if [[ -f "$SERVER_CONFIG" ]]; then
+    return 0
+  fi
+  mkdir -p "$(dirname "$SERVER_CONFIG")"
+  cat >"$SERVER_CONFIG" <<'EOF'
+rag:
+  mcp:
+    servers: []
+EOF
+  warn "已生成服务器配置: ${SERVER_CONFIG}（默认关闭 MCP）"
+}
+
+record_build_sha() {
+  if git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
+    git -C "$ROOT" rev-parse HEAD >"$LAST_BUILD_SHA"
+  fi
+}
+
+git_upstream_ref() {
+  git -C "$ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "origin/master"
+}
+
+count_remote_commits_behind() {
+  local upstream
+  upstream="$(git_upstream_ref)"
+  git -C "$ROOT" rev-list --count "HEAD..${upstream}" 2>/dev/null || echo 0
+}
+
+backend_changed_since_last_build() {
+  [[ -f "$LAST_BUILD_SHA" ]] || return 1
+  local last_sha
+  last_sha="$(cat "$LAST_BUILD_SHA")"
+  git -C "$ROOT" diff --name-only "$last_sha" HEAD -- SWT-JOB-Backend/ 2>/dev/null | grep -q .
+}
+
+remote_has_backend_changes() {
+  local upstream behind_files
+  upstream="$(git_upstream_ref)"
+  behind_files="$(git -C "$ROOT" diff --name-only "HEAD..${upstream}" -- SWT-JOB-Backend/ 2>/dev/null || true)"
+  [[ -n "$behind_files" ]]
+}
+
+prompt_backend_update_action() {
+  local behind="$1"
+  local has_local_changes="$2"
+  local has_remote_backend="$3"
+  local jar_exists="$4"
+
+  echo ""
+  warn "检测到后端可能需要更新："
+  [[ "$behind" -gt 0 ]] && echo "  - 远程领先 ${behind} 个提交"
+  [[ "$has_local_changes" == "true" ]] && echo "  - 本地 Java 代码相对上次编译有变更"
+  [[ "$has_remote_backend" == "true" ]] && echo "  - 远程提交包含 SWT-JOB-Backend 变更"
+  [[ -z "$jar_exists" ]] && echo "  - 当前未找到已编译 jar"
+  echo ""
+
+  if [[ ! -t 0 ]]; then
+    if [[ -n "$jar_exists" ]]; then
+      warn "非交互终端：使用现有 jar 继续启动"
+      return 0
+    fi
+    warn "非交互终端：未找到 jar，将自动拉取并编译"
+    git_pull_and_build
+    return $?
+  fi
+
+  echo "请选择："
+  echo "  [1] 拉取并重新编译 (git pull + build)"
+  if [[ -n "$jar_exists" ]]; then
+    echo "  [2] 使用现有 jar 继续启动"
+  fi
+  echo "  [3] 取消"
+  echo ""
+  local choice
+  while true; do
+    if [[ -n "$jar_exists" ]]; then
+      read -r -p "请输入 [1/2/3]: " choice
+    else
+      read -r -p "请输入 [1/3]: " choice
+      [[ "$choice" == "2" ]] && choice="3"
+    fi
+    case "$choice" in
+      1) git_pull_and_build; return $? ;;
+      2)
+        if [[ -n "$jar_exists" ]]; then
+          ok "使用现有 jar 继续"
+          return 0
+        fi
+        ;;
+      3) fail "已取消启动" ;;
+      *) warn "无效输入，请重新选择" ;;
+    esac
+  done
+}
+
+git_pull_and_build() {
+  info "拉取最新代码..."
+  git -C "$ROOT" pull --ff-only || fail "git pull 失败，请手动解决后重试"
+  build_backend
+}
+
+maybe_prepare_backend() {
+  local do_build="$1"
+
+  ensure_server_config
+
+  if [[ "$do_build" == "true" ]]; then
+    build_backend
+    return 0
+  fi
+
+  if [[ "$SKIP_UPDATE_CHECK" == "true" ]]; then
+    return 0
+  fi
+
+  if ! git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
+    warn "当前目录不是 Git 仓库，跳过更新检测"
+    return 0
+  fi
+
+  if [[ "$AUTO_PULL_BUILD" == "true" ]]; then
+    local behind
+    behind="$(count_remote_commits_behind)"
+    if [[ "$behind" -gt 0 ]] || ! find_backend_jar >/dev/null 2>&1; then
+      git_pull_and_build
+    fi
+    return 0
+  fi
+
+  git -C "$ROOT" fetch origin --quiet 2>/dev/null || warn "git fetch 失败，仅使用本地状态判断"
+
+  local behind=0
+  behind="$(count_remote_commits_behind)"
+  local has_local_changes="false"
+  local has_remote_backend="false"
+  local jar
+  jar="$(find_backend_jar || true)"
+
+  backend_changed_since_last_build && has_local_changes="true"
+  remote_has_backend_changes && has_remote_backend="true"
+
+  if [[ "$behind" -gt 0 || "$has_local_changes" == "true" || "$has_remote_backend" == "true" || -z "$jar" ]]; then
+    prompt_backend_update_action "$behind" "$has_local_changes" "$has_remote_backend" "$jar"
+  fi
+}
+
 build_backend() {
   resolve_java17
   info "编译后端 jar..."
@@ -384,6 +544,7 @@ build_backend() {
   local jar
   jar="$(find_backend_jar)"
   [[ -n "$jar" ]] || fail "编译完成但未找到 jar 包"
+  record_build_sha
   ok "编译完成: ${jar}"
 }
 
@@ -416,6 +577,7 @@ stop_backend() {
 start_backend() {
   resolve_java17
   load_env
+  ensure_server_config
 
   local pid_file="$PID_DIR/backend.pid"
   local log_file="$LOG_DIR/backend.log"
@@ -434,11 +596,22 @@ start_backend() {
   jar="$(find_backend_jar)"
   info "启动 Spring Boot 后端..."
   info "日志: ${log_file}"
+  info "服务器配置: ${SERVER_CONFIG}（已关闭 MCP 等待）"
+
+  local -a java_cmd=(java)
+  # shellcheck disable=SC2206
+  java_cmd+=($JAVA_MEM_OPTS)
+  if [[ -n "${JAVA_OPTS:-}" ]]; then
+    # shellcheck disable=SC2206
+    java_cmd+=($JAVA_OPTS)
+  fi
+
+  export SPRING_CONFIG_ADDITIONAL_LOCATION="file:${SERVER_CONFIG}"
 
   (
     cd "$BACKEND/bootstrap"
     if [[ -n "$jar" ]]; then
-      nohup java -jar "$jar" >>"$log_file" 2>&1 &
+      nohup "${java_cmd[@]}" -jar "$jar" >>"$log_file" 2>&1 &
     else
       warn "未找到 jar，使用 mvnw spring-boot:run（建议先执行 ./server.sh build）"
       nohup ../mvnw -q spring-boot:run -DskipTests >>"$log_file" 2>&1 &
@@ -634,14 +807,17 @@ restart_services() {
   for arg in "$@"; do
     case "$arg" in
       --build) do_build=true ;;
+      --pull) AUTO_PULL_BUILD=true ;;
+      --skip-update-check) SKIP_UPDATE_CHECK=true ;;
       --infra|--nginx) extra_args+=("$arg") ;;
+      *) extra_args+=("$arg") ;;
     esac
   done
 
   case "$target" in
     all)
       stop_all "${extra_args[@]}"
-      [[ "$do_build" == "true" ]] && build_backend
+      maybe_prepare_backend "$do_build"
       start_infra
       start_backend
       nginx_cmd reload
@@ -649,7 +825,7 @@ restart_services() {
       ;;
     backend|be)
       stop_backend
-      [[ "$do_build" == "true" ]] && build_backend
+      maybe_prepare_backend "$do_build"
       start_backend
       ok "后端已重启"
       ;;
@@ -673,6 +849,8 @@ main() {
   for arg in "$@"; do
     case "$arg" in
       --build) do_build=true ;;
+      --pull) AUTO_PULL_BUILD=true ;;
+      --skip-update-check) SKIP_UPDATE_CHECK=true ;;
       --infra|--nginx) extra_args+=("$arg") ;;
       -h|--help) usage; exit 0 ;;
       *) extra_args+=("$arg") ;;
@@ -684,7 +862,7 @@ main() {
   case "$cmd" in
     all|start)
       start_infra
-      [[ "$do_build" == "true" ]] && build_backend
+      maybe_prepare_backend "$do_build"
       start_backend
       nginx_cmd reload
       print_ready
@@ -699,7 +877,7 @@ main() {
       ;;
     backend|be)
       start_infra
-      [[ "$do_build" == "true" ]] && build_backend
+      maybe_prepare_backend "$do_build"
       start_backend
       print_ready
       ;;

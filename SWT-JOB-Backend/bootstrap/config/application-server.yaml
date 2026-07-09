@@ -1,0 +1,6 @@
+# 服务器部署覆盖配置（由 server.sh 自动加载）
+# 生产环境默认关闭 MCP，避免启动时连接 localhost:9099 卡住
+
+rag:
+  mcp:
+    servers: []

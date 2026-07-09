@@ -41,7 +41,7 @@ NC='\033[0m'
 
 info()  { echo -e "${BLUE}[server]${NC} $*"; }
 ok()    { echo -e "${GREEN}[server]${NC} $*"; }
-warn()  { echo -e "${YELLOW}[server]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[server]${NC} $*" >&2; }
 fail()  { echo -e "${RED}[server]${NC} $*" >&2; exit 1; }
 
 usage() {
@@ -308,19 +308,24 @@ start_infra_service() {
 }
 
 infra_services_to_start() {
-  local svc
+  local svc port
+  local -a to_start=()
   for svc in "${INFRA_SERVICES[@]}"; do
-    local port="${INFRA_PORTS[$svc]}"
+    port="${INFRA_PORTS[$svc]}"
     if port_open "$port"; then
       warn "端口 ${port} 已占用，跳过 ${svc}"
     else
-      echo "$svc"
+      to_start+=("$svc")
     fi
   done
+  if [[ ${#to_start[@]} -gt 0 ]]; then
+    printf '%s\n' "${to_start[@]}"
+  fi
 }
 
 start_infra() {
   ensure_container_runtime
+  info "检查基础设施端口..."
   local to_start=()
   while IFS= read -r svc; do
     [[ -n "$svc" ]] && to_start+=("$svc")

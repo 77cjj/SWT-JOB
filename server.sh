@@ -41,7 +41,7 @@ NC='\033[0m'
 
 info()  { echo -e "${BLUE}[server]${NC} $*"; }
 ok()    { echo -e "${GREEN}[server]${NC} $*"; }
-warn()  { echo -e "${YELLOW}[server]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[server]${NC} $*" >&2; }
 fail()  { echo -e "${RED}[server]${NC} $*" >&2; exit 1; }
 
 usage() {
@@ -55,7 +55,7 @@ SWT-JOB 服务器一键启停脚本
   all         启动基础设施 + 后端 + Nginx 重载（默认）
   infra       仅启动缺失的基础设施（Podman/Docker）
   rustfs      仅启动 RustFS（创建知识库必需）
-  backend     启动基础设施 + Spring Boot 后端
+  backend     检查基础设施 + 启动 Spring Boot 后端
   nginx       Nginx 子命令：start | reload | stop | install-conf
   build       编译后端 jar 包
   stop        停止后端（默认保留 Docker / Nginx）
@@ -81,8 +81,9 @@ SWT-JOB 服务器一键启停脚本
   CONTAINER_RT=podman|docker  强制指定容器运行时（默认自动检测）
 
 示例:
-  ./server.sh                    # 全量启动
-  ./server.sh backend            # 只启后端（假设 Docker 已在跑）
+  ./server.sh                    # 检查中间件 + 启动后端 + 重载 Nginx
+  ./server.sh infra              # 只检查/补启中间件
+  ./server.sh backend            # 检查中间件 + 只启后端
   ./server.sh nginx install-conf # 安装 Nginx 配置模板
   ./server.sh nginx reload       # 校验并重载 Nginx
   ./server.sh stop               # 只停后端
@@ -308,19 +309,24 @@ start_infra_service() {
 }
 
 infra_services_to_start() {
-  local svc
+  local svc port
+  local -a to_start=()
   for svc in "${INFRA_SERVICES[@]}"; do
-    local port="${INFRA_PORTS[$svc]}"
+    port="${INFRA_PORTS[$svc]}"
     if port_open "$port"; then
       warn "端口 ${port} 已占用，跳过 ${svc}"
     else
-      echo "$svc"
+      to_start+=("$svc")
     fi
   done
+  if [[ ${#to_start[@]} -gt 0 ]]; then
+    printf '%s\n' "${to_start[@]}"
+  fi
 }
 
 start_infra() {
   ensure_container_runtime
+  info "检查基础设施端口..."
   local to_start=()
   while IFS= read -r svc; do
     [[ -n "$svc" ]] && to_start+=("$svc")

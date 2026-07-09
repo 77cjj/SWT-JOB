@@ -2,7 +2,7 @@
 # SWT-JOB 服务器一键启停脚本（Podman/Docker 基础设施 + 后端 + Nginx）
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND="$ROOT/SWT-JOB-Backend"
 STATE_DIR="$ROOT/.server"
 PID_DIR="$STATE_DIR/pids"

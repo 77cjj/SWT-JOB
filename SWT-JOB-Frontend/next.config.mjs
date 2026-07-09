@@ -36,18 +36,6 @@ const nextConfig = {
       },
     ]
   },
-  async rewrites() {
-    const backendUrl =
-      process.env.RAGENT_BACKEND_URL?.replace(/\/$/, '') ||
-      'http://120.55.91.39/api/ragent'
-
-    return [
-      {
-        source: '/api/ragent/:path*',
-        destination: `${backendUrl}/:path*`,
-      },
-    ]
-  },
 }
 
 export default nextConfig

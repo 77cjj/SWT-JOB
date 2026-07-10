@@ -368,19 +368,27 @@ export const referralPrograms: ReferralProgram[] = [
         validUntil: null,
         reward: { zh: '$325', en: '$325' },
         summary: {
-          zh: '90 天内 DD $1,000，奖励约 30 天内到账。24 岁以下免月费。',
-          en: '$1,000 DD within 90 days; bonus ~30 days. Fee waiver under 24.',
+          zh: '90 天内 DD $1,000，奖励约 30 天内到账。24 岁以下免月费。官方活动页可查阅条款，但须线下开户。',
+          en: '$1,000 DD within 90 days; bonus ~30 days. Fee waiver under 24. Official offer page for terms; in-branch opening required.',
         },
         requirements: {
-          zh: ['线下开户', 'DS-2019 + 护照 + SSN'],
-          en: ['In-branch', 'DS-2019 + passport + SSN'],
+          zh: [
+            '线下开户（官方活动页线上无法办理）',
+            'DS-2019 + 护照 + SSN',
+            '90 天内 DD $1,000',
+          ],
+          en: [
+            'In-branch only (online opening not available on official offer page)',
+            'DS-2019 + passport + SSN',
+            '$1,000 DD within 90 days',
+          ],
         },
-        officialUrl: 'https://www.wellsfargo.com/checking/offer/',
+        officialUrl: 'https://accountoffers.wellsfargo.com/checkingoffer/',
         requiresInPerson: true,
-        tags: { zh: ['线下'], en: ['In-person'] },
+        tags: { zh: ['线下', '亲测'], en: ['In-person', 'Community-tested'] },
         changeNote: {
-          zh: '2026 春季重新开放 $325 档（上一期已于 3 月结束）。',
-          en: 'Spring 2026 $325 offer reopened after March gap.',
+          zh: '2026 春季重新开放 $325 档；社区亲测 BofA ACH + Payroll 约 4 天到账。',
+          en: 'Spring 2026 $325 offer reopened; community report: BofA ACH + Payroll, bonus in ~4 days.',
         },
       },
       {
@@ -396,7 +404,7 @@ export const referralPrograms: ReferralProgram[] = [
           zh: ['90 天内 DD $1,000', '线下开户'],
           en: ['$1,000 DD in 90 days', 'In-branch'],
         },
-        officialUrl: 'https://www.wellsfargo.com/checking/offer/',
+        officialUrl: 'https://accountoffers.wellsfargo.com/checkingoffer/',
         requiresInPerson: true,
       },
     ],
@@ -451,6 +459,50 @@ export const referralPrograms: ReferralProgram[] = [
     ],
   },
   {
+    id: 'weee',
+    category: 'other',
+    offerKind: 'refer',
+    brandName: { zh: 'Weee!', en: 'Weee!' },
+    editions: [
+      {
+        id: 'weee-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '新人共减 $20；邀请人最高 $20 积分', en: 'New user $20 off; referrer up to $20 credit' },
+        summary: {
+          zh: '华人亚超生鲜配送。新人前两单各减 $10；被邀请人 14 天 / 30 天内各完成一单 >$10 配送，邀请人各得 $10 积分。细则见饮食指南。',
+          en: 'Asian grocery delivery. New users get $10 off first two orders; referrer earns $10 credit after invitee’s qualifying orders within 14 and 30 days. See food guide for full terms.',
+        },
+        requirements: {
+          zh: [
+            '被邀请人须为新用户，且通过专属链接注册',
+            '新人券：前两单各减 $10（共 $20）',
+            '邀请人：被邀请人 14 天内首单配送 >$10 → $10 积分',
+            '邀请人：被邀请人 30 天内再次配送 >$10 → 再 $10 积分',
+            '同一配送地址不可有两个以上被邀请账号',
+            '每账户最多 100 个成功推荐',
+          ],
+          en: [
+            'Invitee must be a new user who registers via referral link',
+            'New user: $10 off each of first two orders ($20 total)',
+            'Referrer: $10 credit after invitee’s first $10+ delivery within 14 days',
+            'Referrer: another $10 credit after second $10+ delivery within 30 days',
+            'No more than two referred accounts per delivery address',
+            'Max 100 successful referrals per account',
+          ],
+        },
+        referralUrl:
+          'https://www.sayweee.com/zh/account/referral/landing?t=1&referral_id=17824662&lang=zh&utm_source=copyLink',
+        officialUrl: 'https://www.sayweee.com/zh/help/article/referral-program-terms-and-conditions',
+        tags: { zh: ['亚超', '生鲜配送', '新人友好'], en: ['Asian grocery', 'Delivery', 'New-user friendly'] },
+        changeNote: {
+          zh: '新增 Weee! 邀请：新人 $20 券 + 邀请人最高 $20 积分；完整细则见 /docs/living/food。',
+          en: 'Added Weee! referral: $20 new-user coupons + up to $20 referrer credit; full terms in /docs/living/food.',
+        },
+      },
+    ],
+  },
+  {
     id: 'total-wireless',
     category: 'mobile',
     offerKind: 'promo',
@@ -493,6 +545,88 @@ export const referralPrograms: ReferralProgram[] = [
         changeNote: {
           zh: '2025 年套餐涨至 $50/月。',
           en: '2025 plan increased to $50/mo.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'utest-wearable-150',
+    category: 'other',
+    offerKind: 'refer',
+    brandName: { zh: 'Utest 智能手环测试 ①', en: 'Utest Wearable Band Study 1' },
+    editions: [
+      {
+        id: 'utest-wearable-150-2026',
+        validFrom: '2026-07-07',
+        validUntil: null,
+        reward: { zh: '$150', en: '$150' },
+        summary: {
+          zh: '佩戴智能手环完成指定动作，约 3 小时；无需口语能力，操作较简单。建议先用注册链接创建 Utest 账号并拿到 Utest ID。',
+          en: 'Wear a smart band and complete assigned movements for about 3 hours. Minimal speaking required. Create a Utest account first to get a Utest ID.',
+        },
+        requirements: {
+          zh: [
+            '先注册 Utest 账号，完成后获得 Utest ID',
+            '建议提前 10-15 天提交申请',
+            '申请来源建议填写“朋友介绍”',
+            'Refer 信息可联系 Email: jiajunchi@ucsb.edu 或微信: cjj20040608',
+            '奖励通常以 VISA 电子卡发放，约 48 小时到账',
+          ],
+          en: [
+            'Create a Utest account first and get a Utest ID',
+            'Apply about 10-15 days in advance',
+            'Use "friend referral" as the source when asked',
+            'For referral details, contact Email: jiajunchi@ucsb.edu or WeChat: cjj20040608',
+            'Reward is usually paid as a Visa e-gift card in about 48 hours',
+          ],
+        },
+        referralUrl: 'https://www.utest.com/ref2494414',
+        officialUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSc7LKEUSmHQVlXFj-tjbiIjl9GmhiCigclgH5-Fx1Q17Ec_xw/viewform',
+        tags: { zh: ['纽约', '约 3 小时', '无需口语'], en: ['New York', '~3 hours', 'Low speaking'] },
+        changeNote: {
+          zh: '新增 Utest 智能手环测试，注册链接用于先获取 Utest ID，报名表用于提交测试申请。',
+          en: 'Added Utest wearable band study: sign up first for a Utest ID, then submit the study form.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'wearable-study-225',
+    category: 'other',
+    offerKind: 'promo',
+    brandName: { zh: '手环测试 ②', en: 'Wearable Band Study 2' },
+    editions: [
+      {
+        id: 'wearable-study-225-2026',
+        validFrom: '2026-07-07',
+        validUntil: null,
+        reward: { zh: '$225', en: '$225' },
+        summary: {
+          zh: '智能手环相关线下测试，约 3 小时；报名后可能需要用美国电话确认预约。',
+          en: 'In-person wearable band study, about 3 hours. A US phone verification call may be required after applying.',
+        },
+        requirements: {
+          zh: [
+            '建议提前 10-15 天提交申请',
+            '申请来源建议填写“朋友介绍”',
+            'Refer 信息可联系 Email: jiajunchi@ucsb.edu 或微信: cjj20040608',
+            '“是否参加过其他手环测试”即使报过 $150 项目也选 No，因为不是同一家公司',
+            '留意陌生来电；未接到确认电话可主动联系项目方确认预约',
+          ],
+          en: [
+            'Apply about 10-15 days in advance',
+            'Use "friend referral" as the source when asked',
+            'For referral details, contact Email: jiajunchi@ucsb.edu or WeChat: cjj20040608',
+            'For prior wearable-study participation, choose No even if you applied for the $150 study because this is a different company',
+            'Watch for unknown calls; contact the study team if the confirmation call does not arrive',
+          ],
+        },
+        officialUrl: 'https://schlesinger.focusvision.com/survey/selfserve/5c0/240600#?',
+        requiresInPerson: true,
+        tags: { zh: ['纽约', '约 3 小时', '需电话确认'], en: ['New York', '~3 hours', 'Phone confirmation'] },
+        changeNote: {
+          zh: '新增 $225 手环测试，报名后重点关注电话确认环节。',
+          en: 'Added the $225 wearable band study; phone confirmation is the key follow-up step.',
         },
       },
     ],

@@ -17,6 +17,8 @@ NGINX_CONF="${NGINX_CONF:-/etc/nginx/conf.d/swt-job.conf}"
 USE_SUDO="${USE_SUDO:-auto}"
 CONTAINER_RT="${CONTAINER_RT:-}"
 JAVA_MEM_OPTS="${JAVA_MEM_OPTS:--Xms256m -Xmx512m}"
+LOW_MEM_MODE="${LOW_MEM_MODE:-auto}"
+SKIP_ROCKETMQ="${SKIP_ROCKETMQ:-auto}"
 SKIP_UPDATE_CHECK=false
 AUTO_PULL_BUILD=false
 FORCE_BACKEND=false
@@ -60,7 +62,9 @@ SWT-JOB 服务器一键启停脚本
 
 命令:
   all         启动基础设施 + 后端 + Nginx 重载（默认）
-  fix         一键修复：写配置、修 Broker、强杀卡死后端、重启并健康检查
+  fix         一键修复：写配置、缩容器、停 MQ、重启后端并健康检查
+  light       2G 小内存模式：限制容器内存 + 停 RocketMQ + 给后端腾空间
+  swap        创建并启用 2G swap（小内存机器强烈建议）
   infra       仅启动缺失的基础设施（Podman/Docker）
   rustfs      仅启动 RustFS（创建知识库必需）
   broker      强制重建 RocketMQ Broker（2G 机器稳定配置）
@@ -92,7 +96,9 @@ SWT-JOB 服务器一键启停脚本
   SERVER_CONFIG        服务器 Spring 覆盖配置（默认 bootstrap/config/application.yaml）
   NGINX_CONF           Nginx 站点配置路径
   BACKEND_PORT         后端端口（默认 9090）
-  JAVA_MEM_OPTS        JVM 内存参数（默认 -Xms256m -Xmx512m）
+  JAVA_MEM_OPTS        JVM 内存（2G 机器自动降为 -Xms128m -Xmx384m）
+  LOW_MEM_MODE         auto|true|false  小内存优化（默认 auto：<3GB 自动开启）
+  SKIP_ROCKETMQ        auto|true|false  是否跳过 RocketMQ（默认 auto：小内存时停掉）
   USE_SUDO=yes|no|auto 操作 Nginx 时是否 sudo（默认 auto）
   CONTAINER_RT=podman|docker  强制指定容器运行时（默认自动检测）
 
@@ -102,7 +108,9 @@ SWT-JOB 服务器一键启停脚本
   - 等待「端口 + HTTP 可达」才算启动成功
 
 示例:
-  ./server.sh fix                # 推荐：一键修好 502 / 启动卡住
+  ./server.sh fix                # 推荐：一键修好 502 / OOM
+  ./server.sh light              # 2G 机器：缩容器 + 停 MQ + 重启后端
+  ./server.sh swap               # 加 2G swap，防 Java 被 OOM kill
   ./server.sh doctor             # 只诊断，不改动
   ./server.sh                    # 检查中间件 + 启动后端 + 重载 Nginx
   ./server.sh broker             # 重建稳定的 RocketMQ Broker
@@ -120,6 +128,109 @@ EOF
 
 ensure_dirs() {
   mkdir -p "$PID_DIR" "$LOG_DIR"
+}
+
+total_mem_mb() {
+  awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 4096
+}
+
+detect_low_mem_mode() {
+  case "${LOW_MEM_MODE}" in
+    true|1|yes) return 0 ;;
+    false|0|no) return 1 ;;
+  esac
+  local total
+  total="$(total_mem_mb)"
+  [[ "$total" -lt 3072 ]]
+}
+
+should_skip_rocketmq() {
+  case "${SKIP_ROCKETMQ}" in
+    true|1|yes) return 0 ;;
+    false|0|no) return 1 ;;
+  esac
+  detect_low_mem_mode
+}
+
+apply_low_mem_defaults() {
+  if detect_low_mem_mode; then
+    # 用户若在 .env 里自定义了 JAVA_MEM_OPTS，则尊重用户设置
+    if [[ "${JAVA_MEM_OPTS}" == "-Xms256m -Xmx512m" ]]; then
+      JAVA_MEM_OPTS="-Xms128m -Xmx384m"
+    fi
+    info "小内存模式: 总内存 $(total_mem_mb)MB，后端 JVM=${JAVA_MEM_OPTS}"
+  fi
+}
+
+ct_mem_limit_args() {
+  local svc="$1"
+  detect_low_mem_mode || return 0
+  case "$svc" in
+    postgres) echo --memory=280m --memory-swap=280m ;;
+    redis) echo --memory=96m --memory-swap=96m ;;
+    rmqnamesrv) echo --memory=180m --memory-swap=180m ;;
+    rmqbroker) echo --memory=200m --memory-swap=200m ;;
+    rustfs) echo --memory=128m --memory-swap=128m ;;
+  esac
+}
+
+infra_services_list() {
+  local svc
+  for svc in "${INFRA_SERVICES[@]}"; do
+    if should_skip_rocketmq && [[ "$svc" == rmqnamesrv || "$svc" == rmqbroker ]]; then
+      continue
+    fi
+    echo "$svc"
+  done
+}
+
+stop_rocketmq_containers() {
+  ensure_container_runtime
+  local name
+  for name in rmqbroker rmqnamesrv; do
+    if ct_exists "$name"; then
+      info "停止 ${name}（小内存模式为后端腾内存）..."
+      $CT_CMD stop "$name" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
+ensure_swap() {
+  if swapon --show 2>/dev/null | grep -q .; then
+    ok "Swap 已启用"
+    swapon --show 2>/dev/null || true
+    return 0
+  fi
+  if [[ -f /swapfile ]]; then
+    maybe_sudo swapon /swapfile && ok "已启用 /swapfile" && return 0
+  fi
+  detect_low_mem_mode || return 0
+  warn "未检测到 swap。2G 机器上 Java 启动高峰容易被 OOM kill。"
+  warn "可执行: ./server.sh swap"
+  return 1
+}
+
+setup_swap() {
+  if swapon --show 2>/dev/null | grep -q .; then
+    ok "Swap 已存在"
+    swapon --show
+    return 0
+  fi
+  if [[ -f /swapfile ]]; then
+    maybe_sudo swapon /swapfile
+    ok "已启用已有 /swapfile"
+    return 0
+  fi
+  info "创建 2G swap 文件 /swapfile ..."
+  maybe_sudo fallocate -l 2G /swapfile || maybe_sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+  maybe_sudo chmod 600 /swapfile
+  maybe_sudo mkswap /swapfile
+  maybe_sudo swapon /swapfile
+  if ! grep -q '^/swapfile ' /etc/fstab 2>/dev/null; then
+    echo '/swapfile none swap sw 0 0' | maybe_sudo tee -a /etc/fstab >/dev/null || true
+  fi
+  ok "Swap 已创建并启用"
+  free -h
 }
 
 maybe_sudo() {
@@ -271,31 +382,57 @@ ct_start_postgres() {
   local schema="$BACKEND/resources/database/schema_pg.sql"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
   [[ -f "$schema" ]] || fail "未找到数据库初始化脚本: $schema"
-  $CT_CMD run -d --name "$name" --restart unless-stopped \
-    -p 127.0.0.1:5432:5432 \
-    -e POSTGRES_USER=postgres \
-    -e POSTGRES_PASSWORD=postgres \
-    -e POSTGRES_DB=ragent \
-    -v ragent-pg-data:/var/lib/postgresql/data \
-    -v "$schema:/docker-entrypoint-initdb.d/01-schema.sql:ro" \
-    docker.io/pgvector/pgvector:pg16
+  local -a mem_limit=()
+  if detect_low_mem_mode; then
+    mem_limit=(--memory=280m --memory-swap=280m)
+  fi
+  if detect_low_mem_mode; then
+    $CT_CMD run -d --name "$name" --restart unless-stopped "${mem_limit[@]}" \
+      -p 127.0.0.1:5432:5432 \
+      -e POSTGRES_USER=postgres \
+      -e POSTGRES_PASSWORD=postgres \
+      -e POSTGRES_DB=ragent \
+      -v ragent-pg-data:/var/lib/postgresql/data \
+      -v "$schema:/docker-entrypoint-initdb.d/01-schema.sql:ro" \
+      docker.io/pgvector/pgvector:pg16 \
+      postgres -c shared_buffers=64MB -c max_connections=40 -c work_mem=4MB
+  else
+    $CT_CMD run -d --name "$name" --restart unless-stopped "${mem_limit[@]}" \
+      -p 127.0.0.1:5432:5432 \
+      -e POSTGRES_USER=postgres \
+      -e POSTGRES_PASSWORD=postgres \
+      -e POSTGRES_DB=ragent \
+      -v ragent-pg-data:/var/lib/postgresql/data \
+      -v "$schema:/docker-entrypoint-initdb.d/01-schema.sql:ro" \
+      docker.io/pgvector/pgvector:pg16
+  fi
 }
 
 ct_start_redis() {
   local name="${INFRA_CONTAINERS[redis]}"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
-  $CT_CMD run -d --name "$name" --restart unless-stopped \
+  local -a mem_limit=()
+  local -a redis_args=(redis-server --requirepass 123456)
+  if detect_low_mem_mode; then
+    mem_limit=(--memory=96m --memory-swap=96m)
+    redis_args+=(--maxmemory 48mb --maxmemory-policy allkeys-lru --save "")
+  fi
+  $CT_CMD run -d --name "$name" --restart unless-stopped "${mem_limit[@]}" \
     -p 127.0.0.1:6379:6379 \
     docker.io/library/redis:7 \
-    redis-server --requirepass 123456
+    "${redis_args[@]}"
 }
 
 ct_start_rmqnamesrv() {
   local name="${INFRA_CONTAINERS[rmqnamesrv]}"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
-  $CT_CMD run -d --name "$name" --restart unless-stopped \
+  local -a mem_limit=()
+  if detect_low_mem_mode; then
+    mem_limit=(--memory=180m --memory-swap=180m)
+  fi
+  $CT_CMD run -d --name "$name" --restart unless-stopped "${mem_limit[@]}" \
     -p 127.0.0.1:9876:9876 \
-    -e JAVA_OPT_EXT="-Xms128m -Xmx256m" \
+    -e JAVA_OPT_EXT="-Xms64m -Xmx128m" \
     docker.io/apache/rocketmq:5.2.0 \
     sh mqnamesrv
 }
@@ -303,6 +440,11 @@ ct_start_rmqnamesrv() {
 ct_start_rmqbroker() {
   local name="${INFRA_CONTAINERS[rmqbroker]}"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
+
+  local -a mem_limit=()
+  if detect_low_mem_mode; then
+    mem_limit=(--memory=200m --memory-swap=200m)
+  fi
 
   local broker_script='cat > /tmp/broker.conf << EOF
 brokerClusterName = DefaultCluster
@@ -320,9 +462,10 @@ exec sh mqbroker -n 127.0.0.1:9876 -c /tmp/broker.conf'
 
   # 优先 host 网络（NameServer 连通更稳）；失败则回退端口映射
   if $CT_CMD run -d --name "$name" --restart unless-stopped \
+    "${mem_limit[@]}" \
     --network host \
     -e NAMESRV_ADDR="127.0.0.1:9876" \
-    -e JAVA_OPT_EXT="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m" \
+    -e JAVA_OPT_EXT="-Xms64m -Xmx128m -XX:MaxMetaspaceSize=96m" \
     docker.io/apache/rocketmq:5.2.0 \
     sh -c "$broker_script" >/dev/null 2>&1; then
     ok "Broker 已用 host 网络启动"
@@ -332,10 +475,11 @@ exec sh mqbroker -n 127.0.0.1:9876 -c /tmp/broker.conf'
   warn "host 网络不可用，回退到端口映射模式"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
   $CT_CMD run -d --name "$name" --restart unless-stopped \
+    "${mem_limit[@]}" \
     -p 127.0.0.1:10909:10909 \
     -p 127.0.0.1:10911:10911 \
     -e NAMESRV_ADDR="127.0.0.1:9876" \
-    -e JAVA_OPT_EXT="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m" \
+    -e JAVA_OPT_EXT="-Xms64m -Xmx128m -XX:MaxMetaspaceSize=96m" \
     --add-host=host.containers.internal:host-gateway \
     docker.io/apache/rocketmq:5.2.0 \
     sh -c 'cat > /tmp/broker.conf << EOF
@@ -375,7 +519,11 @@ rebuild_rmqbroker() {
 ct_start_rustfs() {
   local name="${INFRA_CONTAINERS[rustfs]}"
   ct_exists "$name" && $CT_CMD rm -f "$name" >/dev/null 2>&1 || true
-  $CT_CMD run -d --name "$name" --restart unless-stopped \
+  local -a mem_limit=()
+  if detect_low_mem_mode; then
+    mem_limit=(--memory=128m --memory-swap=128m)
+  fi
+  $CT_CMD run -d --name "$name" --restart unless-stopped "${mem_limit[@]}" \
     -p 127.0.0.1:9000:9000 \
     -p 127.0.0.1:9001:9001 \
     -v ragent-rustfs-data:/data \
@@ -402,17 +550,58 @@ start_infra_service() {
 infra_services_to_start() {
   local svc port
   local -a to_start=()
-  for svc in "${INFRA_SERVICES[@]}"; do
+  while IFS= read -r svc; do
+    [[ -z "$svc" ]] && continue
     port="${INFRA_PORTS[$svc]}"
     if port_open "$port"; then
       warn "端口 ${port} 已占用，跳过 ${svc}"
     else
       to_start+=("$svc")
     fi
-  done
+  done < <(infra_services_list)
   if [[ ${#to_start[@]} -gt 0 ]]; then
     printf '%s\n' "${to_start[@]}"
   fi
+}
+
+recreate_light_infra() {
+  ensure_container_runtime
+  info "小内存模式：限额重建 postgres / redis / rustfs ..."
+  ct_start_postgres
+  wait_for_port 5432 "PostgreSQL" 90
+  ct_start_redis
+  wait_for_port 6379 "Redis" 30
+  ct_start_rustfs
+  wait_for_port 9000 "RustFS" 30
+  ok "核心容器已按限额重建"
+}
+
+run_light_mode() {
+  info "=== 小内存模式 (light) ==="
+  LOW_MEM_MODE=true
+  ensure_dirs
+  load_env
+  apply_low_mem_defaults
+  ensure_server_config
+  ensure_swap || true
+
+  stop_rocketmq_containers
+  recreate_light_infra
+
+  FORCE_BACKEND=true
+  kill_stale_backend
+  maybe_prepare_backend false
+  start_backend
+  nginx_cmd reload || true
+
+  echo ""
+  if backend_http_ok; then
+    ok "小内存模式完成：后端已稳定运行"
+    warn "RocketMQ 已停止以节省内存；文档异步分块暂不可用（登录/知识库/聊天正常）"
+  else
+    fail "后端仍未就绪，请执行: ./server.sh doctor"
+  fi
+  print_ready
 }
 
 start_infra() {
@@ -435,8 +624,13 @@ start_infra() {
 
   wait_for_port 5432 "PostgreSQL" 90
   wait_for_port 6379 "Redis" 30
-  wait_for_port 9876 "RocketMQ NameServer" 120
-  wait_for_port 10911 "RocketMQ Broker" 60 "" true || warn_if_broker_unstable
+  if should_skip_rocketmq; then
+    stop_rocketmq_containers
+    warn "小内存模式：已跳过 RocketMQ（为后端节省约 400MB 内存）"
+  else
+    wait_for_port 9876 "RocketMQ NameServer" 120
+    wait_for_port 10911 "RocketMQ Broker" 60 "" true || warn_if_broker_unstable
+  fi
   wait_for_port 9000 "RustFS" 30
   ok "基础设施检查完成"
 }
@@ -756,6 +950,7 @@ stop_backend() {
 start_backend() {
   resolve_java17
   load_env
+  apply_low_mem_defaults
   ensure_server_config
 
   local pid_file="$PID_DIR/backend.pid"
@@ -914,6 +1109,13 @@ show_status() {
   if [[ -n "$CT_RT_LABEL" ]]; then
     echo "  容器运行时: ${CT_RT_LABEL}"
   fi
+  if detect_low_mem_mode; then
+    echo -e "  ${YELLOW}●${NC} 小内存模式: 开启（总内存 $(total_mem_mb)MB）"
+    if should_skip_rocketmq; then
+      echo -e "  ${YELLOW}●${NC} RocketMQ: 已跳过（为后端腾内存）"
+    fi
+    echo "  后端 JVM: ${JAVA_MEM_OPTS}"
+  fi
   echo ""
 
   local svc
@@ -985,19 +1187,31 @@ run_doctor() {
   fi
   echo ""
 
-  echo "5) 内存"
+  echo "5) 内存与容器占用"
   free -h 2>/dev/null || true
+  if [[ -n "$CT_CMD" ]]; then
+    $CT_CMD stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}' 2>/dev/null \
+      | grep -E 'NAME|ragent-|rmq' || true
+  fi
+  echo ""
+  echo "5b) 是否被 OOM kill"
+  if dmesg 2>/dev/null | grep -iE 'killed process|out of memory|oom' | tail -n 5 | grep -q .; then
+    dmesg 2>/dev/null | grep -iE 'killed process|out of memory|oom' | tail -n 5 || true
+    warn "检测到 OOM kill！2G 机器请执行: ./server.sh light && ./server.sh swap"
+  else
+    echo "  未发现近期 OOM 记录（或无权读取 dmesg）"
+  fi
   echo ""
 
   echo "6) 结论"
   if backend_http_ok && nginx_proxy_ok; then
     ok "本机链路正常。若浏览器仍 502，多半是 Vercel 缓存或旧部署，等 1 分钟再试。"
   elif backend_http_ok && ! nginx_proxy_ok; then
-    warn "后端已起来，但 Nginx 代理失败 → 执行: ./server.sh nginx reload"
+    warn "后端已起来，但 Nginx 代理失败 → 执行: ./server.sh nginx install-conf && ./server.sh nginx reload"
   elif port_open "$BACKEND_PORT" && ! backend_http_ok; then
-    warn "端口在听但 HTTP 不通 → 后端卡在启动中。执行: ./server.sh fix"
+    warn "端口在听但 HTTP 不通 → 后端卡在启动中。执行: ./server.sh light"
   else
-    warn "后端未就绪 → 执行: ./server.sh fix"
+    warn "后端未就绪（常被 OOM kill）→ 执行: ./server.sh light"
   fi
   echo ""
 }
@@ -1006,16 +1220,20 @@ fix_all() {
   info "=== 一键修复开始 ==="
   ensure_dirs
   load_env
+  apply_low_mem_defaults
   ensure_server_config
   FORCE_BACKEND=true
+  ensure_swap || true
 
-  # 基础设施：缺啥补啥
-  start_infra || true
+  if detect_low_mem_mode; then
+    warn "检测到小内存机器（$(total_mem_mb)MB），使用 light 策略：停 MQ + 限额重建容器"
+    stop_rocketmq_containers
+    recreate_light_infra
+  else
+    start_infra || true
+    rebuild_rmqbroker || true
+  fi
 
-  # Broker 在 2G 机器上常 OOM 反复重启：fix 时一律重建低内存版本
-  rebuild_rmqbroker || true
-
-  # 强杀卡死后端并重启
   kill_stale_backend
   maybe_prepare_backend false
   start_backend
@@ -1025,7 +1243,9 @@ fix_all() {
   if backend_http_ok && nginx_proxy_ok; then
     ok "修复成功：本机登录接口已通，Vercel 502 应随之消失"
   elif backend_http_ok; then
-    ok "后端已通，但 Nginx 仍异常，请检查 /etc/nginx/conf.d/ 里 upstream 是否指向 127.0.0.1:${BACKEND_PORT}"
+    ok "后端已通，但 Nginx 仍异常 → 执行: ./server.sh nginx install-conf && ./server.sh nginx reload"
+  elif detect_low_mem_mode; then
+    fail "修复后后端仍不可用。请依次执行: ./server.sh swap && ./server.sh light"
   else
     fail "修复后后端仍不可用，请把 ./server.sh doctor 输出贴出来"
   fi
@@ -1162,6 +1382,12 @@ main() {
       ;;
     fix|repair)
       fix_all
+      ;;
+    light|lowmem)
+      run_light_mode
+      ;;
+    swap)
+      setup_swap
       ;;
     doctor|diag|diagnose)
       run_doctor

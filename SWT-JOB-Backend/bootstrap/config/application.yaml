@@ -9,11 +9,9 @@ rocketmq:
   consumer:
     listeners:
       knowledge-document-chunk_cg:
-        knowledge-document-chunk_topic:
-          enabled: false
+        knowledge-document-chunk_topic: false
       message-feedback_cg:
-        message-feedback_topic:
-          enabled: false
+        message-feedback_topic: false
 
 logging:
   level:

@@ -500,6 +500,7 @@ export const zh = {
   support: {
     title: '需要帮助？',
     open: '打开客服窗口',
+    close: '关闭客服窗口',
     tabAi: '智能问答',
     tabHuman: '联系站长',
     aiEmpty: '可问羊毛、开户、SWT 选岗等问题；复杂情况请切到「联系站长」。',

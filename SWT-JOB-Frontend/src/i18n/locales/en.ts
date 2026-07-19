@@ -500,6 +500,7 @@ export const en = {
   support: {
     title: 'Need help?',
     open: 'Open support chat',
+    close: 'Close support chat',
     tabAi: 'AI Q&A',
     tabHuman: 'Contact owner',
     aiEmpty: 'Ask about deals, bank bonuses, SWT job picks—switch to Contact for complex cases.',

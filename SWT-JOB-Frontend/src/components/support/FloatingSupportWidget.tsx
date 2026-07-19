@@ -180,6 +180,9 @@ export default function FloatingSupportWidget() {
         right: { xs: 16, sm: 20 },
         bottom: isMobile ? MOBILE_BOTTOM_NAV_OFFSET : 20,
         zIndex: 1400,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
       }}
     >
       {open ? (
@@ -201,7 +204,6 @@ export default function FloatingSupportWidget() {
               py: 1,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
               borderBottom: 1,
               borderColor: 'divider',
               bgcolor: 'primary.main',
@@ -211,9 +213,6 @@ export default function FloatingSupportWidget() {
             <Typography variant="subtitle2" fontWeight={700}>
               {t('support.title')}
             </Typography>
-            <IconButton size="small" onClick={() => setOpen(false)} sx={{ color: 'inherit' }}>
-              <Close fontSize="small" />
-            </IconButton>
           </Box>
 
           <Tabs
@@ -328,7 +327,12 @@ export default function FloatingSupportWidget() {
         </Paper>
       ) : null}
 
-      <Fab color="primary" aria-label={t('support.open')} onClick={() => setOpen((v) => !v)}>
+      <Fab
+        color="primary"
+        aria-label={open ? t('support.close') : t('support.open')}
+        onClick={() => setOpen((v) => !v)}
+        sx={{ flexShrink: 0 }}
+      >
         {open ? <Close /> : <ChatBubbleOutline />}
       </Fab>
     </Box>

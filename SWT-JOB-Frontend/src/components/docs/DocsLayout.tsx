@@ -54,6 +54,11 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
   );
   const { prev, next } = getAdjacentDocPages(navigation, page.fullSlug);
   const updatedLabel = formatUpdatedAt(page.updatedAt);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [page.fullSlug]);
 
   useEffect(() => {
     if (!isRouteLoading) return;
@@ -75,8 +80,35 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
     <div className="docs-app docs-scrollbar">
       <DocsSearchDialog navigation={navigation} />
       <div className="docs-shell">
-        <aside className="docs-sidebar docs-scrollbar">
-          <DocsSidebarNav navigation={navigation} page={page} />
+        <aside
+          className={`docs-sidebar docs-scrollbar${isMobile ? " docs-sidebar--mobile-collapsible" : ""}`}
+          data-open={isMobile ? mobileNavOpen : true}
+        >
+          {isMobile ? (
+            <>
+              <button
+                type="button"
+                className="docs-sidebar-mobile-toggle"
+                aria-expanded={mobileNavOpen}
+                onClick={() => setMobileNavOpen((open) => !open)}
+              >
+                <span className="docs-sidebar-mobile-toggle-label">文档目录</span>
+                <span className="docs-sidebar-mobile-toggle-current">
+                  {activeSection?.title ?? toChineseTitle(page.title) ?? "SWT 文档"}
+                </span>
+                <span
+                  className="docs-sidebar-mobile-toggle-chevron"
+                  data-open={mobileNavOpen}
+                  aria-hidden
+                />
+              </button>
+              <div className="docs-sidebar-mobile-panel" data-open={mobileNavOpen}>
+                <DocsSidebarNav navigation={navigation} page={page} />
+              </div>
+            </>
+          ) : (
+            <DocsSidebarNav navigation={navigation} page={page} />
+          )}
         </aside>
         <main
           ref={setMainRef}

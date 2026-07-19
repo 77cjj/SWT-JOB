@@ -6,6 +6,7 @@ import { Box, Button, Fab, Paper, Tooltip, Typography } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useAuthStore } from '@/stores/authStore';
 import useDevice from '../../hooks/useDevice';
+import { MOBILE_BOTTOM_NAV_OFFSET, MOBILE_ONBOARDING_FAB_OFFSET } from '../../lib/mobileLayout';
 import {
   getStepsForRoute,
   isOnboardingDone,
@@ -60,8 +61,8 @@ function OnboardingHelpFab({
 
   const bottomOffset = isMobile
     ? supportVisible
-      ? 132
-      : 76
+      ? MOBILE_ONBOARDING_FAB_OFFSET
+      : MOBILE_BOTTOM_NAV_OFFSET
     : supportVisible
       ? 92
       : 20;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Search } from "@mui/icons-material";
 
 import type { DocNavSection, DocPageData, DocsNavigation } from "../../lib/docs/types";
@@ -20,35 +20,7 @@ export function DocsSidebarNav({
   navigation: DocsNavigation;
   page: DocPageData;
 }) {
-  const [keyword, setKeyword] = useState("");
-  const normalizedKeyword = keyword.trim().toLowerCase();
   const studioHref = `${SANITY_STUDIO_BASE_PATH || "/studio"}/structure`;
-
-  const filtered = useMemo(() => {
-    if (!normalizedKeyword) {
-      return {
-        home: navigation.home,
-        sections: navigation.sections,
-      };
-    }
-
-    const home = navigation.home
-      ? toChineseTitle(navigation.home.title).toLowerCase().includes(normalizedKeyword)
-        ? navigation.home
-        : null
-      : null;
-
-    const sections = navigation.sections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) =>
-          toChineseTitle(item.title).toLowerCase().includes(normalizedKeyword),
-        ),
-      }))
-      .filter((section) => section.items.length > 0);
-
-    return { home, sections };
-  }, [navigation, normalizedKeyword]);
 
   return (
     <div className="docs-sidebar-inner">
@@ -63,37 +35,26 @@ export function DocsSidebarNav({
           <span>搜索文档…</span>
           <kbd className="docs-sidebar-kbd">⌘K</kbd>
         </button>
-        <input
-          type="search"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="筛选当前目录…"
-          className="docs-sidebar-search docs-sidebar-filter"
-          aria-label="筛选侧栏文档"
-        />
       </div>
-      {filtered.home ? (
+      {navigation.home ? (
         <Link
-          href={filtered.home.href}
+          href={navigation.home.href}
           className={`docs-nav-link ${page.fullSlug === "" ? "is-active" : ""}`}
         >
-          {toChineseTitle(filtered.home.title)}
+          {toChineseTitle(navigation.home.title)}
         </Link>
       ) : null}
-      {filtered.sections.map((section) => {
+      {navigation.sections.map((section) => {
         const activeHere = sectionHasActivePage(section, page);
         return (
           <CollapsibleSection
             key={`${section.key}-${activeHere ? "1" : "0"}`}
             section={section}
             page={page}
-            defaultOpen={normalizedKeyword ? true : activeHere}
+            defaultOpen={activeHere}
           />
         );
       })}
-      {normalizedKeyword && !filtered.home && filtered.sections.length === 0 ? (
-        <p className="docs-nav-empty">未找到匹配文档</p>
-      ) : null}
       <div className="docs-sidebar-footer">
         <a
           href={studioHref}

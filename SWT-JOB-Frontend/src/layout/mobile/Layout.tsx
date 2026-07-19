@@ -121,7 +121,7 @@ export default function MobileLayout({ children, mainClassName }: MobileLayoutPr
         </div>
       </header>
       <main
-        className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-20', mainClassName)}
+        className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]', mainClassName)}
       >
         {children}
       </main>

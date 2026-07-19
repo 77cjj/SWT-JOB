@@ -30,6 +30,7 @@ import { storage } from '@/utils/storage';
 import { useAuthStore } from '@/stores/authStore';
 import { useI18n } from '../../context/I18nContext';
 import useDevice from '../../hooks/useDevice';
+import { MOBILE_BOTTOM_NAV_OFFSET } from '../../lib/mobileLayout';
 import type { MessageDeltaPayload } from '@/types';
 
 type PanelTab = 'ai' | 'human';
@@ -177,7 +178,7 @@ export default function FloatingSupportWidget() {
       sx={{
         position: 'fixed',
         right: { xs: 16, sm: 20 },
-        bottom: isMobile ? 76 : 20,
+        bottom: isMobile ? MOBILE_BOTTOM_NAV_OFFSET : 20,
         zIndex: 1400,
       }}
     >

@@ -299,7 +299,7 @@ export function WelcomeScreen() {
             {[
               { href: "/deals", label: t("chat.quickDeals") },
               { href: "/jobs", label: t("chat.quickJobs") },
-              { href: "/docs/journey", label: t("chat.quickJourney") },
+              { href: "/docs/apply/timeline", label: t("chat.quickJourney") },
               { href: "/docs", label: t("chat.quickDocs") },
             ].map((item) => (
               <Link

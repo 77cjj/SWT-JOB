@@ -21,11 +21,13 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.service.AuthService;
+import com.nageoffer.ai.ragent.user.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
 
     private final UserMapper userMapper;
+    private final UserProfileService userProfileService;
 
     @Override
     public LoginVO login(LoginRequest requestParam) {
@@ -67,6 +70,36 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout() {
         StpUtil.logout();
+    }
+
+    @Override
+    public LoginVO register(RegisterRequest requestParam) {
+        String username = requestParam.getUsername();
+        String password = requestParam.getPassword();
+        if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
+            throw new ClientException("用户名或密码不能为空");
+        }
+        if (password.length() < 6) {
+            throw new ClientException("密码至少 6 位");
+        }
+        UserDO existing = findByUsername(username.trim());
+        if (existing != null) {
+            throw new ClientException("用户名已存在");
+        }
+        UserDO user = UserDO.builder()
+                .username(username.trim())
+                .password(password)
+                .role("user")
+                .avatar(StrUtil.isBlank(requestParam.getAvatar()) ? DEFAULT_AVATAR_URL : requestParam.getAvatar())
+                .build();
+        userMapper.insert(user);
+        if (user.getId() == null) {
+            throw new ClientException("注册失败");
+        }
+        userProfileService.createDefaultProfile(user.getId().toString(), username.trim(), null, "consent");
+        String loginId = user.getId().toString();
+        StpUtil.login(loginId);
+        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), user.getAvatar());
     }
 
     private UserDO findByUsername(String username) {

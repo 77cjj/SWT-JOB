@@ -19,6 +19,8 @@ export const zh = {
     select: '选择',
     all: '全部',
     logout: '退出登录',
+    login: '登录',
+    register: '注册',
     networkError: '网络连接失败，请确认开发服务已启动后刷新页面。',
   },
 
@@ -362,6 +364,7 @@ export const zh = {
     signupBonusHint: '此项为官网开户奖励，无公开邀请链接',
     categories: {
       bank: '银行开户',
+      remittance: '换汇软件',
       cashback: '返现 App',
       mobile: '手机运营商',
       other: '其他',
@@ -407,6 +410,33 @@ export const zh = {
     readFullGuide: '阅读完整攻略',
     footerHint: '完整攻略见文档；有邀请码可到',
     marketLink: '社区 Refer 市集',
+    openDetail: '点击查看详情与社区经历',
+    openDetailWithExperiences: '点击查看详情 · {count} 条亲测经历',
+    experience: {
+      title: '社区亲测',
+      subtitle: '其他 SWT 参与者的真实办理经历，包括开户方式、材料、DD 操作与到账时间。仅供参考，以银行/平台当时条款为准。',
+      empty: '暂无社区分享。登录后可发表你的亲测经历。',
+      disclaimer: '以上为用户个人经历分享，不构成官方承诺；政策随时可能变化，请自行核实。',
+      openingMethod: '开户方式',
+      materials: '使用材料',
+      ddMethod: 'DD 操作',
+      ddDate: 'DD 完成',
+      bonusReceivedDate: '奖励到账',
+      bonusAmount: '到账金额',
+      postTitle: '分享你的经历',
+      bodyLabel: '亲测描述 *',
+      bodyTooShort: '请至少输入 10 个字的描述',
+      submit: '发布',
+      loginToPost: '登录后可分享亲测经历。',
+    },
+  },
+
+  member: {
+    myProfile: '我的主页',
+    editProfile: '编辑资料',
+    profileVisibility: '联系方式披露方式',
+    visibilityConsent: '经同意才披露',
+    visibilityPublic: '主页直接公开',
   },
 
   // 交易市集

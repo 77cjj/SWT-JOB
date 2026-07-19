@@ -9,7 +9,6 @@ import {
   Button,
   Snackbar,
   Alert,
-  Collapse,
   IconButton,
   Tooltip,
 } from '@mui/material';
@@ -18,12 +17,12 @@ import {
   OpenInNew,
   Storefront,
   AccountBalance,
+  CurrencyExchange,
   PhoneIphone,
   MoreHoriz,
-  ExpandMore,
-  ExpandLess,
   History,
   InfoOutlined,
+  OpenInFull,
 } from '@mui/icons-material';
 import {
   dealCategoryOrder,
@@ -32,6 +31,7 @@ import {
   type OfferKind,
 } from '../data/referralDeals';
 import DealHistoryDialog from '../components/deals/DealHistoryDialog';
+import DealDetailPanel from '../components/deals/DealDetailPanel';
 import ExternalLinkDialog from '../components/deals/ExternalLinkDialog';
 import {
   formatEditionPeriod,
@@ -44,6 +44,7 @@ import type { Language } from '../i18n/types';
 
 const categoryIcons: Record<DealCategory, React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
+  remittance: <CurrencyExchange fontSize="small" />,
   cashback: <Storefront fontSize="small" />,
   mobile: <PhoneIphone fontSize="small" />,
   other: <MoreHoriz fontSize="small" />,
@@ -68,28 +69,39 @@ function DealCard({
   onCopy,
   onOpenExternal,
   onViewHistory,
+  onOpenDetail,
 }: {
   item: ResolvedProgram;
   lang: Language;
   onCopy: (url: string, title: string) => void;
   onOpenExternal: (url: string, title: string) => void;
   onViewHistory: () => void;
+  onOpenDetail: () => void;
 }) {
   const { t, tWithParams } = useI18n();
-  const [expanded, setExpanded] = useState(false);
   const { program, edition, status, isStale, daysUntilExpiry } = item;
   const title = pickLang(program.brandName, lang);
   const reward = pickLang(edition.reward, lang);
   const summary = pickLang(edition.summary, lang);
-  const requirements = pickLangList(edition.requirements, lang);
   const tags = edition.tags ? pickLangList(edition.tags, lang) : [];
   const showReferral = hasReferralLink(item);
   const period = formatEditionPeriod(edition, lang);
   const offerKind = program.offerKind as OfferKind;
   const officialUrl = edition.officialUrl;
 
+  const stopClick = (e: React.MouseEvent) => e.stopPropagation();
+
   return (
     <Box
+      role="button"
+      tabIndex={0}
+      onClick={onOpenDetail}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenDetail();
+        }
+      }}
       sx={{
         border: 1,
         borderColor: isStale ? 'action.disabled' : 'divider',
@@ -100,7 +112,8 @@ function DealCard({
         flexDirection: 'column',
         gap: 1.25,
         height: '100%',
-        transition: 'box-shadow 0.2s, opacity 0.2s',
+        cursor: 'pointer',
+        transition: 'box-shadow 0.2s, transform 0.2s, opacity 0.2s',
         ...(isStale
           ? {
               opacity: 0.52,
@@ -108,7 +121,9 @@ function DealCard({
               bgcolor: 'action.hover',
               '&:hover': { boxShadow: 0 },
             }
-          : { '&:hover': { boxShadow: 2 } }),
+          : {
+              '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
+            }),
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
@@ -126,7 +141,10 @@ function DealCard({
                 <IconButton
                   size="small"
                   aria-label={t('deals.officialInfo')}
-                  onClick={() => onOpenExternal(officialUrl, t('deals.officialTerms'))}
+                  onClick={(e) => {
+                    stopClick(e);
+                    onOpenExternal(officialUrl, t('deals.officialTerms'));
+                  }}
                   sx={{
                     p: 0.35,
                     color: 'primary.main',
@@ -193,26 +211,14 @@ function DealCard({
         </Typography>
       ) : null}
 
-      <Collapse in={expanded}>
-        <Box component="ul" sx={{ m: 0, pl: 2.5, color: isStale ? 'text.disabled' : 'text.secondary' }}>
-          {requirements.map((req) => (
-            <Typography component="li" variant="body2" key={req} sx={{ mb: 0.5 }}>
-              {req}
-            </Typography>
-          ))}
-        </Box>
-      </Collapse>
-
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <IconButton size="small" onClick={() => setExpanded((v) => !v)} aria-label="toggle details">
-          {expanded ? <ExpandLess /> : <ExpandMore />}
-        </IconButton>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 'auto', pt: 0.5 }}>
+        <OpenInFull sx={{ fontSize: 14, color: 'text.secondary' }} />
         <Typography variant="caption" color="text.secondary">
-          {expanded ? t('deals.hideDetails') : t('deals.showDetails')}
+          {t('deals.openDetail')}
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }} onClick={stopClick}>
         {!isStale && showReferral ? (
           <>
             <Button
@@ -264,6 +270,7 @@ export default function DealsPage() {
     severity: 'success',
   });
   const [historyTarget, setHistoryTarget] = useState<ResolvedProgram | null>(null);
+  const [detailTarget, setDetailTarget] = useState<ResolvedProgram | null>(null);
   const [externalLink, setExternalLink] = useState<{ url: string; label: string } | null>(null);
 
   const allResolved = useMemo(() => resolveAllPrograms(referralPrograms), []);
@@ -349,6 +356,7 @@ export default function DealsPage() {
             onCopy={handleCopy}
             onOpenExternal={(url, label) => setExternalLink({ url, label })}
             onViewHistory={() => setHistoryTarget(item)}
+            onOpenDetail={() => setDetailTarget(item)}
           />
         ))}
       </Box>
@@ -369,6 +377,17 @@ export default function DealsPage() {
           {t('deals.marketLink')}
         </Link>
       </Typography>
+
+      <DealDetailPanel
+        open={Boolean(detailTarget)}
+        item={detailTarget}
+        onClose={() => setDetailTarget(null)}
+        onCopy={handleCopy}
+        onOpenExternal={(url, label) => setExternalLink({ url, label })}
+        onViewHistory={() => {
+          if (detailTarget) setHistoryTarget(detailTarget);
+        }}
+      />
 
       <DealHistoryDialog
         open={Boolean(historyTarget)}

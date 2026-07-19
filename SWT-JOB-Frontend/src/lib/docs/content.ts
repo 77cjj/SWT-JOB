@@ -1,6 +1,5 @@
 import { DOC_SECTION_MAP, DOC_SECTIONS, resolveDocSectionKey } from "./sections";
 import { resolveDocSlugRedirect } from "./redirects";
-import { injectSpecialNavItems } from "./special-nav";
 import { getLegacyDocBySlug, getLegacyDocs, getLegacyNavigation } from "./legacy";
 import { sanityReadClient } from "../sanity/client";
 import {
@@ -173,12 +172,12 @@ function buildNavigation(docs: DocPageData[]): DocsNavigation {
     };
   }).filter((section) => section.items.length > 0);
 
-  return injectSpecialNavItems({
+  return {
     home: homeDoc
       ? { title: homeDoc.title, href: "/docs", slug: [], order: 0 }
       : null,
     sections,
-  });
+  };
 }
 
 async function getPreferredDocs() {

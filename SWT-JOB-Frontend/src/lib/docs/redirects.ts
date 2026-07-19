@@ -7,6 +7,7 @@ export const DOC_SLUG_REDIRECTS: Record<string, string> = {
   // preparation → visa / departure / apply
   "preparation/agency": "apply/agency",
   "preparation/timeline": "apply/timeline",
+  journey: "apply/timeline",
   "preparation/interview": "apply/interview",
   "preparation/flights": "departure/flights",
   "preparation/packing": "departure/packing",

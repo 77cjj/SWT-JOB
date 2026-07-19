@@ -46,16 +46,22 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-export function RedirectIfAuthed({ children }: { children: ReactNode }) {
+export function RedirectIfAuthed({
+  children,
+  redirectTo = "/chat",
+}: {
+  children: ReactNode;
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     if (!router.isReady || allowLoginPageWhileAuthed) return;
     if (isAuthenticated) {
-      void router.replace("/chat");
+      void router.replace(redirectTo);
     }
-  }, [router, isAuthenticated]);
+  }, [router, isAuthenticated, redirectTo]);
 
   if (isAuthenticated && !allowLoginPageWhileAuthed) {
     return null;

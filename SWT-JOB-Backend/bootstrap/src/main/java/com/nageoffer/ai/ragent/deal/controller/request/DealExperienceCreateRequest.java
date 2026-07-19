@@ -1,0 +1,53 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.nageoffer.ai.ragent.deal.controller.request;
+
+import lombok.Data;
+
+@Data
+public class DealExperienceCreateRequest {
+
+    private String programId;
+
+    private String editionId;
+
+    private String bodyZh;
+
+    private String bodyEn;
+
+    private String openingMethodZh;
+
+    private String openingMethodEn;
+
+    private String ddMethodZh;
+
+    private String ddMethodEn;
+
+    private String materialsZh;
+
+    private String materialsEn;
+
+    private String ddDate;
+
+    private String bonusReceivedDate;
+
+    private String bonusAmount;
+
+    /** 发帖时同步更新隐私设置 */
+    private String profileVisibility;
+}

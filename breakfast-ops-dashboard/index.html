@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Breakfast Ops — Demo Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --surface: #ffffff;
+      --surface-2: #faf8f5;
+      --border: #e6dfd4;
+      --text: #1c1917;
+      --muted: #6b6560;
+      --accent: #2d5a47;
+      --accent-soft: #e8f0ec;
+      --accent-2: #8b5e3c;
+      --warn: #b45309;
+      --warn-bg: #fff7ed;
+      --crit: #b91c1c;
+      --crit-bg: #fef2f2;
+      --info: #1d4ed8;
+      --info-bg: #eff6ff;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(28,25,23,.06), 0 8px 24px rgba(28,25,23,.05);
+      --sidebar-w: 240px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #1f2b26;
+      color: #f5f2ec;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      padding: 0 8px 24px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 20px;
+    }
+
+    .brand .eyebrow {
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #9eb5a8;
+      margin-bottom: 6px;
+    }
+
+    .brand h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .brand .demo-badge {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.15);
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: #c8d9cf;
+    }
+
+    .nav { list-style: none; flex: 1; }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: #c8d0c8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      transition: background .15s, color .15s;
+    }
+
+    .nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .nav a.active { background: var(--accent); color: #fff; }
+
+    .nav .icon {
+      width: 18px;
+      text-align: center;
+      opacity: .85;
+      font-size: 13px;
+    }
+
+    .sidebar-foot {
+      padding: 16px 8px 0;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 12px;
+      color: #8fa598;
+    }
+
+    .sidebar-foot strong { color: #d4e0d8; display: block; margin-bottom: 4px; }
+
+    /* Main */
+    .main {
+      padding: 28px 32px 48px;
+      overflow-x: hidden;
+    }
+
+    .page { display: none; animation: fade .25s ease; }
+    .page.active { display: block; }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .page-header h2 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1.1;
+    }
+
+    .page-header p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+      max-width: 520px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: box-shadow .15s, border-color .15s;
+    }
+
+    .btn:hover { box-shadow: var(--shadow); border-color: #d4cdc2; }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #244a3a; }
+
+    /* KPI cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .kpi .value {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 8px 0 4px;
+      letter-spacing: -.02em;
+    }
+
+    .kpi .sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .kpi .delta {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      margin-top: 6px;
+    }
+
+    .delta.up { background: var(--warn-bg); color: var(--warn); }
+    .delta.down { background: var(--accent-soft); color: var(--accent); }
+    .delta.ok { background: #f0fdf4; color: #15803d; }
+
+    /* Layout grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .grid-2-eq {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .card .card-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+
+    .chart-wrap.sm { height: 220px; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    table.data th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    table.data td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #f0ebe3;
+      vertical-align: middle;
+    }
+
+    table.data tr:hover td { background: var(--surface-2); }
+
+    .pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .pill.protein { background: #fef3c7; color: #92400e; }
+    .pill.dairy { background: #dbeafe; color: #1e40af; }
+    .pill.beverage { background: #d1fae5; color: #065f46; }
+    .pill.bakery { background: #fce7f3; color: #9d174d; }
+    .pill.supplies { background: #ede9fe; color: #5b21b6; }
+    .pill.frozen { background: #e0f2fe; color: #075985; }
+    .pill.produce { background: #ecfccb; color: #3f6212; }
+
+    .stock-bar {
+      height: 6px;
+      background: #efe9df;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .stock-bar span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .stock-bar.low span { background: var(--warn); }
+    .stock-bar.crit span { background: var(--crit); }
+
+    /* Alerts */
+    .alert-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .alert-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .alert-item.critical { border-color: #fecaca; background: var(--crit-bg); }
+    .alert-item.warning { border-color: #fed7aa; background: var(--warn-bg); }
+    .alert-item.info { border-color: #bfdbfe; background: var(--info-bg); }
+
+    .alert-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 5px;
+    }
+
+    .critical .alert-dot { background: var(--crit); }
+    .warning .alert-dot { background: var(--warn); }
+    .info .alert-dot { background: var(--info); }
+
+    .alert-item strong { font-size: 14px; display: block; }
+    .alert-item p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .alert-item time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field input, .field select, .field textarea {
+      width: 100%;
+      font: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .field textarea { min-height: 80px; resize: vertical; }
+
+    .form-note {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: var(--accent-soft);
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1f2b26;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 12px 40px rgba(0,0,0,.2);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show { opacity: 1; transform: none; }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .filters select {
+      font: inherit;
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .insight-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .insight {
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+    }
+
+    .insight .t { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .insight .v { font-size: 18px; font-weight: 700; margin-top: 6px; }
+    .insight .d { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-2-eq { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .insight-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        height: auto;
+        padding: 16px;
+      }
+      .nav { display: flex; flex-wrap: wrap; gap: 4px; }
+      .nav a { margin: 0; font-size: 13px; padding: 8px 10px; }
+      .sidebar-foot { display: none; }
+      .main { padding: 20px 16px 40px; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="eyebrow">Operations</div>
+        <h1>Breakfast Ops</h1>
+        <span class="demo-badge">Scheme B · Demo</span>
+      </div>
+      <ul class="nav">
+        <li><a href="#overview" class="nav-link active" data-page="overview"><span class="icon">◉</span> Overview</a></li>
+        <li><a href="#purchases" class="nav-link" data-page="purchases"><span class="icon">▤</span> Purchases</a></li>
+        <li><a href="#inventory" class="nav-link" data-page="inventory"><span class="icon">▦</span> Inventory</a></li>
+        <li><a href="#trends" class="nav-link" data-page="trends"><span class="icon">↗</span> Trends</a></li>
+        <li><a href="#alerts" class="nav-link" data-page="alerts"><span class="icon">!</span> Alerts</a></li>
+        <li><a href="#daily-log" class="nav-link" data-page="daily-log"><span class="icon">✎</span> Daily Log</a></li>
+      </ul>
+      <div class="sidebar-foot">
+        <strong>Lucas · Owner view</strong>
+        Sample data · Jul 2026<br />
+        Pair with printed checklist
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- OVERVIEW -->
+      <section id="page-overview" class="page active">
+        <div class="page-header">
+          <div>
+            <h2>Overview</h2>
+            <p>Weekly spend, cost per guest, and how breakfast supply tracks with occupancy.</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn" onclick="exportDemo()">Export summary</button>
+            <button class="btn btn-primary" onclick="goPage('daily-log')">+ Log today</button>
+          </div>
+        </div>
+
+        <div class="kpi-grid" id="kpi-grid"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Weekly spend vs guests</h3>
+            <p class="card-sub">See if higher occupancy drives proportional food cost</p>
+            <div class="chart-wrap"><canvas id="chart-spend-guests"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Spend by category</h3>
+            <p class="card-sub">Current week breakdown</p>
+            <div class="chart-wrap sm"><canvas id="chart-category"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-2-eq">
+          <div class="card">
+            <h3>Cost per guest trend</h3>
+            <p class="card-sub">Target: <span id="target-cpg"></span> · Breakfast included in room rate</p>
+            <div class="chart-wrap sm"><canvas id="chart-cpg"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Recent alerts</h3>
+            <p class="card-sub">Stock &amp; cost exceptions</p>
+            <div class="alert-list" id="overview-alerts"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PURCHASES -->
+      <section id="page-purchases" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Purchases</h2>
+            <p>What was bought, when, how much, and unit price — foundation for spend &amp; trend analysis.</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="showToast('Demo: purchase form would open')">+ Add purchase</button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <select id="filter-category" onchange="renderPurchases()">
+            <option value="">All categories</option>
+          </select>
+          <select id="filter-month" onchange="renderPurchases()">
+            <option value="">All months</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data" id="purchases-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Item</th>
+                  <th>Category</th>
+                  <th>Qty</th>
+                  <th>Unit price</th>
+                  <th>Total</th>
+                  <th>Supplier</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="insight-row" id="purchase-insights"></div>
+      </section>
+
+      <!-- INVENTORY -->
+      <section id="page-inventory" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Inventory &amp; Usage</h2>
+            <p>On-hand levels, par targets, and estimated days of supply from daily use.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data" id="inventory-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>On hand</th>
+                  <th>Par</th>
+                  <th>Daily use</th>
+                  <th>Days left</th>
+                  <th>Status</th>
+                  <th>Level</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid-2-eq" style="margin-top:16px">
+          <div class="card">
+            <h3>7-day usage (end counts)</h3>
+            <p class="card-sub">From daily close log</p>
+            <div class="chart-wrap sm"><canvas id="chart-usage"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Inventory health</h3>
+            <p class="card-sub">Items below par level</p>
+            <div class="chart-wrap sm"><canvas id="chart-inventory-health"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRENDS -->
+      <section id="page-trends" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Trends &amp; Analytics</h2>
+            <p>Unit price changes over time and relationship between guest volume and total spend.</p>
+          </div>
+          <div class="header-actions">
+            <select id="trend-sku" class="btn" style="appearance:auto" onchange="renderPriceTrend()"></select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Unit price trend</h3>
+            <p class="card-sub" id="price-trend-sub"></p>
+            <div class="chart-wrap"><canvas id="chart-price"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Guests vs weekly spend</h3>
+            <p class="card-sub">Scatter — each dot is one week</p>
+            <div class="chart-wrap"><canvas id="chart-scatter"></canvas></div>
+          </div>
+        </div>
+
+        <div class="insight-row" id="trend-insights"></div>
+      </section>
+
+      <!-- ALERTS -->
+      <section id="page-alerts" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Alerts</h2>
+            <p>Low stock, cost spikes, and price increases — actionable for Lucas.</p>
+          </div>
+        </div>
+        <div class="alert-list" id="full-alerts"></div>
+      </section>
+
+      <!-- DAILY LOG -->
+      <section id="page-daily-log" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Daily Log</h2>
+            <p>Staff entry at close — guest count + end inventory. Feeds usage &amp; cost-per-guest metrics.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <form id="daily-form" onsubmit="submitDailyLog(event)">
+            <div class="form-grid">
+              <div class="field">
+                <label>Date</label>
+                <input type="date" name="date" id="log-date" required />
+              </div>
+              <div class="field">
+                <label>Breakfast guests</label>
+                <input type="number" name="guests" min="0" placeholder="e.g. 30" required />
+              </div>
+              <div class="field">
+                <label>Eggs end (trays)</label>
+                <input type="number" name="eggsEnd" min="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>Milk end (gal)</label>
+                <input type="number" name="milkEnd" min="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>Coffee cups end</label>
+                <input type="number" name="cupsEnd" min="0" />
+              </div>
+              <div class="field">
+                <label>Coffee lids end</label>
+                <input type="number" name="lidsEnd" min="0" />
+              </div>
+              <div class="field" style="grid-column: 1 / -1">
+                <label>Notes (shortages, busy day, etc.)</label>
+                <textarea name="notes" placeholder="e.g. Lids critical — photo sent to Lucas"></textarea>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button type="submit" class="btn btn-primary">Save entry (demo)</button>
+              <button type="button" class="btn" onclick="document.getElementById('daily-form').reset()">Clear</button>
+            </div>
+            <div class="form-note">
+              Demo only — saved entries stay in browser memory for this session. Production version would sync to database and update dashboards live.
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

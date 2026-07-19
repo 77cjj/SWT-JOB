@@ -19,6 +19,8 @@ export const en = {
     select: 'Select',
     all: 'All',
     logout: 'Log out',
+    login: 'Log in',
+    register: 'Sign up',
     networkError: 'Network request failed. Check that the dev server is running and refresh.',
   },
 
@@ -363,6 +365,7 @@ export const en = {
     signupBonusHint: 'Official sign-up bonus only—no public referral link',
     categories: {
       bank: 'Bank accounts',
+      remittance: 'Money transfer',
       cashback: 'Cashback apps',
       mobile: 'Mobile carriers',
       other: 'Other',
@@ -408,6 +411,33 @@ export const en = {
     readFullGuide: 'Read full guide',
     footerHint: 'See docs for the full guide, or share codes on the',
     marketLink: 'Community marketplace',
+    openDetail: 'Click for details & community reports',
+    openDetailWithExperiences: 'Click for details · {count} community report(s)',
+    experience: {
+      title: 'Community reports',
+      subtitle: 'Real experiences from other SWT participants—opening method, documents, DD steps, and payout timing. For reference only; official terms apply.',
+      empty: 'No community reports yet. Log in to share yours.',
+      disclaimer: 'These are personal reports, not official guarantees. Terms change—verify yourself.',
+      openingMethod: 'How opened',
+      materials: 'Documents used',
+      ddMethod: 'DD method',
+      ddDate: 'DD completed',
+      bonusReceivedDate: 'Bonus received',
+      bonusAmount: 'Amount received',
+      postTitle: 'Share your experience',
+      bodyLabel: 'Your report *',
+      bodyTooShort: 'Please enter at least 10 characters',
+      submit: 'Post',
+      loginToPost: 'Log in to share your experience.',
+    },
+  },
+
+  member: {
+    myProfile: 'My profile',
+    editProfile: 'Edit profile',
+    profileVisibility: 'Contact visibility',
+    visibilityConsent: 'Share on consent only',
+    visibilityPublic: 'Show on profile',
   },
 
   marketplace: {

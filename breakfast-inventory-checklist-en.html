@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Breakfast Inventory Checklist</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 9mm 11mm;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.3;
+      color: #111;
+      background: #e8e8e8;
+    }
+
+    .toolbar {
+      max-width: 210mm;
+      margin: 12px auto;
+      padding: 0 10mm;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .toolbar button {
+      font: inherit;
+      font-size: 11pt;
+      padding: 8px 16px;
+      border: 1px solid #111;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .toolbar span { font-size: 10pt; color: #444; }
+
+    .sheet {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 9mm 11mm;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0,0,0,.12);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2.5px solid #111;
+      padding-bottom: 5px;
+      margin-bottom: 7px;
+    }
+
+    header h1 {
+      font-size: 14pt;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    header .meta {
+      font-size: 8.5pt;
+      color: #333;
+      text-align: right;
+    }
+
+    .subtitle {
+      font-size: 8.5pt;
+      color: #444;
+      margin: -3px 0 8px;
+    }
+
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 12px;
+    }
+
+    section {
+      break-inside: avoid;
+      margin-bottom: 6px;
+    }
+
+    section h2 {
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: #111;
+      color: #fff;
+      padding: 2px 6px;
+      margin-bottom: 2px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    tr { border-bottom: 1px dotted #bbb; }
+
+    td {
+      padding: 2px 3px;
+      vertical-align: top;
+    }
+
+    td.check { width: 12px; padding-left: 0; padding-right: 1px; }
+    td.item { width: 56%; }
+    td.qty { width: 44%; color: #333; font-size: 8.5pt; }
+
+    .box {
+      display: inline-block;
+      width: 8.5px;
+      height: 8.5px;
+      border: 1.15px solid #222;
+      vertical-align: middle;
+      margin-top: 1px;
+    }
+
+    .note {
+      margin-top: 8px;
+      border: 1.5px solid #111;
+      padding: 6px 8px;
+      font-size: 8.5pt;
+      background: #f7f7f7;
+    }
+
+    .note strong { font-weight: 700; }
+
+    .note .lines {
+      margin-top: 5px;
+      border-top: 1px solid #ccc;
+      padding-top: 4px;
+      color: #555;
+      font-size: 8pt;
+    }
+
+    .note .lines div {
+      border-bottom: 1px solid #ddd;
+      height: 16px;
+      margin-bottom: 2px;
+    }
+
+    footer.sheet-foot {
+      margin-top: 6px;
+      border-top: 1px solid #111;
+      padding-top: 4px;
+      font-size: 8pt;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      .sheet {
+        margin: 0;
+        box-shadow: none;
+        width: auto;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+    <span>A4 · Inventory only</span>
+  </div>
+
+  <div class="sheet">
+    <header>
+      <div>
+        <h1>Breakfast Inventory Checklist</h1>
+      </div>
+      <div class="meta">
+        Date: ____________<br />
+        Checked by: ____________
+      </div>
+    </header>
+    <p class="subtitle">Quick walk-through before / after service. Check each item · note qty if low.</p>
+
+    <div class="cols">
+      <div>
+        <section>
+          <h2>Utensils &amp; Condiments</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Napkins / tissues</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Forks, spoons, knives</td><td class="qty">Enough each</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Salt &amp; pepper (shakers)</td><td class="qty">1+ each</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Syrup</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Ketchup</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Hot sauce</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Bear bottle syrup</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Grape spread</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Cream cheese spread</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Strawberry jam</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Salted butter</td><td class="qty">Stocked</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>Coffee Station</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Regular coffee (cans)</td><td class="qty">2 cans</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Decaf coffee (cans)</td><td class="qty">1 can</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Regular coffee (bulk)</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Decaf coffee (bulk)</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Espresso Nescafé</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Coffee cups</td><td class="qty">Check stock</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Sugar substitutes</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Regular sugar</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Coffee stirrers</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Coffee lids</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Coffee Mate</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Hot water</td><td class="qty">Ready</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>Tea (8 kinds)</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Chamomile</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Orange Spice</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Lemon Ginger</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Chai Spice</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">English Breakfast</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Earl Grey</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Premium Green</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Wild Raspberry Hibiscus</td><td class="qty">Stocked</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>Plates &amp; Trays</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Large plates</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Medium plates</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Small bowls</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Light-brown food trays</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Plastic cups</td><td class="qty">Stocked</td></tr>
+          </table>
+        </section>
+      </div>
+
+      <div>
+        <section>
+          <h2>Drinks</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Milk</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Almond milk</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">French Vanilla Half &amp; Half</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Orange juice</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Cranberry juice</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Apple juice</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Water</td><td class="qty">Stocked</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>Bakes &amp; Bread</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Muffin — Chocolate</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Muffin — Cranberry</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Muffin — Blueberry</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Muffin — Corn</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Crumb cake</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Cheese-filled Danish</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Cranberry-filled Danish</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">English muffin</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Rye bread</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Whole grain bread</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Raisin cinnamon bread</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Cereals</td><td class="qty">Stocked</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>Cold / Hot Food</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Fruit platters</td><td class="qty">2 when busy</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Chobani yogurt</td><td class="qty">10 each</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Activia yogurt</td><td class="qty">10 each</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Hash browns</td><td class="qty">2 boxes</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Sausage patties</td><td class="qty">1 pack</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Eggs</td><td class="qty">3 trays</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>Supplies &amp; Cleaning</h2>
+          <table>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Paper towels</td><td class="qty">Spare under sink</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Gloves</td><td class="qty">Spare under sink</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Stretch wrap</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Parchment paper</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Foil</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Black garbage bags</td><td class="qty">≥ half left</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">White garbage bags</td><td class="qty">≥ half left</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Detergent / dish soap</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Hand soap</td><td class="qty">Stocked</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Towels (L / M / S)</td><td class="qty">≥ 4 of each size</td></tr>
+            <tr><td class="check"><span class="box"></span></td><td class="item">Tea light candles</td><td class="qty">≥ 10 · remind Lucas</td></tr>
+          </table>
+        </section>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>SHORTAGE RULE — tell Lucas</strong><br />
+      If any item is missing or running low: write the item name + how many are left, take a clear photo, and send it to Lucas.
+      <div class="lines">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+
+    <footer class="sheet-foot">
+      <span>□ Inventory done &nbsp; □ Shortages sent to Lucas</span>
+      <span>Breakfast Inventory · EN</span>
+    </footer>
+  </div>
+</body>
+</html>

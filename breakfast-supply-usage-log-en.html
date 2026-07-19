@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Breakfast Supply Usage Log</title>
+  <style>
+    @page { size: A4 landscape; margin: 8mm 10mm; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      line-height: 1.25;
+      color: #111;
+      background: #e8e8e8;
+    }
+
+    .toolbar {
+      max-width: 297mm;
+      margin: 12px auto;
+      padding: 0 10mm;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .toolbar button {
+      font: inherit;
+      font-size: 11pt;
+      padding: 8px 16px;
+      border: 1px solid #111;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .toolbar span { font-size: 10pt; color: #444; }
+
+    .sheet {
+      width: 297mm;
+      margin: 0 auto 16px;
+      padding: 8mm 10mm;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0,0,0,.12);
+      page-break-after: always;
+    }
+
+    .sheet:last-of-type { page-break-after: auto; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid #111;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    header h1 { font-size: 13pt; font-weight: 700; }
+    header .meta { font-size: 8pt; text-align: right; color: #333; }
+
+    .how-to {
+      font-size: 7.5pt;
+      color: #444;
+      margin-bottom: 6px;
+      border-left: 3px solid #111;
+      padding: 4px 8px;
+      background: #f5f5f5;
+    }
+
+    .how-to strong { color: #111; }
+
+    table.log {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    table.log th,
+    table.log td {
+      border: 1px solid #999;
+      padding: 3px 4px;
+      vertical-align: middle;
+      text-align: center;
+      height: 22px;
+    }
+
+    table.log th {
+      background: #111;
+      color: #fff;
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    table.log td.item {
+      text-align: left;
+      font-size: 7.5pt;
+      width: 14%;
+      background: #fafafa;
+      font-weight: 600;
+    }
+
+    table.log td.day {
+      width: 10.5%;
+    }
+
+    table.log td.blank {
+      background: #fff;
+    }
+
+    .summary {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .summary-box {
+      border: 1px solid #111;
+      padding: 6px 8px;
+      font-size: 7.5pt;
+    }
+
+    .summary-box h3 {
+      font-size: 8pt;
+      border-bottom: 1px solid #111;
+      margin-bottom: 4px;
+      padding-bottom: 2px;
+    }
+
+    .summary-box .line {
+      border-bottom: 1px dotted #bbb;
+      height: 18px;
+      margin-bottom: 2px;
+    }
+
+    .legend {
+      margin-top: 6px;
+      font-size: 7pt;
+      color: #555;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      .sheet { margin: 0; box-shadow: none; width: auto; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+    <span>A4 landscape · 1 week per page · pair with inventory checklist</span>
+  </div>
+
+  <!-- WEEK 1 -->
+  <div class="sheet">
+    <header>
+      <div>
+        <h1>Breakfast Supply Usage Log</h1>
+      </div>
+      <div class="meta">
+        Week of: ____________ &nbsp;·&nbsp; Location: Breakfast<br />
+        Logged by: ____________
+      </div>
+    </header>
+
+    <div class="how-to">
+      <strong>How to fill:</strong> Each day write <strong>End Count</strong> (what’s left at close).
+      <strong>Used</strong> = yesterday’s end (or Mon AM start) + restocked − today’s end.
+      If low / out → note in box + photo to Lucas. <strong>AM Start</strong> = count before breakfast opens.
+    </div>
+
+    <table class="log">
+      <thead>
+        <tr>
+          <th style="width:14%">Item</th>
+          <th>Mon<br /><span style="font-weight:400;font-size:6pt">AM / End / Used</span></th>
+          <th>Tue</th>
+          <th>Wed</th>
+          <th>Thu</th>
+          <th>Fri</th>
+          <th>Sat</th>
+          <th>Sun</th>
+          <th style="width:9%">Week<br />Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="item">Eggs (trays)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Hash browns (boxes)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Sausage (packs)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Milk (cartons)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Almond milk</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Half &amp; Half</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Orange juice</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Cranberry juice</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Apple juice</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Chobani yogurt</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Activia yogurt</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Regular coffee (bulk)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Decaf coffee (bulk)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Coffee cups</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Coffee lids</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Stirrers</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Napkins</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Gloves (boxes)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Paper towels</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Black trash bags</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">White trash bags</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Fruit platters (made)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Muffins / pastries</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Bread (sliced)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Butter / spreads</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Tea light candles</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+        <tr><td class="item">Towels (clean set)</td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td><td class="day blank"></td></tr>
+      </tbody>
+    </table>
+
+    <div class="summary">
+      <div class="summary-box">
+        <h3>Weekly — Items that ran low or ran out</h3>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </div>
+      <div class="summary-box">
+        <h3>Weekly — Reorder / adjust par levels</h3>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </div>
+    </div>
+
+    <p class="legend">
+      Daily cell format (example): <strong>8 / 5 / 3</strong> = AM start 8 · End 5 · Used 3 &nbsp;|&nbsp;
+      Busy day? note guest count if known: _____
+    </p>
+  </div>
+</body>
+</html>

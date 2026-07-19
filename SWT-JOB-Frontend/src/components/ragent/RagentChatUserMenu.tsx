@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   Button,
   ButtonBase,
@@ -21,18 +22,16 @@ import {
 import {
   AdminPanelSettings as AdminPanelSettingsIcon,
   Logout as LogoutIcon,
+  Person as PersonIcon,
+  Settings as SettingsIcon,
   VpnKey as VpnKeyIcon,
 } from "@mui/icons-material";
-import { useRouter } from "next/router";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { changePassword } from "@/services/userService";
 import { getVisibleAdminNavItems } from "@/lib/adminNavLinks";
 import { useI18n } from "../../context/I18nContext";
 
-/**
- * 全局顶栏右侧：胶囊式头像+用户名；下拉菜单含管理后台子菜单（按角色）、修改密码与退出登录
- */
 export function RagentChatUserMenu() {
   const router = useRouter();
   const { t } = useI18n();
@@ -60,6 +59,14 @@ export function RagentChatUserMenu() {
   const initial = displayName.slice(0, 1).toUpperCase();
   const avatarUrl = user?.avatar?.trim();
   const showImg = Boolean(avatarUrl) && !imgFailed;
+
+  if (!isAuthenticated || !user?.userId) {
+    return (
+      <Button component={Link} href="/login" variant="outlined" size="small" sx={{ borderRadius: 999 }}>
+        {t("common.login")}
+      </Button>
+    );
+  }
 
   const handleLogout = async () => {
     setAnchor(null);
@@ -96,6 +103,8 @@ export function RagentChatUserMenu() {
       setPasswordSubmitting(false);
     }
   };
+
+  const isOAuthUser = user.userId.startsWith("google-");
 
   return (
     <>
@@ -154,6 +163,19 @@ export function RagentChatUserMenu() {
           },
         }}
       >
+        <MenuItem component={Link} href={`/u/${user.userId}`} onClick={() => setAnchor(null)}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <PersonIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary={t("member.myProfile")} />
+        </MenuItem>
+        <MenuItem component={Link} href="/settings/profile" onClick={() => setAnchor(null)}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <SettingsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary={t("member.editProfile")} />
+        </MenuItem>
+        <Divider />
         {adminNavItems.length > 0 ? (
           <>
             <Typography
@@ -178,7 +200,7 @@ export function RagentChatUserMenu() {
             <Divider />
           </>
         ) : null}
-        {isAuthenticated ? (
+        {!isOAuthUser ? (
           <MenuItem onClick={handleOpenPassword}>
             <ListItemIcon sx={{ minWidth: 36 }}>
               <VpnKeyIcon fontSize="small" />

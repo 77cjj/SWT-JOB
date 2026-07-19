@@ -70,6 +70,10 @@ public class UserContextInterceptor implements HandlerInterceptor {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
+        String uri = request.getRequestURI();
+        if (uri != null && uri.contains("/public/")) {
+            return true;
+        }
 
         String loginId = StpUtil.getLoginIdAsString();
         if (DEV_BYPASS_LOGIN_ID.equals(loginId)) {

@@ -1,4 +1,5 @@
 import * as React from "react";
+import Link from "next/link";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useRouter } from "next/router";
 
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
+import { GoogleLoginButton } from "../../src/components/auth/GoogleLoginButton";
 
 export function LoginPage() {
   const router = useRouter();
@@ -40,9 +42,19 @@ export function LoginPage() {
         <div className="mb-6">
           <p className="font-display text-2xl font-semibold">欢迎回来</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            登录后继续你的检索增强对话。
+            登录后继续你的检索增强对话，或分享薅羊毛亲测经历。
           </p>
         </div>
+
+        <div className="mb-4 flex justify-center">
+          <GoogleLoginButton />
+        </div>
+
+        <div className="relative my-5 text-center text-xs text-muted-foreground">
+          <span className="relative z-10 bg-background/80 px-2">或使用用户名登录</span>
+          <div className="absolute inset-x-0 top-1/2 border-t border-border/70" />
+        </div>
+
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -88,7 +100,11 @@ export function LoginPage() {
               <Checkbox checked={remember} onCheckedChange={(value) => setRemember(Boolean(value))} />
               记住我
             </label>
-            <span className="text-xs text-muted-foreground">账号由管理员初始化</span>
+            <span className="text-xs text-muted-foreground">
+              <Link href="/register" className="font-medium text-primary hover:underline">
+                注册新账号
+              </Link>
+            </span>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit" className="w-full" disabled={isLoading}>

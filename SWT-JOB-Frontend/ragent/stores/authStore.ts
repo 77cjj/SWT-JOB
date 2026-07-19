@@ -5,7 +5,9 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 import type { User } from "@/types";
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "@/services/authService";
+import type { GoogleOAuthProfile, RegisterFormData } from "../../src/lib/member/types";
+import { getCurrentUser, login as loginRequest, logout as logoutRequest, register as registerRequest } from "@/services/authService";
+import { updateMyProfile } from "@/services/profileService";
 import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
@@ -17,6 +19,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (data: RegisterFormData) => Promise<void>;
+  loginWithGoogle: (profile: GoogleOAuthProfile) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
@@ -25,6 +29,10 @@ interface AuthState {
 /** 仅在非生产环境且显式开启时，跳过真实登录校验。 */
 const BYPASS_AUTH = RAGENT_BYPASS_AUTH;
 const DEV_BYPASS_TOKEN = "local-dev-token";
+
+function isOAuthToken(token: string | null | undefined) {
+  return Boolean(token && token.startsWith("oauth-"));
+}
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user:
@@ -75,6 +83,67 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       toast.error((error as Error).message || "登录失败");
       throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  register: async (data) => {
+    set({ isLoading: true });
+    try {
+      const result = await registerRequest({
+        username: data.username.trim(),
+        password: data.password,
+      });
+      const user = {
+        userId: result.userId,
+        username: data.displayName?.trim() || data.username.trim(),
+        role: result.role,
+        token: result.token,
+        avatar: result.avatar,
+      };
+      storage.setToken(user.token);
+      storage.setUser(user);
+      setAuthToken(user.token);
+      set({ user, token: user.token, isAuthenticated: true });
+      await updateMyProfile({
+        displayName: data.displayName?.trim() || data.username.trim(),
+        programYear: data.programYear,
+        workState: data.workState,
+        jobTitle: data.jobTitle,
+        phone: data.phone,
+        email: data.email,
+        wechat: data.wechat,
+        profileVisibility: data.profileVisibility,
+      }).catch(() => null);
+      toast.success("注册成功");
+    } catch (error) {
+      toast.error((error as Error).message || "注册失败");
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  loginWithGoogle: async (profile) => {
+    set({ isLoading: true });
+    try {
+      const userId = `google-${profile.sub}`;
+      const token = `oauth-google-${profile.sub}`;
+      const user = {
+        userId,
+        username: profile.name,
+        role: "user",
+        token,
+        avatar: profile.picture,
+      };
+      storage.setToken(token);
+      storage.setUser(user);
+      setAuthToken(token);
+      set({ user, token, isAuthenticated: true });
+      await updateMyProfile({
+        displayName: profile.name,
+        email: profile.email,
+      }).catch(() => null);
+      toast.success("Google 登录成功");
     } finally {
       set({ isLoading: false });
     }
@@ -140,7 +209,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   fetchCurrentUser: async () => {
     const token = get().token || storage.getToken();
-    if (!token) return;
+    if (!token || isOAuthToken(token)) return;
     try {
       const data = await getCurrentUser();
       const nextUser = { ...data, token };

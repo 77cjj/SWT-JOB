@@ -1,4 +1,4 @@
-export type DealCategory = 'bank' | 'cashback' | 'mobile' | 'other';
+export type DealCategory = 'bank' | 'remittance' | 'cashback' | 'mobile' | 'other';
 
 /** refer = 邀请返现；signup_bonus = 官网开户奖励（无邀请链接）；promo = 运营商/促销 */
 export type OfferKind = 'refer' | 'signup_bonus' | 'promo';
@@ -43,7 +43,7 @@ export interface ReferralProgram {
   editions: DealEdition[];
 }
 
-export const dealCategoryOrder: DealCategory[] = ['bank', 'cashback', 'mobile', 'other'];
+export const dealCategoryOrder: DealCategory[] = ['bank', 'remittance', 'cashback', 'mobile', 'other'];
 
 export const referralPrograms: ReferralProgram[] = [
   {
@@ -406,6 +406,245 @@ export const referralPrograms: ReferralProgram[] = [
         },
         officialUrl: 'https://accountoffers.wellsfargo.com/checkingoffer/',
         requiresInPerson: true,
+      },
+    ],
+  },
+  {
+    id: 'panda-remit',
+    category: 'remittance',
+    offerKind: 'refer',
+    brandName: { zh: '熊猫换汇', en: 'Panda Remit' },
+    editions: [
+      {
+        id: 'panda-remit-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '额外 $5', en: 'Extra $5' },
+        summary: {
+          zh: '通过邀请链接注册并完成首笔转汇，社区额外返 $5。',
+          en: 'Register via referral link and complete your first transfer; community bonus $5.',
+        },
+        requirements: {
+          zh: [
+            '须通过本站邀请链接注册',
+            '完成至少一笔转汇',
+            '达标后联系社区站长领取额外 $5',
+            '官方新人奖励以熊猫换汇 App 内展示为准',
+          ],
+          en: [
+            'Register via this site’s referral link',
+            'Complete at least one transfer',
+            'Contact the community host for the extra $5 after qualifying',
+            'Official new-user rewards shown in the Panda Remit app apply',
+          ],
+        },
+        referralUrl:
+          'https://p.pandaremit.com/h5activity/launchInvitationCode?countryCode=USA&shareCode=UlM0NkdN&lang=en',
+        officialUrl: 'https://www.pandaremit.com/',
+        tags: { zh: ['线上', '华人友好'], en: ['Online', 'Chinese-friendly'] },
+        changeNote: {
+          zh: '新增换汇分类：熊猫换汇邀请，注册转汇后社区额外返 $5。',
+          en: 'New remittance category: Panda Remit referral with $5 community bonus after first transfer.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'western-union',
+    category: 'remittance',
+    offerKind: 'refer',
+    brandName: { zh: '西联汇款', en: 'Western Union' },
+    editions: [
+      {
+        id: 'western-union-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '最高 $17', en: 'Up to $17' },
+        summary: {
+          zh: '首笔汇款 ≥$100 且完善资料：官方 $10 亚马逊礼品卡 + 社区再返 $7。',
+          en: 'First transfer ≥$100 with profile complete: $10 Amazon gift card + $7 community bonus.',
+        },
+        requirements: {
+          zh: [
+            '通过邀请链接注册并完善个人资料',
+            '完成单笔 ≥$100 的汇款',
+            '官方奖励：$10 亚马逊礼品卡（试成后发放）',
+            '社区额外返 $7（达标后联系站长领取）',
+            '以西联官方条款为准',
+          ],
+          en: [
+            'Register via referral link and complete your profile',
+            'Complete a single transfer of ≥$100',
+            'Official reward: $10 Amazon gift card (after qualifying)',
+            'Community bonus $7 (contact host after qualifying)',
+            'Western Union official terms apply',
+          ],
+        },
+        referralUrl: 'https://ssqt.co/mQVLhFT',
+        officialUrl: 'https://www.westernunion.com/',
+        tags: { zh: ['线上', '礼品卡'], en: ['Online', 'Gift card'] },
+        changeNote: {
+          zh: '新增西联汇款邀请：$10 亚马逊礼品卡 + 社区再返 $7。',
+          en: 'Added Western Union referral: $10 Amazon gift card + $7 community bonus.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'lemfi',
+    category: 'remittance',
+    offerKind: 'refer',
+    brandName: { zh: 'LemFi', en: 'LemFi' },
+    editions: [
+      {
+        id: 'lemfi-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '最高 $30', en: 'Up to $30' },
+        summary: {
+          zh: '首笔转汇 ≥$100：官方 $20（次日到账）+ 社区再返 $10。',
+          en: 'First transfer ≥$100: $20 official bonus (next day) + $10 community bonus.',
+        },
+        requirements: {
+          zh: [
+            '通过邀请链接注册',
+            '完成首笔 ≥$100 的转汇',
+            '官方 $20 约次日发放至账户，可提现或继续转汇',
+            '社区额外返 $10（达标后联系站长领取）',
+            '以 LemFi 官方 Refer 条款为准',
+          ],
+          en: [
+            'Register via referral link',
+            'Complete first transfer of ≥$100',
+            'Official $20 posts ~next day; withdraw or transfer again',
+            'Community bonus $10 (contact host after qualifying)',
+            'LemFi official referral terms apply',
+          ],
+        },
+        referralUrl: 'https://referral.lemfi.com/i9UkCXXhP4b',
+        officialUrl: 'https://lemfi.com/',
+        tags: { zh: ['线上', '次日到账'], en: ['Online', 'Next-day payout'] },
+        changeNote: {
+          zh: '新增 LemFi 邀请：转 $100+ 官方 $20 + 社区再返 $10。',
+          en: 'Added LemFi referral: $20 official + $10 community bonus on $100+ transfer.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'remitly',
+    category: 'remittance',
+    offerKind: 'refer',
+    brandName: { zh: 'Remitly', en: 'Remitly' },
+    editions: [
+      {
+        id: 'remitly-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '最高 $13', en: 'Up to $13' },
+        summary: {
+          zh: '单笔转汇 ≥$100：新人手续费优惠约 $3 + 社区再返 $10。',
+          en: 'Single transfer ≥$100: ~$3 fee savings + $10 community bonus.',
+        },
+        requirements: {
+          zh: [
+            '通过邀请链接注册',
+            '完成单笔 ≥$100 的汇款',
+            '首笔 $5 手续费约 $2，净省约 $3',
+            '社区额外返 $10（达标后联系站长领取）',
+            '以 Remitly 官方 Refer 条款为准',
+          ],
+          en: [
+            'Register via referral link',
+            'Complete a single transfer of ≥$100',
+            'First $5 transfer fee ~$2; net savings ~$3',
+            'Community bonus $10 (contact host after qualifying)',
+            'Remitly official referral terms apply',
+          ],
+        },
+        referralUrl: 'https://www.remitly.com/r/1yry1wyi',
+        officialUrl: 'https://www.remitly.com/',
+        tags: { zh: ['线上', '手续费优惠'], en: ['Online', 'Fee discount'] },
+        changeNote: {
+          zh: '新增 Remitly 邀请：手续费优惠约 $3 + 社区再返 $10。',
+          en: 'Added Remitly referral: ~$3 fee savings + $10 community bonus.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'wise',
+    category: 'remittance',
+    offerKind: 'refer',
+    brandName: { zh: 'Wise', en: 'Wise' },
+    editions: [
+      {
+        id: 'wise-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '$600 减免 + $10', en: '$600 waiver + $10' },
+        summary: {
+          zh: '注册享 $600 手续费减免额度；累计转汇超 $301 后社区再返 $10。',
+          en: 'Register for $600 fee-free transfer allowance; community $10 after $301+ sent.',
+        },
+        requirements: {
+          zh: [
+            '通过邀请链接注册，获得 $600 手续费减免额度',
+            '累计转汇金额超过 $301',
+            '社区额外返 $10（达标后联系站长领取）',
+            '以 Wise 官方 Refer 条款为准',
+          ],
+          en: [
+            'Register via referral link for $600 fee-free transfer allowance',
+            'Send more than $301 in total transfers',
+            'Community bonus $10 (contact host after qualifying)',
+            'Wise official referral terms apply',
+          ],
+        },
+        referralUrl: 'https://wise.com/invite/ilpc/jiajunc191',
+        officialUrl: 'https://wise.com/',
+        tags: { zh: ['线上', '大额减免'], en: ['Online', 'High fee waiver'] },
+        changeNote: {
+          zh: '新增 Wise 邀请：$600 手续费减免 + 转汇超 $301 社区再返 $10。',
+          en: 'Added Wise referral: $600 fee waiver + $10 community bonus after $301+ transfers.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'wirebarley',
+    category: 'remittance',
+    offerKind: 'refer',
+    brandName: { zh: 'WireBarley', en: 'WireBarley' },
+    editions: [
+      {
+        id: 'wirebarley-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '$10 优惠券', en: '$10 coupon' },
+        summary: {
+          zh: '首次注册并使用邀请链接，可获得 $10 优惠券（邀请码 I961X4H）。',
+          en: 'First-time registration via referral link earns a $10 coupon (code I961X4H).',
+        },
+        requirements: {
+          zh: [
+            '通过邀请链接或邀请码 I961X4H 注册',
+            '首次注册奖励 $10 优惠券',
+            '优惠券使用规则以 WireBarley 官方为准',
+          ],
+          en: [
+            'Register via referral link or code I961X4H',
+            'First-time sign-up bonus: $10 coupon',
+            'Coupon terms per WireBarley official policy',
+          ],
+        },
+        referralUrl: 'https://wbarley.app.link/KMjj1GEjP4b',
+        officialUrl: 'https://www.wirebarley.com/',
+        tags: { zh: ['线上', '新人优惠券'], en: ['Online', 'New-user coupon'] },
+        changeNote: {
+          zh: '新增 WireBarley 邀请：首次注册 $10 优惠券。',
+          en: 'Added WireBarley referral: $10 coupon on first registration.',
+        },
       },
     ],
   },

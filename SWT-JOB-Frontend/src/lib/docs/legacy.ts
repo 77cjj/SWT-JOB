@@ -4,7 +4,6 @@ import path from "node:path";
 import matter from "gray-matter";
 
 import { DOC_SECTIONS, resolveDocSectionKey } from "./sections";
-import { injectSpecialNavItems } from "./special-nav";
 import type { DocNavSection, DocPageData, DocsNavigation } from "./types";
 
 const DOCS_ROOT = path.join(process.cwd(), "src/pages/docs");
@@ -307,10 +306,10 @@ export async function getLegacyNavigation(): Promise<DocsNavigation> {
     };
   }).filter((section) => section.items.length > 0);
 
-  return injectSpecialNavItems({
+  return {
     home: home ?? null,
     sections,
-  });
+  };
 }
 
 export function normalizeLegacySection(value: string | undefined | null) {

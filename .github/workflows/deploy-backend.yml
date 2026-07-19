@@ -1,0 +1,57 @@
+name: Deploy Backend to Aliyun
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "SWT-JOB-Backend/**"
+      - "server.sh"
+      - "scripts/auto-pull-backend.sh"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-aliyun
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy backend over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ALIYUN_SSH_HOST }}
+          username: ${{ secrets.ALIYUN_SSH_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          port: 22
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+            DEPLOY_PATH="${{ secrets.ALIYUN_DEPLOY_PATH }}"
+            BRANCH="master"
+
+            if [[ -z "${DEPLOY_PATH}" ]]; then
+              echo "Missing ALIYUN_DEPLOY_PATH secret"
+              exit 1
+            fi
+
+            cd "${DEPLOY_PATH}"
+
+            if [[ ! -x "./server.sh" ]]; then
+              echo "server.sh not found in ${DEPLOY_PATH}"
+              exit 1
+            fi
+
+            echo "==> Sync code (${BRANCH})"
+            git fetch origin "${BRANCH}"
+            git checkout "${BRANCH}"
+            git pull --ff-only origin "${BRANCH}"
+
+            echo "==> Build and restart backend"
+            ./server.sh restart backend --pull --skip-update-check --force
+
+            echo "==> Done"

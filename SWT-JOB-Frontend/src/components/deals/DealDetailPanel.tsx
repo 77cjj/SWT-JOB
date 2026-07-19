@@ -161,24 +161,14 @@ export default function DealDetailPanel({
   const [loadingExperiences, setLoadingExperiences] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  if (!item) return null;
-
-  const { program, edition, status, isStale, daysUntilExpiry } = item;
-  const title = pickLang(program.brandName, language);
-  const reward = pickLang(edition.reward, language);
-  const summary = pickLang(edition.summary, language);
-  const requirements = pickLangList(edition.requirements, language);
-  const tags = edition.tags ? pickLangList(edition.tags, language) : [];
-  const showReferral = hasReferralLink(item);
-  const period = formatEditionPeriod(edition, language);
-  const offerKind = program.offerKind as OfferKind;
-  const officialUrl = edition.officialUrl;
+  const programId = item?.program.id;
+  const editionId = item?.edition.id;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !programId || !editionId) return;
     let cancelled = false;
     setLoadingExperiences(true);
-    void getExperiencesForProgram(program.id, edition.id)
+    void getExperiencesForProgram(programId, editionId)
       .then((list) => {
         if (!cancelled) setExperiences(list);
       })
@@ -191,7 +181,20 @@ export default function DealDetailPanel({
     return () => {
       cancelled = true;
     };
-  }, [open, program.id, edition.id, refreshKey]);
+  }, [open, programId, editionId, refreshKey]);
+
+  if (!item) return null;
+
+  const { program, edition, status, isStale, daysUntilExpiry } = item;
+  const title = pickLang(program.brandName, language);
+  const reward = pickLang(edition.reward, language);
+  const summary = pickLang(edition.summary, language);
+  const requirements = pickLangList(edition.requirements, language);
+  const tags = edition.tags ? pickLangList(edition.tags, language) : [];
+  const showReferral = hasReferralLink(item);
+  const period = formatEditionPeriod(edition, language);
+  const offerKind = program.offerKind as OfferKind;
+  const officialUrl = edition.officialUrl;
 
   return (
     <Dialog

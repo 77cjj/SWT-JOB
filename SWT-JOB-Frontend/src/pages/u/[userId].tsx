@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Box, Container, Paper, Typography, CircularProgress, Alert } from '@mui/material';
+import { Box, Container, Paper, Typography, CircularProgress } from '@mui/material';
 import DesktopLayout from '../../layout/desktop/Layout';
 import MobileLayout from '../../layout/mobile/Layout';
 import useDevice from '../../hooks/useDevice';

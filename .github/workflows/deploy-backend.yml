@@ -21,23 +21,54 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      - name: Validate secrets
+        shell: bash
+        env:
+          ALIYUN_SSH_HOST: ${{ secrets.ALIYUN_SSH_HOST }}
+          ALIYUN_SSH_USER: ${{ secrets.ALIYUN_SSH_USER }}
+          ALIYUN_SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
+          ALIYUN_DEPLOY_PATH: ${{ secrets.ALIYUN_DEPLOY_PATH }}
+        run: |
+          missing=0
+          for name in ALIYUN_SSH_HOST ALIYUN_SSH_USER ALIYUN_SSH_KEY ALIYUN_DEPLOY_PATH; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing GitHub Secret: ${name}"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Prepare SSH private key
+        shell: bash
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.ALIYUN_SSH_KEY }}" > ~/.ssh/aliyun_deploy_key
+          chmod 600 ~/.ssh/aliyun_deploy_key
+
+          if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/aliyun_deploy_key; then
+            echo "::error::ALIYUN_SSH_KEY 不是私钥。请粘贴含 BEGIN OPENSSH PRIVATE KEY 或 BEGIN RSA PRIVATE KEY 的完整私钥，不要粘贴 .pub 公钥。"
+            exit 1
+          fi
+
+          if ! ssh-keygen -y -f ~/.ssh/aliyun_deploy_key >/dev/null 2>&1; then
+            echo "::error::ALIYUN_SSH_KEY 无法解析。常见原因：复制不完整、换行丢失、或粘贴了错误内容。请重新生成并完整粘贴私钥。"
+            exit 1
+          fi
+
+          echo "SSH private key looks valid."
+
       - name: Deploy backend over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.ALIYUN_SSH_HOST }}
           username: ${{ secrets.ALIYUN_SSH_USER }}
-          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          key_path: ~/.ssh/aliyun_deploy_key
           port: 22
           command_timeout: 15m
           script: |
             set -euo pipefail
             DEPLOY_PATH="${{ secrets.ALIYUN_DEPLOY_PATH }}"
             BRANCH="master"
-
-            if [[ -z "${DEPLOY_PATH}" ]]; then
-              echo "Missing ALIYUN_DEPLOY_PATH secret"
-              exit 1
-            fi
 
             cd "${DEPLOY_PATH}"
 

@@ -93,9 +93,6 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
                 onClick={() => setMobileNavOpen((open) => !open)}
               >
                 <span className="docs-sidebar-mobile-toggle-label">文档目录</span>
-                <span className="docs-sidebar-mobile-toggle-current">
-                  {activeSection?.title ?? toChineseTitle(page.title) ?? "SWT 文档"}
-                </span>
                 <span
                   className="docs-sidebar-mobile-toggle-chevron"
                   data-open={mobileNavOpen}
@@ -103,7 +100,9 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
                 />
               </button>
               <div className="docs-sidebar-mobile-panel" data-open={mobileNavOpen}>
-                <DocsSidebarNav navigation={navigation} page={page} />
+                <div className="docs-sidebar-mobile-panel-inner">
+                  <DocsSidebarNav navigation={navigation} page={page} />
+                </div>
               </div>
             </>
           ) : (

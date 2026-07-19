@@ -993,43 +993,37 @@ body[data-app='swt'][data-theme='dark'] .docs-callout--warning .docs-callout-hea
     position: static;
     height: auto;
     max-height: none;
-    overflow: visible;
     border-right: none;
     border-bottom: 1px solid var(--docs-border);
   }
 
+  .docs-sidebar:not(.docs-sidebar--mobile-collapsible) {
+    overflow: visible;
+  }
+
   .docs-sidebar--mobile-collapsible {
     padding: 0;
+    overflow: hidden;
   }
 
   .docs-sidebar-mobile-toggle {
     display: flex;
     width: 100%;
     align-items: center;
-    gap: 0.55rem;
+    justify-content: space-between;
+    gap: 0.75rem;
     border: none;
     background: var(--docs-bg);
-    padding: 0.85rem 0.95rem;
+    padding: 0.72rem 0.95rem;
     text-align: left;
     color: var(--docs-fg);
     cursor: pointer;
   }
 
   .docs-sidebar-mobile-toggle-label {
-    flex-shrink: 0;
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--docs-muted);
-  }
-
-  .docs-sidebar-mobile-toggle-current {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.88rem;
-    font-weight: 600;
+    color: var(--docs-fg);
   }
 
   .docs-sidebar-mobile-toggle-chevron {
@@ -1050,19 +1044,64 @@ body[data-app='swt'][data-theme='dark'] .docs-callout--warning .docs-callout-hea
   .docs-sidebar-mobile-panel {
     display: grid;
     grid-template-rows: 0fr;
+    overflow: hidden;
     transition: grid-template-rows 0.24s ease;
   }
 
   .docs-sidebar-mobile-panel[data-open='true'] {
     grid-template-rows: 1fr;
+    border-top: 1px solid var(--docs-border);
   }
 
-  .docs-sidebar-mobile-panel > .docs-sidebar-inner {
+  .docs-sidebar-mobile-panel-inner {
+    min-height: 0;
     overflow: hidden;
   }
 
-  .docs-sidebar-mobile-panel[data-open='true'] > .docs-sidebar-inner {
-    overflow: visible;
+  .docs-sidebar-mobile-panel[data-open='true'] .docs-sidebar-mobile-panel-inner {
+    max-height: min(58vh, 26rem);
+    overflow-y: auto;
+  }
+
+  .docs-sidebar-mobile-panel .docs-sidebar-inner {
+    padding-top: 0.55rem;
+  }
+
+  .docs-nav-link {
+    font-size: 0.92rem;
+  }
+
+  .docs-article-header h1 {
+    font-size: 1.72rem;
+  }
+
+  .docs-article-summary {
+    font-size: 1.02rem;
+  }
+
+  .docs-content {
+    font-size: 1.06rem;
+    line-height: 1.82;
+  }
+
+  .docs-content .docs-heading--h2 {
+    font-size: 1.42rem;
+  }
+
+  .docs-content .docs-heading--h3 {
+    font-size: 1.18rem;
+  }
+
+  .docs-content .docs-heading--h4 {
+    font-size: 1.08rem;
+  }
+
+  .docs-content h2:not(.docs-heading) {
+    font-size: 1.38rem;
+  }
+
+  .docs-content h3:not(.docs-heading) {
+    font-size: 1.16rem;
   }
 
   .docs-main {

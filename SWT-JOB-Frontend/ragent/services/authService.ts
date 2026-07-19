@@ -12,6 +12,10 @@ export async function register(input: { username: string; password: string; avat
   return api.post<LoginResponse>("/auth/register", input);
 }
 
+export async function loginWithGoogleIdToken(idToken: string) {
+  return api.post<LoginResponse>("/auth/google", { idToken });
+}
+
 export async function logout() {
   return api.post<void>("/auth/logout");
 }

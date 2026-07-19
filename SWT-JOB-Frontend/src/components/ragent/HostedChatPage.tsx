@@ -8,7 +8,6 @@ import useDevice from "../../hooks/useDevice";
 import { ChatShellProvider } from "@/context/ChatShellContext";
 import { ChatPage } from "@/pages/ChatPage";
 import { RagentProviders } from "./RagentProviders";
-import { RequireAuth } from "../../lib/ragent/guards";
 
 export function HostedChatPage() {
   const isMobile = useDevice();
@@ -27,9 +26,7 @@ export function HostedChatPage() {
   const content = (
     <div className="chat-hosted-shell flex h-full min-h-0 flex-1 flex-col bg-white dark:bg-neutral-950">
       <RagentProviders embedded>
-        <RequireAuth>
-          <ChatPage />
-        </RequireAuth>
+        <ChatPage />
       </RagentProviders>
     </div>
   );

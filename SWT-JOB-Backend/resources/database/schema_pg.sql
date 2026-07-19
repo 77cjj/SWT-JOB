@@ -9,22 +9,31 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- ============================================
 
 CREATE TABLE t_user (
-    id           VARCHAR(20)  NOT NULL PRIMARY KEY,
-    username     VARCHAR(64)  NOT NULL,
-    password     VARCHAR(128) NOT NULL,
-    role         VARCHAR(32)  NOT NULL,
-    avatar       VARCHAR(128),
-    create_time  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
-    update_time  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
-    deleted      SMALLINT     DEFAULT 0,
+    id              VARCHAR(20)  NOT NULL PRIMARY KEY,
+    username        VARCHAR(64)  NOT NULL,
+    password        VARCHAR(128) NOT NULL,
+    role            VARCHAR(32)  NOT NULL,
+    avatar          VARCHAR(512),
+    google_sub      VARCHAR(64),
+    ai_quota_total  INT          NOT NULL DEFAULT 3,
+    ai_quota_used   INT          NOT NULL DEFAULT 0,
+    create_time     TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    update_time     TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    deleted         SMALLINT     DEFAULT 0,
     CONSTRAINT uk_user_username UNIQUE (username)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_user_google_sub
+    ON t_user (google_sub)
+    WHERE google_sub IS NOT NULL AND deleted = 0;
 COMMENT ON TABLE t_user IS '系统用户表';
 COMMENT ON COLUMN t_user.id IS '主键ID';
 COMMENT ON COLUMN t_user.username IS '用户名，唯一';
-COMMENT ON COLUMN t_user.password IS '密码';
+COMMENT ON COLUMN t_user.password IS '密码（BCrypt）';
 COMMENT ON COLUMN t_user.role IS '角色：admin/user';
 COMMENT ON COLUMN t_user.avatar IS '用户头像';
+COMMENT ON COLUMN t_user.google_sub IS 'Google 账号 subject，用于 OAuth 绑定';
+COMMENT ON COLUMN t_user.ai_quota_total IS 'AI 免费提问总次数';
+COMMENT ON COLUMN t_user.ai_quota_used IS '已使用的 AI 提问次数';
 COMMENT ON COLUMN t_user.create_time IS '创建时间';
 COMMENT ON COLUMN t_user.update_time IS '更新时间';
 COMMENT ON COLUMN t_user.deleted IS '是否删除 0：正常 1：删除';

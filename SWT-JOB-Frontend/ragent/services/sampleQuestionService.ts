@@ -24,7 +24,8 @@ export interface SampleQuestionPayload {
 }
 
 export async function listSampleQuestions(): Promise<SampleQuestion[]> {
-  return api.get<SampleQuestion[], SampleQuestion[]>("/rag/sample-questions");
+  // 公开接口：游客欢迎页与登录用户均可读取
+  return api.get<SampleQuestion[], SampleQuestion[]>("/public/sample-questions");
 }
 
 export async function getSampleQuestionsPage(

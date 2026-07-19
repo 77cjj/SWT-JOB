@@ -4,19 +4,6 @@ import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useRouter } from 'next/router';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import type { GoogleOAuthProfile } from '../../lib/member/types';
-
-function decodeJwtPayload(token: string): GoogleOAuthProfile | null {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    const data = JSON.parse(json) as GoogleOAuthProfile;
-    return data;
-  } catch {
-    return null;
-  }
-}
 
 function GoogleLoginInner() {
   const router = useRouter();
@@ -26,7 +13,7 @@ function GoogleLoginInner() {
   if (!clientId) {
     return (
       <p className="text-center text-xs text-muted-foreground">
-        Google 登录未配置。请在环境变量中设置 NEXT_PUBLIC_GOOGLE_CLIENT_ID。
+        Google 登录未配置。请在环境变量中设置 NEXT_PUBLIC_GOOGLE_CLIENT_ID（后端同步设置 GOOGLE_CLIENT_ID）。
       </p>
     );
   }
@@ -38,14 +25,13 @@ function GoogleLoginInner() {
           toast.error('Google 登录失败');
           return;
         }
-        const profile = decodeJwtPayload(response.credential);
-        if (!profile?.sub) {
-          toast.error('无法解析 Google 账号信息');
-          return;
-        }
-        void loginWithGoogle(profile).then(() => {
-          void router.push('/chat');
-        });
+        void loginWithGoogle(response.credential)
+          .then(() => {
+            void router.push('/chat');
+          })
+          .catch(() => {
+            // toast 已在 store 内处理
+          });
       }}
       onError={() => toast.error('Google 登录失败')}
       theme="outline"

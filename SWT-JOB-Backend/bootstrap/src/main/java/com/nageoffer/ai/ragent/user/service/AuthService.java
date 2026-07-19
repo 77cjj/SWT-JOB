@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.user.service;
 
+import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
@@ -26,6 +27,8 @@ public interface AuthService {
     LoginVO login(LoginRequest requestParam);
 
     LoginVO register(RegisterRequest requestParam);
+
+    LoginVO loginWithGoogle(GoogleLoginRequest requestParam);
 
     void logout();
 }

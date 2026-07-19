@@ -220,9 +220,36 @@ export default function FloatingSupportWidget() {
             <>
               <Box ref={scrollRef} sx={{ flex: 1, overflowY: 'auto', p: 1.5, bgcolor: 'action.hover' }}>
                 {aiLines.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('support.aiEmpty')}
-                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {canUseAi ? t('support.aiEmpty') : t('support.aiGuestHint')}
+                    </Typography>
+                    {!canUseAi
+                      ? [
+                          { q: t('support.aiSampleQ1'), a: t('support.aiSampleA1') },
+                          { q: t('support.aiSampleQ2'), a: t('support.aiSampleA2') },
+                          { q: t('support.aiSampleQ3'), a: t('support.aiSampleA3') },
+                        ].map((item) => (
+                          <Box
+                            key={item.q}
+                            sx={{
+                              p: 1.1,
+                              borderRadius: 1.5,
+                              bgcolor: 'background.paper',
+                              border: 1,
+                              borderColor: 'divider',
+                            }}
+                          >
+                            <Typography variant="subtitle2" sx={{ fontSize: '0.82rem', mb: 0.4 }}>
+                              {item.q}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.78rem' }}>
+                              {item.a}
+                            </Typography>
+                          </Box>
+                        ))
+                      : null}
+                  </Box>
                 ) : null}
                 {aiLines.map((line, i) => (
                   <Box
@@ -255,6 +282,8 @@ export default function FloatingSupportWidget() {
                   <Alert severity="info" sx={{ mt: 1 }}>
                     {t('support.aiNeedLogin')}{' '}
                     <Link href="/login">{t('support.goLogin')}</Link>
+                    {' · '}
+                    <Link href="/chat">{t('nav.chat')}</Link>
                   </Alert>
                 ) : null}
               </Box>

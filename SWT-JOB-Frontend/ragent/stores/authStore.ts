@@ -5,8 +5,14 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 import type { User } from "@/types";
-import type { GoogleOAuthProfile, RegisterFormData } from "../../src/lib/member/types";
-import { getCurrentUser, login as loginRequest, logout as logoutRequest, register as registerRequest } from "@/services/authService";
+import type { RegisterFormData } from "../../src/lib/member/types";
+import {
+  getCurrentUser,
+  login as loginRequest,
+  loginWithGoogleIdToken,
+  logout as logoutRequest,
+  register as registerRequest,
+} from "@/services/authService";
 import { updateMyProfile } from "@/services/profileService";
 import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
@@ -20,18 +26,34 @@ interface AuthState {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (data: RegisterFormData) => Promise<void>;
-  loginWithGoogle: (profile: GoogleOAuthProfile) => Promise<void>;
+  /** 传入 Google Identity Services 返回的 ID Token（credential） */
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
+  refreshQuota: () => Promise<void>;
 }
 
 /** 仅在非生产环境且显式开启时，跳过真实登录校验。 */
 const BYPASS_AUTH = RAGENT_BYPASS_AUTH;
 const DEV_BYPASS_TOKEN = "local-dev-token";
 
-function isOAuthToken(token: string | null | undefined) {
-  return Boolean(token && token.startsWith("oauth-"));
+function resetChatStore() {
+  useChatStore.getState().cancelGeneration();
+  useChatStore.setState({
+    sessions: [],
+    currentSessionId: null,
+    messages: [],
+    isLoading: false,
+    isStreaming: false,
+    isCreatingNew: true,
+    deepThinkingEnabled: false,
+    thinkingStartAt: null,
+    streamTaskId: null,
+    streamAbort: null,
+    streamingMessageId: null,
+    cancelRequested: false,
+  });
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -43,6 +65,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           username: "admin",
           role: "admin",
           token: DEV_BYPASS_TOKEN,
+          aiQuotaTotal: null,
+          aiQuotaRemaining: null,
         }
       : null),
   token: storage.getToken() || (BYPASS_AUTH ? DEV_BYPASS_TOKEN : null),
@@ -57,28 +81,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         username: data.username || username,
         role: data.role,
         token: data.token,
-        avatar: data.avatar
+        avatar: data.avatar,
       };
       storage.setToken(user.token);
       storage.setUser(user);
       setAuthToken(user.token);
       set({ user, token: user.token, isAuthenticated: true });
       get().fetchCurrentUser().catch(() => null);
-      useChatStore.getState().cancelGeneration();
-      useChatStore.setState({
-        sessions: [],
-        currentSessionId: null,
-        messages: [],
-        isLoading: false,
-        isStreaming: false,
-        isCreatingNew: true,
-        deepThinkingEnabled: false,
-        thinkingStartAt: null,
-        streamTaskId: null,
-        streamAbort: null,
-        streamingMessageId: null,
-        cancelRequested: false
-      });
+      resetChatStore();
       toast.success("登录成功");
     } catch (error) {
       toast.error((error as Error).message || "登录失败");
@@ -100,6 +110,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         role: result.role,
         token: result.token,
         avatar: result.avatar,
+        aiQuotaTotal: 3,
+        aiQuotaRemaining: 3,
       };
       storage.setToken(user.token);
       storage.setUser(user);
@@ -115,6 +127,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         wechat: data.wechat,
         profileVisibility: data.profileVisibility,
       }).catch(() => null);
+      get().fetchCurrentUser().catch(() => null);
+      resetChatStore();
       toast.success("注册成功");
     } catch (error) {
       toast.error((error as Error).message || "注册失败");
@@ -123,27 +137,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
     }
   },
-  loginWithGoogle: async (profile) => {
+  loginWithGoogle: async (idToken) => {
     set({ isLoading: true });
     try {
-      const userId = `google-${profile.sub}`;
-      const token = `oauth-google-${profile.sub}`;
+      const data = await loginWithGoogleIdToken(idToken);
       const user = {
-        userId,
-        username: profile.name,
-        role: "user",
-        token,
-        avatar: profile.picture,
+        userId: data.userId,
+        username: data.username,
+        role: data.role,
+        token: data.token,
+        avatar: data.avatar,
       };
-      storage.setToken(token);
+      storage.setToken(user.token);
       storage.setUser(user);
-      setAuthToken(token);
-      set({ user, token, isAuthenticated: true });
-      await updateMyProfile({
-        displayName: profile.name,
-        email: profile.email,
-      }).catch(() => null);
+      setAuthToken(user.token);
+      set({ user, token: user.token, isAuthenticated: true });
+      get().fetchCurrentUser().catch(() => null);
+      resetChatStore();
       toast.success("Google 登录成功");
+    } catch (error) {
+      toast.error((error as Error).message || "Google 登录失败");
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -154,21 +168,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // Ignore network errors on logout
     }
-    useChatStore.getState().cancelGeneration();
-    useChatStore.setState({
-      sessions: [],
-      currentSessionId: null,
-      messages: [],
-      isLoading: false,
-      isStreaming: false,
-      isCreatingNew: false,
-      deepThinkingEnabled: false,
-      thinkingStartAt: null,
-      streamTaskId: null,
-      streamAbort: null,
-      streamingMessageId: null,
-      cancelRequested: false
-    });
+    resetChatStore();
+    useChatStore.setState({ isCreatingNew: false });
     storage.clearAuth();
     setAuthToken(null);
     set({ user: null, token: null, isAuthenticated: false });
@@ -190,6 +191,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         username: "admin",
         role: "admin",
         token: DEV_BYPASS_TOKEN,
+        aiQuotaTotal: null,
+        aiQuotaRemaining: null,
       };
       const fallbackToken = storage.getToken() || DEV_BYPASS_TOKEN;
       storage.setUser(fallbackUser);
@@ -209,10 +212,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   fetchCurrentUser: async () => {
     const token = get().token || storage.getToken();
-    if (!token || isOAuthToken(token)) return;
+    if (!token) return;
     try {
       const data = await getCurrentUser();
-      const nextUser = { ...data, token };
+      const nextUser = {
+        ...data,
+        token,
+        aiQuotaTotal: data.aiQuotaTotal ?? null,
+        aiQuotaRemaining: data.aiQuotaRemaining ?? null,
+      };
       storage.setUser(nextUser);
       set({ user: nextUser, token, isAuthenticated: true });
     } catch {
@@ -221,5 +229,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: null, token: null, isAuthenticated: false });
       return;
     }
-  }
+  },
+  refreshQuota: async () => {
+    if (!get().isAuthenticated) return;
+    await get().fetchCurrentUser();
+  },
 }));

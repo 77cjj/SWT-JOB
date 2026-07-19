@@ -1,13 +1,20 @@
 import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { Brain, Lightbulb, Send, Square } from "lucide-react";
+import { toast } from "sonner";
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { useI18n } from "../../../src/context/I18nContext";
 
 export function ChatInput() {
+  const router = useRouter();
   const { t } = useI18n();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
   const isComposingRef = React.useRef(false);
@@ -20,6 +27,10 @@ export function ChatInput() {
     setDeepThinkingEnabled,
     inputFocusKey
   } = useChatStore();
+
+  const quotaRemaining = user?.aiQuotaRemaining;
+  const quotaExhausted =
+    isAuthenticated && typeof quotaRemaining === "number" && quotaRemaining <= 0;
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -51,6 +62,16 @@ export function ChatInput() {
       return;
     }
     if (!value.trim()) return;
+    if (!isAuthenticated) {
+      toast.info(t("chat.guest.loginToAsk"));
+      void router.push("/login");
+      return;
+    }
+    if (quotaExhausted) {
+      toast.info(t("chat.quotaExhausted"));
+      void router.push("/pricing");
+      return;
+    }
     const next = value;
     setValue("");
     focusInput();
@@ -62,6 +83,14 @@ export function ChatInput() {
 
   return (
     <div className="space-y-4">
+      {!isAuthenticated ? (
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          {t("chat.guest.loginToAsk")}{" "}
+          <Link href="/login" className="text-indigo-600 hover:underline dark:text-indigo-400">
+            {t("common.login")}
+          </Link>
+        </p>
+      ) : null}
       <div
         className={cn(
           "relative flex flex-col rounded-2xl border bg-white px-4 pt-3 pb-2 transition-all duration-200 dark:border-neutral-700 dark:bg-neutral-950",
@@ -75,7 +104,13 @@ export function ChatInput() {
             ref={textareaRef}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder={deepThinkingEnabled ? t("chat.deepInputPlaceholder") : t("chat.inputPlaceholder")}
+            placeholder={
+              !isAuthenticated
+                ? t("chat.guest.inputPlaceholder")
+                : deepThinkingEnabled
+                  ? t("chat.deepInputPlaceholder")
+                  : t("chat.inputPlaceholder")
+            }
             className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-neutral-900 shadow-none placeholder:text-neutral-400 focus-visible:ring-0 dark:text-neutral-100 dark:placeholder:text-neutral-500"
             rows={1}
             onFocus={() => setIsFocused(true)}
@@ -103,14 +138,14 @@ export function ChatInput() {
           <button
             type="button"
             onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
-            disabled={isStreaming}
+            disabled={isStreaming || !isAuthenticated}
             aria-pressed={deepThinkingEnabled}
             className={cn(
               "absolute left-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
               deepThinkingEnabled
                 ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/80 dark:text-indigo-300"
                 : "border-transparent bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600",
-              isStreaming && "cursor-not-allowed opacity-60"
+              (isStreaming || !isAuthenticated) && "cursor-not-allowed opacity-60"
             )}
           >
             <span className="inline-flex items-center gap-2">
@@ -124,13 +159,13 @@ export function ChatInput() {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!hasContent && !isStreaming}
+            disabled={(!hasContent && !isStreaming) || quotaExhausted}
             aria-label={isStreaming ? t("chat.stopGeneration") : t("chat.sendMessage")}
             className={cn(
               "ml-auto rounded-full p-2.5 transition-all duration-200",
               isStreaming
                 ? "bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-950/80 dark:text-red-400"
-                : hasContent
+                : hasContent && !quotaExhausted
                   ? "bg-indigo-600 text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
                   : "cursor-not-allowed bg-neutral-200 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500"
             )}
@@ -139,7 +174,7 @@ export function ChatInput() {
           </button>
         </div>
       </div>
-      {deepThinkingEnabled ? (
+      {deepThinkingEnabled && isAuthenticated ? (
         <p className="text-xs text-indigo-700 dark:text-indigo-400">
           <span className="inline-flex items-center gap-1.5">
             <Lightbulb className="h-3.5 w-3.5" />

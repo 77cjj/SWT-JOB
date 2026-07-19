@@ -15,26 +15,17 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.nageoffer.ai.ragent.user.service;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CurrentUserVO {
+public interface AiQuotaService {
 
-    private String userId;
+    int DEFAULT_FREE_QUOTA = 3;
 
-    private String username;
+    boolean tryConsume(String userId);
 
-    private String role;
+    int remainingOf(UserDO user);
 
-    private String avatar;
-
-    private Integer aiQuotaTotal;
-
-    private Integer aiQuotaRemaining;
+    int totalOf(UserDO user);
 }

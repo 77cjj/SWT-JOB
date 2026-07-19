@@ -47,6 +47,16 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+function redirectToLoginIfAuthedSession() {
+  // 游客访问公开页时不要因偶发 401 被踢去登录页
+  const hadToken = Boolean(storage.getToken());
+  storage.clearAuth();
+  if (!hadToken) return;
+  const path = window.location.pathname;
+  if (path === "/login" || path === "/register") return;
+  window.location.href = "/login";
+}
+
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
     const payload = response.data;
@@ -55,10 +65,7 @@ axiosInstance.interceptors.response.use(
         const message = payload.message || "请求失败";
         const isAuthExpired = typeof message === "string" && message.includes("未登录");
         if (isAuthExpired) {
-          storage.clearAuth();
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
+          redirectToLoginIfAuthedSession();
         }
         return Promise.reject(new Error(message));
       }
@@ -68,10 +75,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error?.response?.status === 401) {
-      storage.clearAuth();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      redirectToLoginIfAuthedSession();
     }
     const responseData = error?.response?.data;
     if (responseData && typeof responseData === "object" && "message" in responseData && responseData.message) {

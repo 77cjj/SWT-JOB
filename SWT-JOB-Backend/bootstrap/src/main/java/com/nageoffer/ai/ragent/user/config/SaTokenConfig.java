@@ -90,5 +90,31 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 // 排除认证相关路径和错误页面
                 .excludePathPatterns("/auth/**", "/public/**", "/error");
+
+        // 管理后台相关接口：登录后还须具备 admin 角色
+        registry.addInterceptor(new SaInterceptor(handler -> {
+                    ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attrs != null) {
+                        HttpServletRequest request = attrs.getRequest();
+                        if (request.getDispatcherType() == DispatcherType.ASYNC) {
+                            return;
+                        }
+                        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                            return;
+                        }
+                    }
+                    StpUtil.checkLogin();
+                    StpUtil.checkRole("admin");
+                }))
+                .addPathPatterns(
+                        "/knowledge-base/**",
+                        "/sample-questions/**",
+                        "/intent-tree/**",
+                        "/ingestion/**",
+                        "/rag/traces/**",
+                        "/rag/settings",
+                        "/mappings/**",
+                        "/admin/**"
+                );
     }
 }

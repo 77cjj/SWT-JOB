@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.nageoffer.ai.ragent.user.controller.request;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CurrentUserVO {
+public class GoogleLoginRequest {
 
-    private String userId;
-
-    private String username;
-
-    private String role;
-
-    private String avatar;
-
-    private Integer aiQuotaTotal;
-
-    private Integer aiQuotaRemaining;
+    /**
+     * Google Identity Services 返回的 ID Token（JWT）
+     */
+    private String idToken;
 }

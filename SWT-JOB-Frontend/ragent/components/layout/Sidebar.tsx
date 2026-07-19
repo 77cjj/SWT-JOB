@@ -55,7 +55,7 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
     fetchSessions
   } = useChatStore();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAuthenticated } = useAuthStore();
   const [query, setQuery] = React.useState("");
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
@@ -67,10 +67,11 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
   const renameInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
+    if (!isAuthenticated) return;
     if (sessions.length === 0) {
       fetchSessions().catch(() => null);
     }
-  }, [fetchSessions, sessions.length]);
+  }, [fetchSessions, sessions.length, isAuthenticated]);
 
   const filteredSessions = React.useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -184,6 +185,11 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
               type="button"
               className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-white/5"
               onClick={() => {
+                if (!isAuthenticated) {
+                  void router.push("/login");
+                  onClose();
+                  return;
+                }
                 void createSession().catch(() => null);
                 void router.replace("/chat");
                 onClose();
@@ -196,7 +202,25 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
         </div>
         <div className="relative flex-1 min-h-0">
           <div className="h-full overflow-y-auto sidebar-scroll">
-            {sessions.length === 0 && (!sessionsLoaded || isLoading) ? (
+            {!isAuthenticated ? (
+              <div
+                className="flex h-full flex-col items-center justify-center px-4 text-center text-neutral-500 dark:text-neutral-400"
+                style={{ fontFamily: sessionTitleFont }}
+              >
+                <MessageSquare className="h-14 w-14 opacity-80" />
+                <p className="mt-3 text-[14px]">{t("chat.guest.loginToAsk")}</p>
+                <button
+                  type="button"
+                  className="mt-3 rounded-full bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+                  onClick={() => {
+                    void router.push("/login");
+                    onClose();
+                  }}
+                >
+                  {t("common.login")}
+                </button>
+              </div>
+            ) : sessions.length === 0 && (!sessionsLoaded || isLoading) ? (
               <div
                 className="flex h-full items-center justify-center text-neutral-500 dark:text-neutral-400"
                 style={{ fontFamily: sessionTitleFont }}

@@ -21,13 +21,19 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
+import com.nageoffer.ai.ragent.framework.web.SseEmitterSender;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.rag.aop.ChatRateLimit;
+import com.nageoffer.ai.ragent.rag.dto.CompletionPayload;
+import com.nageoffer.ai.ragent.rag.dto.MessageDelta;
+import com.nageoffer.ai.ragent.rag.dto.MetaPayload;
+import com.nageoffer.ai.ragent.rag.enums.SSEEventType;
 import com.nageoffer.ai.ragent.rag.service.RAGChatService;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
 import com.nageoffer.ai.ragent.rag.service.pipeline.StreamChatContext;
 import com.nageoffer.ai.ragent.rag.service.pipeline.StreamChatPipeline;
+import com.nageoffer.ai.ragent.user.service.AiQuotaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,9 +47,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class RAGChatServiceImpl implements RAGChatService {
 
+    private static final String QUOTA_EXCEEDED_MESSAGE =
+            "免费 AI 提问次数已用尽。请前往 /pricing 查看套餐，或联系站长开通更多次数。";
+
     private final StreamChatPipeline chatPipeline;
     private final StreamCallbackFactory callbackFactory;
     private final StreamTaskManager taskManager;
+    private final AiQuotaService aiQuotaService;
 
     @Override
     @ChatRateLimit
@@ -52,6 +62,14 @@ public class RAGChatServiceImpl implements RAGChatService {
         String taskId = StrUtil.isBlank(RagTraceContext.getTaskId())
                 ? IdUtil.getSnowflakeNextIdStr()
                 : RagTraceContext.getTaskId();
+        String userId = UserContext.getUserId();
+
+        if (!aiQuotaService.tryConsume(userId)) {
+            log.info("AI 配额不足，拒绝对话，userId={}，会话ID：{}", userId, actualConversationId);
+            sendQuotaReject(emitter, actualConversationId, taskId);
+            return;
+        }
+
         log.info("开始流式对话，会话ID：{}，任务ID：{}", actualConversationId, taskId);
         boolean thinkingEnabled = Boolean.TRUE.equals(deepThinking);
 
@@ -62,7 +80,7 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .conversationId(actualConversationId)
                 .taskId(taskId)
                 .deepThinking(thinkingEnabled)
-                .userId(UserContext.getUserId())
+                .userId(userId)
                 .callback(callback)
                 .build();
 
@@ -77,5 +95,14 @@ public class RAGChatServiceImpl implements RAGChatService {
     @Override
     public void stopTask(String taskId) {
         taskManager.cancel(taskId);
+    }
+
+    private void sendQuotaReject(SseEmitter emitter, String conversationId, String taskId) {
+        SseEmitterSender sender = new SseEmitterSender(emitter);
+        sender.sendEvent(SSEEventType.META.value(), new MetaPayload(conversationId, taskId));
+        sender.sendEvent(SSEEventType.REJECT.value(), new MessageDelta("response", QUOTA_EXCEEDED_MESSAGE));
+        sender.sendEvent(SSEEventType.FINISH.value(), new CompletionPayload(null, null));
+        sender.sendEvent(SSEEventType.DONE.value(), "[DONE]");
+        sender.complete();
     }
 }

@@ -18,17 +18,25 @@
 package com.nageoffer.ai.ragent.user.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.service.AiQuotaService;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import com.nageoffer.ai.ragent.user.service.UserProfileService;
+import com.nageoffer.ai.ragent.user.util.PasswordHasher;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,9 +47,16 @@ public class AuthServiceImpl implements AuthService {
     private static final String DEV_BYPASS_USERNAME = "Admin";
     private static final String DEV_BYPASS_PASSWORD = "Admin";
     private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
+    private static final String GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token=";
 
     private final UserMapper userMapper;
     private final UserProfileService userProfileService;
+
+    @Value("${app.dev-bypass-enabled:false}")
+    private boolean devBypassEnabled;
+
+    @Value("${google.client-id:}")
+    private String googleClientId;
 
     @Override
     public LoginVO login(LoginRequest requestParam) {
@@ -55,11 +70,15 @@ public class AuthServiceImpl implements AuthService {
             return new LoginVO(DEV_BYPASS_LOGIN_ID, "admin", StpUtil.getTokenValue(), DEFAULT_AVATAR_URL);
         }
         UserDO user = findByUsername(username);
-        if (user == null || !passwordMatches(password, user.getPassword())) {
+        if (user == null || !PasswordHasher.matches(password, user.getPassword())) {
             throw new ClientException("用户名或密码错误");
         }
         if (user.getId() == null) {
             throw new ClientException("用户信息异常");
+        }
+        if (PasswordHasher.needsRehash(user.getPassword())) {
+            user.setPassword(PasswordHasher.hash(password));
+            userMapper.updateById(user);
         }
         String loginId = user.getId().toString();
         StpUtil.login(loginId);
@@ -88,9 +107,11 @@ public class AuthServiceImpl implements AuthService {
         }
         UserDO user = UserDO.builder()
                 .username(username.trim())
-                .password(password)
+                .password(PasswordHasher.hash(password))
                 .role("user")
                 .avatar(StrUtil.isBlank(requestParam.getAvatar()) ? DEFAULT_AVATAR_URL : requestParam.getAvatar())
+                .aiQuotaTotal(AiQuotaService.DEFAULT_FREE_QUOTA)
+                .aiQuotaUsed(0)
                 .build();
         userMapper.insert(user);
         if (user.getId() == null) {
@@ -100,6 +121,113 @@ public class AuthServiceImpl implements AuthService {
         String loginId = user.getId().toString();
         StpUtil.login(loginId);
         return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), user.getAvatar());
+    }
+
+    @Override
+    public LoginVO loginWithGoogle(GoogleLoginRequest requestParam) {
+        if (StrUtil.isBlank(googleClientId)) {
+            throw new ClientException("Google 登录未配置，请联系管理员设置 GOOGLE_CLIENT_ID");
+        }
+        if (requestParam == null || StrUtil.isBlank(requestParam.getIdToken())) {
+            throw new ClientException("缺少 Google ID Token");
+        }
+        JSONObject payload = verifyGoogleIdToken(requestParam.getIdToken().trim());
+        String sub = payload.getStr("sub");
+        String email = payload.getStr("email");
+        String name = payload.getStr("name");
+        String picture = payload.getStr("picture");
+        if (StrUtil.isBlank(sub)) {
+            throw new ClientException("无法解析 Google 账号信息");
+        }
+
+        UserDO user = userMapper.selectOne(
+                Wrappers.lambdaQuery(UserDO.class)
+                        .eq(UserDO::getGoogleSub, sub)
+                        .eq(UserDO::getDeleted, 0)
+        );
+        if (user == null && StrUtil.isNotBlank(email)) {
+            user = findByUsername(email.trim());
+            if (user != null && StrUtil.isBlank(user.getGoogleSub())) {
+                user.setGoogleSub(sub);
+                if (StrUtil.isNotBlank(picture)) {
+                    user.setAvatar(picture);
+                }
+                userMapper.updateById(user);
+            } else if (user != null && !sub.equals(user.getGoogleSub())) {
+                user = null;
+            }
+        }
+        if (user == null) {
+            String username = resolveGoogleUsername(email, sub);
+            user = UserDO.builder()
+                    .username(username)
+                    .password(PasswordHasher.hash(IdUtil.fastSimpleUUID()))
+                    .role("user")
+                    .avatar(StrUtil.isBlank(picture) ? DEFAULT_AVATAR_URL : picture)
+                    .googleSub(sub)
+                    .aiQuotaTotal(AiQuotaService.DEFAULT_FREE_QUOTA)
+                    .aiQuotaUsed(0)
+                    .build();
+            userMapper.insert(user);
+            String displayName = StrUtil.blankToDefault(name, username);
+            userProfileService.createDefaultProfile(
+                    user.getId().toString(),
+                    displayName,
+                    StrUtil.blankToDefault(email, null),
+                    "consent"
+            );
+        }
+
+        String loginId = user.getId().toString();
+        StpUtil.login(loginId);
+        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
+        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+    }
+
+    private JSONObject verifyGoogleIdToken(String idToken) {
+        String body;
+        try {
+            body = HttpUtil.get(GOOGLE_TOKENINFO_URL + idToken, 8000);
+        } catch (Exception ex) {
+            throw new ClientException("Google Token 验证失败，请稍后重试");
+        }
+        if (StrUtil.isBlank(body) || !JSONUtil.isTypeJSON(body)) {
+            throw new ClientException("Google Token 验证失败");
+        }
+        JSONObject payload = JSONUtil.parseObj(body);
+        if (payload.containsKey("error") || payload.containsKey("error_description")) {
+            throw new ClientException("Google Token 无效或已过期");
+        }
+        String aud = payload.getStr("aud");
+        if (!googleClientId.equals(aud)) {
+            throw new ClientException("Google Client ID 与 Token 不匹配");
+        }
+        String emailVerified = payload.getStr("email_verified");
+        if (StrUtil.isNotBlank(emailVerified) && !"true".equalsIgnoreCase(emailVerified)) {
+            throw new ClientException("Google 邮箱尚未验证");
+        }
+        return payload;
+    }
+
+    private String resolveGoogleUsername(String email, String sub) {
+        if (StrUtil.isNotBlank(email)) {
+            String candidate = email.trim();
+            if (candidate.length() > 64) {
+                candidate = candidate.substring(0, 64);
+            }
+            if (findByUsername(candidate) == null) {
+                return candidate;
+            }
+        }
+        String fallback = "g_" + sub;
+        if (fallback.length() > 64) {
+            fallback = fallback.substring(0, 64);
+        }
+        if (findByUsername(fallback) == null) {
+            return fallback;
+        }
+        String withSuffix = "g_" + sub + "_" + IdUtil.fastSimpleUUID().substring(0, 6);
+        return withSuffix.length() > 64 ? withSuffix.substring(0, 64) : withSuffix;
     }
 
     private UserDO findByUsername(String username) {
@@ -113,14 +241,10 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-    private boolean passwordMatches(String input, String stored) {
-        if (stored == null) {
-            return input == null;
-        }
-        return stored.equals(input);
-    }
-
     private boolean isDevBypass(String username, String password) {
+        if (!devBypassEnabled) {
+            return false;
+        }
         return DEV_BYPASS_USERNAME.equalsIgnoreCase(StrUtil.trim(username))
                 && DEV_BYPASS_PASSWORD.equalsIgnoreCase(StrUtil.trim(password));
     }

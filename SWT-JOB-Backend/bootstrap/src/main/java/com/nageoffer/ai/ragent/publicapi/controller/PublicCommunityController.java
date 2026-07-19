@@ -21,6 +21,8 @@ import com.nageoffer.ai.ragent.deal.controller.vo.DealExperienceVO;
 import com.nageoffer.ai.ragent.deal.service.DealExperienceService;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.rag.controller.vo.SampleQuestionVO;
+import com.nageoffer.ai.ragent.rag.service.SampleQuestionService;
 import com.nageoffer.ai.ragent.user.controller.vo.UserProfileVO;
 import com.nageoffer.ai.ragent.user.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ public class PublicCommunityController {
 
     private final DealExperienceService dealExperienceService;
     private final UserProfileService userProfileService;
+    private final SampleQuestionService sampleQuestionService;
 
     @GetMapping("/public/deal-experiences")
     public Result<List<DealExperienceVO>> listDealExperiences(
@@ -53,5 +56,13 @@ public class PublicCommunityController {
     @GetMapping("/public/user-profiles/{userId}")
     public Result<UserProfileVO> publicProfile(@PathVariable String userId) {
         return Results.success(userProfileService.getProfileForViewer(userId, null));
+    }
+
+    /**
+     * 游客欢迎页示例问题（无需登录）
+     */
+    @GetMapping("/public/sample-questions")
+    public Result<List<SampleQuestionVO>> listSampleQuestions() {
+        return Results.success(sampleQuestionService.listRandomQuestions());
     }
 }

@@ -54,6 +54,21 @@ public class UserDO {
      */
     private String role;
 
+    /**
+     * Google OAuth subject；非 Google 账号为空
+     */
+    private String googleSub;
+
+    /**
+     * AI 免费提问总次数
+     */
+    private Integer aiQuotaTotal;
+
+    /**
+     * 已使用的 AI 提问次数
+     */
+    private Integer aiQuotaUsed;
+
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 

@@ -1,14 +1,20 @@
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 
 import { ChatSessionTitle } from "../../src/components/ragent/ChatSessionTitle";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { MessageList } from "@/components/chat/MessageList";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
+import { useI18n } from "../../src/context/I18nContext";
 
 export function ChatPage() {
   const router = useRouter();
+  const { t, tWithParams } = useI18n();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const sessionId =
     typeof router.query.sessionId === "string" ? router.query.sessionId : undefined;
   const {
@@ -30,7 +36,19 @@ export function ChatPage() {
     return sessions.some((session) => session.id === sessionId);
   }, [sessionId, sessions]);
 
+  const quotaRemaining = user?.aiQuotaRemaining;
+  const quotaTotal = user?.aiQuotaTotal;
+  const showQuota =
+    isAuthenticated &&
+    typeof quotaRemaining === "number" &&
+    typeof quotaTotal === "number";
+  const quotaExhausted = showQuota && quotaRemaining <= 0;
+
   React.useEffect(() => {
+    if (!isAuthenticated) {
+      setSessionsReady(true);
+      return;
+    }
     let active = true;
     fetchSessions()
       .catch(() => null)
@@ -42,7 +60,7 @@ export function ChatPage() {
     return () => {
       active = false;
     };
-  }, [fetchSessions]);
+  }, [fetchSessions, isAuthenticated]);
 
   React.useEffect(() => {
     if (!sessionId) {
@@ -51,6 +69,9 @@ export function ChatPage() {
   }, [sessionId]);
 
   React.useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
     if (sessionId) {
       if (sessionsReady && !sessionExists) {
         // 新建对话首条消息：onMeta 已把 currentSessionId 设为 URL 中的 id，但 listSessions 可能尚未包含该会话
@@ -83,6 +104,7 @@ export function ChatPage() {
     }
     createSession().catch(() => null);
   }, [
+    isAuthenticated,
     sessionId,
     sessionsReady,
     sessionExists,
@@ -97,10 +119,11 @@ export function ChatPage() {
   // 仅在仍停留在 /chat（无 session 段）但流式首包已写入 conversationId 时，把 URL 补全为 /chat/:id。
   // 绝不能在「URL 已是 /chat/B、store 里还是 A」的过渡帧里把路由 replace 回 A，否则会与侧栏切换打架。
   React.useEffect(() => {
+    if (!isAuthenticated) return;
     if (!sessionId && currentSessionId) {
       void router.replace(`/chat/${currentSessionId}`);
     }
-  }, [currentSessionId, sessionId, router]);
+  }, [currentSessionId, sessionId, router, isAuthenticated]);
 
   return (
     <MainLayout>
@@ -130,6 +153,23 @@ export function ChatPage() {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 -top-3 h-3 bg-gradient-to-t from-white to-transparent dark:from-neutral-950"
               />
+              {showQuota ? (
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                  <span>
+                    {quotaExhausted
+                      ? t("chat.quotaExhausted")
+                      : tWithParams("chat.quotaRemaining", {
+                          remaining: quotaRemaining,
+                          total: quotaTotal,
+                        })}
+                  </span>
+                  {quotaExhausted ? (
+                    <Link href="/pricing" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                      {t("chat.viewPricing")}
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
               <ChatInput />
             </div>
           )}

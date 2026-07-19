@@ -20,6 +20,10 @@ export interface User {
   role: string;
   token: string;
   avatar?: string;
+  /** 免费提问总额；admin 为 null/undefined 表示不限额 */
+  aiQuotaTotal?: number | null;
+  /** 剩余免费提问次数；admin 为 null/undefined 表示不限额 */
+  aiQuotaRemaining?: number | null;
 }
 
 export type CurrentUser = Omit<User, "token">;

@@ -29,6 +29,9 @@ import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.nageoffer.ai.ragent.user.service.AiQuotaService;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,6 +51,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final UserMapper userMapper;
+    private final AiQuotaService aiQuotaService;
 
     /**
      * 获取当前登录用户信息
@@ -55,11 +60,27 @@ public class UserController {
     @GetMapping("/user/me")
     public Result<CurrentUserVO> currentUser() {
         LoginUser user = UserContext.requireUser();
+        // admin / 开发后门账号不限额（前端以 null 表示无限）
+        if ("admin".equalsIgnoreCase(user.getRole()) || "dev-admin".equals(user.getUserId())) {
+            return Results.success(new CurrentUserVO(
+                    user.getUserId(),
+                    user.getUsername(),
+                    user.getRole(),
+                    user.getAvatar(),
+                    null,
+                    null
+            ));
+        }
+        UserDO record = userMapper.selectById(user.getUserId());
+        int total = aiQuotaService.totalOf(record);
+        int remaining = aiQuotaService.remainingOf(record);
         return Results.success(new CurrentUserVO(
                 user.getUserId(),
                 user.getUsername(),
                 user.getRole(),
-                user.getAvatar()
+                user.getAvatar(),
+                total,
+                remaining
         ));
     }
 

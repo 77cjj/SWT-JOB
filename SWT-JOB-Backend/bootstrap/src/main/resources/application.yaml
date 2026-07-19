@@ -229,3 +229,10 @@ sa-token:
 
 app:
   demo-mode: false
+  # 仅本地/调试开启；生产务必保持 false，禁用 Admin/Admin 后门登录
+  dev-bypass-enabled: false
+
+google:
+  # Google OAuth Web Client ID，与前端 NEXT_PUBLIC_GOOGLE_CLIENT_ID 保持一致
+  # 未配置时 /auth/google 返回「未配置」，不影响密码登录
+  client-id: ${GOOGLE_CLIENT_ID:}

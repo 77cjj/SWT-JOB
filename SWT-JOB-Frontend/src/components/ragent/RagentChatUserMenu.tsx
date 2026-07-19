@@ -23,6 +23,7 @@ import {
   AdminPanelSettings as AdminPanelSettingsIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
+  Sell as SellIcon,
   Settings as SettingsIcon,
   VpnKey as VpnKeyIcon,
 } from "@mui/icons-material";
@@ -34,7 +35,7 @@ import { useI18n } from "../../context/I18nContext";
 
 export function RagentChatUserMenu() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, tWithParams } = useI18n();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
@@ -103,8 +104,6 @@ export function RagentChatUserMenu() {
       setPasswordSubmitting(false);
     }
   };
-
-  const isOAuthUser = user.userId.startsWith("google-");
 
   return (
     <>
@@ -175,6 +174,22 @@ export function RagentChatUserMenu() {
           </ListItemIcon>
           <ListItemText primary={t("member.editProfile")} />
         </MenuItem>
+        <MenuItem component={Link} href="/pricing" onClick={() => setAnchor(null)}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <SellIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary={t("pricing.menuLabel")}
+            secondary={
+              typeof user.aiQuotaRemaining === "number"
+                ? tWithParams("chat.quotaRemaining", {
+                    remaining: user.aiQuotaRemaining,
+                    total: user.aiQuotaTotal ?? 3,
+                  })
+                : undefined
+            }
+          />
+        </MenuItem>
         <Divider />
         {adminNavItems.length > 0 ? (
           <>
@@ -200,14 +215,12 @@ export function RagentChatUserMenu() {
             <Divider />
           </>
         ) : null}
-        {!isOAuthUser ? (
-          <MenuItem onClick={handleOpenPassword}>
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <VpnKeyIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="修改密码" />
-          </MenuItem>
-        ) : null}
+        <MenuItem onClick={handleOpenPassword}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <VpnKeyIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="修改密码" />
+        </MenuItem>
         <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
           <ListItemIcon>
             <LogoutIcon fontSize="small" color="error" />

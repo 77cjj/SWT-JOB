@@ -359,6 +359,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       onReject: (payload: MessageDeltaPayload) => {
         if (!payload || typeof payload !== "object") return;
         get().appendStreamContent(payload.delta);
+        // 动态引入避免与 authStore 循环依赖
+        void import("@/stores/authStore").then(({ useAuthStore }) => {
+          useAuthStore.getState().refreshQuota().catch(() => null);
+        });
       },
       onResources: (payload: ResourcesPayload) => {
         if (get().streamingMessageId !== assistantId) return;
@@ -447,6 +451,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       onDone: () => {
         if (get().streamingMessageId !== assistantId) return;
+        void import("@/stores/authStore").then(({ useAuthStore }) => {
+          useAuthStore.getState().refreshQuota().catch(() => null);
+        });
         set({
           isStreaming: false,
           thinkingStartAt: null,

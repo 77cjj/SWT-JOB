@@ -1,9 +1,24 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Bot, Brain, Calculator, Gift, Lightbulb, MapPin, Send, Square } from "lucide-react";
+import { useRouter } from "next/router";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Bot,
+  Brain,
+  Calculator,
+  ChevronDown,
+  Gift,
+  Lightbulb,
+  MapPin,
+  Send,
+  Square,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { listSampleQuestions } from "@/services/sampleQuestionService";
+import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { useI18n } from "../../../src/context/I18nContext";
 
@@ -15,10 +30,19 @@ type PromptPreset = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
+type GuestFaqItem = {
+  id: string;
+  question: string;
+  answer: string;
+};
+
 const PRESET_ICONS = [BookOpen, MapPin, Calculator, Gift];
 
 export function WelcomeScreen() {
+  const router = useRouter();
   const { language, t, tWithParams } = useI18n();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const defaultPresets = React.useMemo<PromptPreset[]>(
     () => [
       {
@@ -48,13 +72,47 @@ export function WelcomeScreen() {
     ],
     [t]
   );
+  const guestFaqs = React.useMemo<GuestFaqItem[]>(
+    () => [
+      {
+        id: "faq-ssn",
+        question: t("chat.guest.faqSsnQ"),
+        answer: t("chat.guest.faqSsnA"),
+      },
+      {
+        id: "faq-bank",
+        question: t("chat.guest.faqBankQ"),
+        answer: t("chat.guest.faqBankA"),
+      },
+      {
+        id: "faq-housing",
+        question: t("chat.guest.faqHousingQ"),
+        answer: t("chat.guest.faqHousingA"),
+      },
+      {
+        id: "faq-remit",
+        question: t("chat.guest.faqRemitQ"),
+        answer: t("chat.guest.faqRemitA"),
+      },
+    ],
+    [t]
+  );
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
   const [promptPresets, setPromptPresets] = React.useState<PromptPreset[]>(defaultPresets);
+  const [openFaqId, setOpenFaqId] = React.useState<string | null>(guestFaqs[0]?.id ?? null);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const { sendMessage, isStreaming, cancelGeneration, deepThinkingEnabled, setDeepThinkingEnabled } =
     useChatStore();
+
+  const quotaRemaining = user?.aiQuotaRemaining;
+  const quotaTotal = user?.aiQuotaTotal;
+  const showQuota =
+    isAuthenticated &&
+    typeof quotaRemaining === "number" &&
+    typeof quotaTotal === "number";
+  const quotaExhausted = showQuota && quotaRemaining <= 0;
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -77,12 +135,6 @@ export function WelcomeScreen() {
   React.useEffect(() => {
     let active = true;
     setPromptPresets(defaultPresets);
-
-    if (language !== "zh") {
-      return () => {
-        active = false;
-      };
-    }
 
     const loadPresets = async () => {
       const data = await listSampleQuestions().catch(() => null);
@@ -112,19 +164,36 @@ export function WelcomeScreen() {
       }
     };
 
-    loadPresets();
+    // 中文优先用后台示例问题；英文保留内置预设，但仍尝试公开接口
+    if (language === "zh" || !isAuthenticated) {
+      loadPresets();
+    }
     return () => {
       active = false;
     };
-  }, [defaultPresets, language, t, tWithParams]);
+  }, [defaultPresets, language, t, tWithParams, isAuthenticated]);
+
+  const requireLogin = React.useCallback(() => {
+    toast.info(t("chat.guest.loginToAsk"));
+    void router.push("/login");
+  }, [router, t]);
 
   const applyPreset = React.useCallback(
     (prompt: string) => {
       if (isStreaming) return;
+      if (!isAuthenticated) {
+        requireLogin();
+        return;
+      }
+      if (quotaExhausted) {
+        toast.info(t("chat.quotaExhausted"));
+        void router.push("/pricing");
+        return;
+      }
       setValue(prompt);
       focusInput();
     },
-    [isStreaming, focusInput]
+    [isStreaming, isAuthenticated, requireLogin, quotaExhausted, router, t, focusInput]
   );
 
   const handleSubmit = async () => {
@@ -134,6 +203,15 @@ export function WelcomeScreen() {
       return;
     }
     if (!value.trim()) return;
+    if (!isAuthenticated) {
+      requireLogin();
+      return;
+    }
+    if (quotaExhausted) {
+      toast.info(t("chat.quotaExhausted"));
+      void router.push("/pricing");
+      return;
+    }
     const next = value;
     setValue("");
     focusInput();
@@ -158,9 +236,94 @@ export function WelcomeScreen() {
             </span>
           </h1>
           <p className="mt-4 text-base text-neutral-600 sm:text-lg dark:text-neutral-400">
-            {t("chat.subtitle")}
+            {isAuthenticated ? t("chat.subtitle") : t("chat.guest.subtitle")}
           </p>
+          {!isAuthenticated ? (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href="/login"
+                className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              >
+                {t("common.login")}
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-indigo-300 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
+              >
+                {t("common.register")}
+              </Link>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t("chat.guest.freeQuotaHint")}
+              </span>
+            </div>
+          ) : showQuota ? (
+            <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+              {quotaExhausted
+                ? t("chat.quotaExhausted")
+                : tWithParams("chat.quotaRemaining", {
+                    remaining: quotaRemaining,
+                    total: quotaTotal,
+                  })}
+              {quotaExhausted ? (
+                <>
+                  {" · "}
+                  <Link href="/pricing" className="text-indigo-600 hover:underline dark:text-indigo-400">
+                    {t("chat.viewPricing")}
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
+
+        {!isAuthenticated ? (
+          <div className="mt-10 animate-fade-up space-y-3" style={{ animationDelay: "80ms", animationFillMode: "both" }}>
+            <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.24em] text-neutral-400 dark:text-neutral-500">
+              <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
+              {t("chat.guest.faqTitle")}
+              <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
+            </div>
+            {guestFaqs.map((item) => {
+              const open = openFaqId === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-neutral-200/90 bg-white/95 text-left shadow-sm dark:border-neutral-700 dark:bg-neutral-950"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqId(open ? null : item.id)}
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                  >
+                    <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                      {item.question}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-neutral-400 transition-transform",
+                        open && "rotate-180"
+                      )}
+                    />
+                  </button>
+                  {open ? (
+                    <div className="border-t border-neutral-100 px-4 py-3 text-sm leading-relaxed text-neutral-600 dark:border-neutral-800 dark:text-neutral-300">
+                      {item.answer}
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={requireLogin}
+                          className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                        >
+                          {t("chat.guest.askAiCta")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
         <div className="mt-10 animate-fade-up" style={{ animationDelay: "80ms", animationFillMode: "both" }}>
           <div
@@ -177,7 +340,13 @@ export function WelcomeScreen() {
                 ref={textareaRef}
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                placeholder={deepThinkingEnabled ? t("chat.deepInputPlaceholder") : t("chat.inputPlaceholder")}
+                placeholder={
+                  !isAuthenticated
+                    ? t("chat.guest.inputPlaceholder")
+                    : deepThinkingEnabled
+                      ? t("chat.deepInputPlaceholder")
+                      : t("chat.inputPlaceholder")
+                }
                 className="max-h-40 min-h-[52px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none sm:text-base dark:text-neutral-100 dark:placeholder:text-neutral-500"
                 rows={1}
                 onFocus={() => setIsFocused(true)}
@@ -205,14 +374,14 @@ export function WelcomeScreen() {
               <button
                 type="button"
                 onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
-                disabled={isStreaming}
+                disabled={isStreaming || !isAuthenticated}
                 aria-pressed={deepThinkingEnabled}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
                   deepThinkingEnabled
                     ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/80 dark:text-indigo-300"
                     : "border-transparent bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-900",
-                  isStreaming && "cursor-not-allowed opacity-60"
+                  (isStreaming || !isAuthenticated) && "cursor-not-allowed opacity-60"
                 )}
               >
                 <span className="inline-flex items-center gap-2">
@@ -241,7 +410,7 @@ export function WelcomeScreen() {
               </button>
             </div>
           </div>
-          {deepThinkingEnabled ? (
+          {deepThinkingEnabled && isAuthenticated ? (
             <p className="mt-3 text-xs text-indigo-700 dark:text-indigo-400">
               <span className="inline-flex items-center gap-1.5">
                 <Lightbulb className="h-3.5 w-3.5" />
@@ -254,7 +423,7 @@ export function WelcomeScreen() {
         <div className="mt-10 animate-fade-up" style={{ animationDelay: "160ms", animationFillMode: "both" }}>
           <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.24em] text-neutral-400 dark:text-neutral-500">
             <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
-            {t("chat.startFrom")}
+            {isAuthenticated ? t("chat.startFrom") : t("chat.guest.samplePrompts")}
             <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -102,7 +102,7 @@ function fmtUsd(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
-export default function MarketplacePage() {
+export default function MarketplacePage({ embedded = false }: { embedded?: boolean }) {
   const { t, tWithParams } = useI18n();
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -200,7 +200,7 @@ export default function MarketplacePage() {
 
   const requireLogin = () => {
     if (!isAuthenticated) {
-      void router.push('/login?redirect=/market');
+      void router.push('/login?redirect=/deals?section=market');
       return false;
     }
     return true;
@@ -304,36 +304,52 @@ export default function MarketplacePage() {
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          mb: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
-            {t('marketplace.title')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('marketplace.subtitleShort')}
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<Add />}
-          sx={{ flexShrink: 0, mt: 0.5 }}
-          onClick={() => {
-            if (!requireLogin()) return;
-            setCreateOpen(true);
+      {!embedded ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 2,
           }}
         >
-          {t('marketplace.createListing')}
-        </Button>
-      </Box>
+          <Box>
+            <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
+              {t('marketplace.title')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('marketplace.subtitleShort')}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<Add />}
+            sx={{ flexShrink: 0, mt: 0.5 }}
+            onClick={() => {
+              if (!requireLogin()) return;
+              setCreateOpen(true);
+            }}
+          >
+            {t('marketplace.createListing')}
+          </Button>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<Add />}
+            onClick={() => {
+              if (!requireLogin()) return;
+              setCreateOpen(true);
+            }}
+          >
+            {t('marketplace.createListing')}
+          </Button>
+        </Box>
+      )}
 
       <Tabs
         data-tour="market-tabs"

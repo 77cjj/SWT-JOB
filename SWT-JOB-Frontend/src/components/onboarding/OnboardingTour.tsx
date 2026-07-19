@@ -1,9 +1,11 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Box, Button, Fab, Paper, Tooltip, Typography } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { useAuthStore } from '@/stores/authStore';
+import useDevice from '../../hooks/useDevice';
 import {
   getStepsForRoute,
   isOnboardingDone,
@@ -39,14 +41,30 @@ export function useOnboarding() {
   return useContext(OnboardingContext);
 }
 
-function OnboardingHelpFab() {
+function OnboardingHelpFab({
+  done,
+  isMobile,
+  supportVisible,
+}: {
+  done: boolean;
+  isMobile: boolean;
+  supportVisible: boolean;
+}) {
   const router = useRouter();
   const ctx = useOnboarding();
-  const steps = getStepsForRoute(router.pathname);
+  const section =
+    router.pathname === '/deals' && router.query.section === 'market' ? 'market' : undefined;
+  const steps = getStepsForRoute(router.pathname, section);
 
-  if (!ctx || steps.length === 0 || shouldHideHelpFab(router.pathname)) return null;
+  if (!ctx || steps.length === 0 || shouldHideHelpFab(router.pathname) || done) return null;
 
-  const supportVisible = !shouldHideSupportWidget(router.pathname);
+  const bottomOffset = isMobile
+    ? supportVisible
+      ? 132
+      : 76
+    : supportVisible
+      ? 92
+      : 20;
 
   return (
     <Tooltip title="新手引导" placement="left">
@@ -57,15 +75,20 @@ function OnboardingHelpFab() {
         sx={{
           position: 'fixed',
           right: { xs: 16, sm: 20 },
-          bottom: supportVisible ? { xs: 88, sm: 92 } : { xs: 16, sm: 20 },
+          bottom: bottomOffset,
           zIndex: 1390,
           boxShadow: 4,
           bgcolor: 'background.paper',
           color: 'primary.main',
           border: '1px solid',
           borderColor: 'divider',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
             bgcolor: 'action.hover',
+            transform: 'scale(1.05)',
+          },
+          '&:active': {
+            transform: 'scale(0.96)',
           },
         }}
       >
@@ -192,12 +215,25 @@ function OnboardingOverlay({
   );
 }
 
-/** 全局引导：首次自动播放 + 右下角悬浮「?」 */
+/** 全局引导：每账户首次自动播放；完成后不再显示「?」按钮 */
 export function OnboardingTour() {
   const router = useRouter();
+  const isMobile = useDevice();
+  const userId = useAuthStore((s) => s.user?.userId ?? null);
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
-  const steps = getStepsForRoute(router.pathname);
+  const [done, setDone] = useState(true);
+
+  const section =
+    router.pathname === '/deals' && router.query.section === 'market' ? 'market' : undefined;
+  const steps = useMemo(
+    () => getStepsForRoute(router.pathname, section),
+    [router.pathname, section],
+  );
+
+  useEffect(() => {
+    setDone(isOnboardingDone(userId));
+  }, [userId]);
 
   const startTour = useCallback(() => {
     setIndex(0);
@@ -205,9 +241,10 @@ export function OnboardingTour() {
   }, []);
 
   const finish = useCallback(() => {
-    markOnboardingDone();
+    markOnboardingDone(userId);
+    setDone(true);
     setActive(false);
-  }, []);
+  }, [userId]);
 
   const next = useCallback(() => {
     if (index < steps.length - 1) {
@@ -220,11 +257,11 @@ export function OnboardingTour() {
   useEffect(() => {
     setActive(false);
     setIndex(0);
-  }, [router.pathname]);
+  }, [router.pathname, section]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (isOnboardingDone()) return;
+    if (isOnboardingDone(userId)) return;
     if (steps.length === 0) return;
 
     let cancelled = false;
@@ -249,14 +286,16 @@ export function OnboardingTour() {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [router.pathname, steps]);
+  }, [router.pathname, section, steps, userId]);
+
+  const supportVisible = !shouldHideSupportWidget(router.pathname);
 
   return (
     <OnboardingContext.Provider value={{ startTour }}>
       {active && steps.length > 0 ? (
         <OnboardingOverlay steps={steps} index={index} onFinish={finish} onNext={next} />
       ) : null}
-      <OnboardingHelpFab />
+      <OnboardingHelpFab done={done} isMobile={isMobile} supportVisible={supportVisible} />
     </OnboardingContext.Provider>
   );
 }

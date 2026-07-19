@@ -353,6 +353,8 @@ export const en = {
   deals: {
     title: 'Referral Bonuses',
     subtitle: 'Referral cash-back and sign-up bonuses · Official terms always apply',
+    sectionOfficial: 'Official picks',
+    sectionMarket: 'Marketplace',
     disclaimer: 'This site is not affiliated with banks or carriers. Bonus terms change often. Verify SSN and direct-deposit requirements yourself.',
     offerKind: {
       refer: 'Referral',

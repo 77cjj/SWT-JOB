@@ -6,7 +6,17 @@ export type OnboardingStep = {
   body: string;
 };
 
-export const ONBOARDING_STORAGE_KEY = 'swt-onboarding-v1-done';
+export const ONBOARDING_STORAGE_KEY_PREFIX = 'swt-onboarding-v2-done';
+
+/** 未登录用户使用 guest；已登录用户使用 userId */
+export function getOnboardingUserKey(userId?: string | null): string {
+  const id = userId?.trim();
+  return id || 'guest';
+}
+
+function storageKey(userId?: string | null): string {
+  return `${ONBOARDING_STORAGE_KEY_PREFIX}:${getOnboardingUserKey(userId)}`;
+}
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
@@ -52,29 +62,42 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     body: '支持关键词搜索；点「载入计算器」把情报带到对比页。',
   },
   {
+    id: 'deals-section',
+    route: '/deals',
+    target: '[data-tour="deals-section"]',
+    title: '薅羊毛',
+    body: '官方 Refer 活动在此浏览；「交易市集」Tab 可发布或购买返现与岗位情报。',
+  },
+  {
     id: 'market-tabs',
-    route: '/market',
+    route: '/deals',
     target: '[data-tour="market-tabs"]',
     title: '交易市集',
     body: 'Refer 返现与付费岗位情报分栏展示；钱包与撮合单在后续 Tab。',
   },
 ];
 
-export function getStepsForRoute(pathname: string): OnboardingStep[] {
+export function getStepsForRoute(pathname: string, section?: string): OnboardingStep[] {
+  if (pathname === '/deals') {
+    if (section === 'market') {
+      return ONBOARDING_STEPS.filter((s) => s.id === 'market-tabs');
+    }
+    return ONBOARDING_STEPS.filter((s) => s.id === 'deals-section');
+  }
   return ONBOARDING_STEPS.filter((s) => s.route === pathname);
 }
 
-export function isOnboardingDone(): boolean {
+export function isOnboardingDone(userId?: string | null): boolean {
   if (typeof window === 'undefined') return true;
-  return localStorage.getItem(ONBOARDING_STORAGE_KEY) === '1';
+  return localStorage.getItem(storageKey(userId)) === '1';
 }
 
-export function markOnboardingDone() {
+export function markOnboardingDone(userId?: string | null) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ONBOARDING_STORAGE_KEY, '1');
+  localStorage.setItem(storageKey(userId), '1');
 }
 
-export function resetOnboarding() {
+export function resetOnboarding(userId?: string | null) {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+  localStorage.removeItem(storageKey(userId));
 }

@@ -11,7 +11,7 @@ import {
   HistoryRounded,
   MenuBookRounded,
   SmartToyRounded,
-  StorefrontRounded,
+  LocalOfferRounded,
 } from '@mui/icons-material';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
@@ -27,6 +27,16 @@ const RagentChatUserMenu = dynamic(
 interface MobileLayoutProps extends PropsWithChildren {
   mainClassName?: string;
 }
+
+type NavKey = 'home' | 'jobs' | 'docs' | 'chat' | 'deals';
+
+const NAV_ITEMS: { key: NavKey; href: string; icon: React.ReactNode; match: (path: string) => boolean }[] = [
+  { key: 'home', href: '/compare', icon: <BarChartRounded fontSize="small" />, match: (p) => p === '/compare' },
+  { key: 'jobs', href: '/jobs', icon: <HistoryRounded fontSize="small" />, match: (p) => p === '/jobs' || p.startsWith('/jobs/') },
+  { key: 'chat', href: '/', icon: <SmartToyRounded fontSize="small" />, match: (p) => p === '/' || p.startsWith('/chat') },
+  { key: 'deals', href: '/deals', icon: <LocalOfferRounded fontSize="small" />, match: (p) => p === '/deals' || p.startsWith('/deals/') },
+  { key: 'docs', href: '/docs', icon: <MenuBookRounded fontSize="small" />, match: (p) => p.startsWith('/docs') },
+];
 
 export default function MobileLayout({ children, mainClassName }: MobileLayoutProps) {
   const { mode, toggleMode } = useAppTheme();
@@ -49,34 +59,8 @@ export default function MobileLayout({ children, mainClassName }: MobileLayoutPr
     handleLangMenuClose();
   };
 
-  const navLinkClass = (path: string) => {
-    const isActive = pathname === path || (path !== '/' && pathname.startsWith(path));
-    return `flex flex-col items-center gap-0.5 px-2 py-2 text-[11px] leading-tight transition-colors ${
-      isActive
-        ? isDark
-          ? 'text-indigo-400'
-          : 'text-indigo-600'
-        : isDark
-          ? 'text-neutral-400'
-          : 'text-neutral-600'
-    }`;
-  };
-  const aiNavLinkClass = () => {
-    const isActive = pathname === '/' || pathname.startsWith('/chat');
-    return `flex flex-col items-center gap-0.5 px-2 py-2 text-[11px] leading-tight transition-colors ${
-      isActive
-        ? isDark
-          ? 'text-indigo-400'
-          : 'text-indigo-600'
-        : isDark
-          ? 'text-neutral-400'
-          : 'text-neutral-600'
-    }`;
-  };
-
-  const navLabel = (key: 'home' | 'jobs' | 'docs' | 'chat' | 'deals' | 'market') => {
+  const navLabel = (key: NavKey) => {
     const full = t(`nav.${key}`);
-    // 中文保留前两个字，英文/其他语言取第一个单词，避免在小屏溢出
     if (language === 'zh') {
       if (key === 'deals') return '羊毛';
       return full.slice(0, 2);
@@ -142,34 +126,48 @@ export default function MobileLayout({ children, mainClassName }: MobileLayoutPr
         {children}
       </main>
       <nav
-        className={`fixed bottom-0 left-0 right-0 border-t ${
+        className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t pb-[env(safe-area-inset-bottom,0px)] ${
           isDark ? 'border-neutral-800/60 bg-neutral-950' : 'border-neutral-200 bg-white'
         }`}
       >
-        <div className="flex items-center justify-around py-1.5">
-          <Link href="/compare" className={navLinkClass('/compare')}>
-            <BarChartRounded fontSize="small" />
-            <span>{navLabel('home')}</span>
-          </Link>
-          <Link href="/jobs" className={navLinkClass('/jobs')}>
-            <HistoryRounded fontSize="small" />
-            <span>{navLabel('jobs')}</span>
-          </Link>
-          <Link href="/" className={aiNavLinkClass()}>
-            <SmartToyRounded fontSize="small" />
-            <span>{navLabel('chat')}</span>
-          </Link>
-          <Link href="/market" className={navLinkClass('/market')}>
-            <StorefrontRounded fontSize="small" />
-            <span>{navLabel('market')}</span>
-          </Link>
-          <Link href="/docs" className={navLinkClass('/docs')}>
-            <MenuBookRounded fontSize="small" />
-            <span>{navLabel('docs')}</span>
-          </Link>
+        <div className="mx-auto grid max-w-lg grid-cols-5 items-stretch px-1 py-1">
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.match(pathname);
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={cn(
+                  'mobile-nav-item group relative flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] leading-tight transition-all duration-200 ease-out active:scale-95',
+                  isActive
+                    ? isDark
+                      ? 'text-indigo-400'
+                      : 'text-indigo-600'
+                    : isDark
+                      ? 'text-neutral-400'
+                      : 'text-neutral-600',
+                )}
+              >
+                <span
+                  className={cn(
+                    'mobile-nav-icon flex items-center justify-center transition-transform duration-200 ease-out',
+                    isActive ? 'scale-110' : 'group-hover:scale-105',
+                  )}
+                >
+                  {item.icon}
+                </span>
+                <span className="max-w-full truncate px-0.5">{navLabel(item.key)}</span>
+                <span
+                  className={cn(
+                    'mobile-nav-indicator absolute bottom-0.5 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-indigo-500 transition-all duration-300 ease-out',
+                    isActive ? 'w-5 opacity-100' : 'w-0 opacity-0',
+                  )}
+                />
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>
   );
 }
-

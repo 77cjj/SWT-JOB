@@ -96,14 +96,6 @@ export default function DesktopLayout({
                 {t("nav.jobs")}
               </Link>
               <Link
-                href="/market"
-                className={`transition-colors ${linkHoverClass} ${
-                  pathname === "/market" ? linkActiveClass : ""
-                }`}
-              >
-                {t("nav.market")}
-              </Link>
-              <Link
                 href="/deals"
                 className={`transition-colors ${linkHoverClass} ${
                   pathname === "/deals" ? linkActiveClass : ""

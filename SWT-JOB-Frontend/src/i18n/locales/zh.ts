@@ -352,6 +352,8 @@ export const zh = {
   deals: {
     title: '薅羊毛',
     subtitle: '邀请返现与开户奖励一览 · 细则以各平台官网为准',
+    sectionOfficial: '官方精选',
+    sectionMarket: '交易市集',
     disclaimer: '本站非银行或运营商官方页面。奖励条件可能随时变更；涉及 SSN、Direct Deposit 等请自行核实，风险自负。',
     offerKind: {
       refer: '邀请返现',

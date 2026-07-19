@@ -29,6 +29,7 @@ import { buildQuery } from '@/utils/helpers';
 import { storage } from '@/utils/storage';
 import { useAuthStore } from '@/stores/authStore';
 import { useI18n } from '../../context/I18nContext';
+import useDevice from '../../hooks/useDevice';
 import type { MessageDeltaPayload } from '@/types';
 
 type PanelTab = 'ai' | 'human';
@@ -63,6 +64,7 @@ export default function FloatingSupportWidget() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isMobile = useDevice();
   const hidden = shouldHideWidget(router.pathname);
   const wechatHint = process.env.NEXT_PUBLIC_SITE_WECHAT_HINT?.trim();
 
@@ -171,7 +173,14 @@ export default function FloatingSupportWidget() {
   if (hidden) return null;
 
   return (
-    <Box sx={{ position: 'fixed', right: 20, bottom: 20, zIndex: 1400 }}>
+    <Box
+      sx={{
+        position: 'fixed',
+        right: { xs: 16, sm: 20 },
+        bottom: isMobile ? 76 : 20,
+        zIndex: 1400,
+      }}
+    >
       {open ? (
         <Paper
           elevation={8}

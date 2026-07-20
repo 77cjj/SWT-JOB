@@ -311,16 +311,11 @@ export default function DealsPage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
-        <Box>
-          <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 0.5 }}>
-            {t('deals.title')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('deals.subtitle')}
-          </Typography>
-        </Box>
+        <Typography variant="body2" color="text.secondary">
+          {t('deals.subtitle')}
+        </Typography>
         <Tooltip title={t('deals.disclaimer')} placement="left">
-          <IconButton size="small" aria-label={t('deals.disclaimer')} sx={{ mt: 0.5, flexShrink: 0 }}>
+          <IconButton size="small" aria-label={t('deals.disclaimer')} sx={{ mt: -0.25, flexShrink: 0 }}>
             <InfoOutlined fontSize="small" />
           </IconButton>
         </Tooltip>

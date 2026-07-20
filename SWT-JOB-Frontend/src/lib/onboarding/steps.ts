@@ -23,8 +23,8 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: 'compare-title',
     route: '/compare',
     target: '[data-tour="compare-header"]',
-    title: '选岗计算器',
-    body: '在这里手动录入 Offer，或从岗位情报库一键载入，模拟税后净收入。',
+    title: '保存与对比',
+    body: '右侧可浏览岗位情报库，或把已保存岗位加入对比（最多 3 个）。',
   },
   {
     id: 'compare-form',
@@ -38,14 +38,14 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     route: '/compare',
     target: '[data-tour="income-preview"]',
     title: '收入预览',
-    body: '表单填写时，这里会实时显示税后净收入估算。',
+    body: '这里显示税后净收入估算。点击金额可在美元与人民币等币种间切换（后续会支持更多货币）。',
   },
   {
     id: 'compare-saved',
     route: '/compare',
     target: '[data-tour="saved-jobs"]',
-    title: '保存与对比',
-    body: '保存多个岗位后，最多选 3 个打开对比弹窗。',
+    title: '我的岗位',
+    body: '保存多个岗位后，点「打开对比」查看表格维度与 AI 分析建议。',
   },
   {
     id: 'jobs-explorer',

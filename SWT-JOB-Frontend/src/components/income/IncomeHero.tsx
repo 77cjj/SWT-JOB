@@ -187,15 +187,15 @@ export default function IncomeHero({
       >
         <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <Box
-            component={ready && canCycleCurrency ? 'button' : 'div'}
-            type={ready && canCycleCurrency ? 'button' : undefined}
-            onClick={ready && canCycleCurrency ? handleCycleCurrency : undefined}
-            aria-label={
-              canCycleCurrency
-                ? tWithParams('income.cycleCurrency', { currency: displayCurrency })
-                : undefined
-            }
-            title={canCycleCurrency ? t('income.cycleCurrencyHint') : undefined}
+            {...(ready && canCycleCurrency
+              ? {
+                  component: 'button' as const,
+                  type: 'button' as const,
+                  onClick: handleCycleCurrency,
+                  'aria-label': tWithParams('income.cycleCurrency', { currency: displayCurrency }),
+                  title: t('income.cycleCurrencyHint'),
+                }
+              : {})}
             sx={{
               display: 'inline-flex',
               alignItems: 'flex-start',
@@ -238,11 +238,6 @@ export default function IncomeHero({
                 })
               : t('income.heroHint')}
           </Typography>
-          {ready && canCycleCurrency ? (
-            <Typography color="text.disabled" sx={{ mt: 0.35, fontSize: '0.6875rem', lineHeight: 1.3 }}>
-              {tWithParams('income.showingCurrency', { currency: displayCurrency })}
-            </Typography>
-          ) : null}
         </Box>
 
         {ready && income && useInlineDetails ? (

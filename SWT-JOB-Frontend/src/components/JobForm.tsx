@@ -6,7 +6,6 @@ import {
   Button,
   FormControlLabel,
   Checkbox,
-  MenuItem,
   Box,
   Divider,
   Alert,
@@ -18,10 +17,10 @@ import {
 } from '@mui/material';
 import { Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { DateField } from '@mui/x-date-pickers/DateField';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import type { JobRecord, SecondJobDifficulty } from '../types/job';
 import taxTable from '../data/tax.json';
@@ -71,6 +70,13 @@ const DEFAULT_FORM: Partial<JobRecord> = {
   projectEndDate: '2026-09-15',
 };
 
+const twoColumnGrid = {
+  display: 'grid',
+  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+  gap: 1.25,
+  alignItems: 'start',
+} as const;
+
 interface Props {
   onSubmit: (job: JobRecord) => void;
   initialData?: JobRecord;
@@ -85,6 +91,24 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
   const { t, tWithParams } = useI18n();
   const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState<Partial<JobRecord>>(initialData ?? DEFAULT_FORM);
+
+  const formatStateOption = (stateCode: string) => {
+    const maxRate = getStateMaxMarginalRate(stateCode);
+    const suffix =
+      maxRate > 0
+        ? tWithParams('jobForm.stateTaxSuffix', { rate: (maxRate * 100).toFixed(2) })
+        : t('jobForm.noStateTax');
+    return `${stateCode} ${suffix}`;
+  };
+
+  const filterStateOptions = (options: string[], inputValue: string) => {
+    const query = inputValue.trim().toLowerCase();
+    if (!query) return options;
+    return options.filter((code) => {
+      const label = formatStateOption(code).toLowerCase();
+      return code.toLowerCase().includes(query) || label.includes(query);
+    });
+  };
 
   const estimatedIncome = useMemo(() => {
     const hourlyWage = formData.hourlyWage ?? 0;
@@ -192,6 +216,16 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
     if (!initialData) setFormData(DEFAULT_FORM);
   };
 
+  const setProjectStartDate = (newValue: Dayjs | null) => {
+    if (!newValue?.isValid()) return;
+    setFormData({ ...formData, projectStartDate: newValue.format('YYYY-MM-DD') });
+  };
+
+  const setProjectEndDate = (newValue: Dayjs | null) => {
+    if (!newValue?.isValid()) return;
+    setFormData({ ...formData, projectEndDate: newValue.format('YYYY-MM-DD') });
+  };
+
   const accordionSx = {
     bgcolor: 'transparent',
     '&:before': { display: 'none' },
@@ -209,6 +243,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
     '& .MuiSlider-track': { height: 3 },
   } as const;
 
+  const dateFieldSlotProps = {
+    textField: {
+      fullWidth: true,
+      size: 'small' as const,
+      placeholder: 'YYYY-MM-DD',
+    },
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Card variant="outlined" sx={{ borderRadius: 1.5 }}>
@@ -220,108 +262,207 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
               </Alert>
             ) : null}
 
-            <TextField
+            <Box sx={twoColumnGrid}>
+              <Autocomplete
+                fullWidth
+                freeSolo
+                size="small"
+                options={JOB_TITLE_OPTIONS}
+                value={formData.jobTitle ?? ''}
+                onChange={(_, newValue: string | null) =>
+                  setFormData({ ...formData, jobTitle: newValue ?? '' })
+                }
+                onInputChange={(_, newInputValue: string) =>
+                  setFormData({ ...formData, jobTitle: newInputValue })
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label={t('jobForm.jobTitle')} placeholder={t('jobForm.jobTitle')} />
+                )}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label={t('jobForm.company')}
+                value={formData.company ?? ''}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              />
+            </Box>
+
+            <Autocomplete
               fullWidth
-              required
-              select
+              disableClearable
               size="small"
-              label={t('jobForm.state')}
+              options={STATE_OPTIONS}
               value={formData.state ?? 'NJ'}
-              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-            >
-              {STATE_OPTIONS.map((s) => {
-                const maxRate = getStateMaxMarginalRate(s);
-                const suffix =
-                  maxRate > 0
-                    ? tWithParams('jobForm.stateTaxSuffix', { rate: (maxRate * 100).toFixed(2) })
-                    : t('jobForm.noStateTax');
-                return (
-                  <MenuItem key={s} value={s}>
-                    {s} {suffix}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-
-            <Box>
-              <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25, fontSize: '0.8125rem' }}>
-                {t('jobForm.hourlyWage')}
-                <Typography component="span" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
-                  {(formData.hourlyWage ?? 12).toFixed(2)} $/h
-                </Typography>
-              </Typography>
-              <Slider
-                size="small"
-                sx={sliderSx}
-                value={formData.hourlyWage ?? 12}
-                min={7.25}
-                max={40}
-                step={0.25}
-                valueLabelDisplay="auto"
-                onChange={(_, value) => {
-                  const next = Array.isArray(value) ? value[0] : value;
-                  setFormData({ ...formData, hourlyWage: next });
-                }}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25, fontSize: '0.8125rem' }}>
-                {t('jobForm.avgHoursPerWeek')}
-                <Typography component="span" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
-                  {formData.avgHoursPerWeek ?? 40} h
-                </Typography>
-              </Typography>
-              <Slider
-                size="small"
-                sx={sliderSx}
-                value={formData.avgHoursPerWeek ?? 40}
-                min={20}
-                max={60}
-                step={1}
-                valueLabelDisplay="auto"
-                onChange={(_, value) => {
-                  const next = Array.isArray(value) ? value[0] : value;
-                  setFormData({ ...formData, avgHoursPerWeek: next });
-                }}
-              />
-            </Box>
-
-            <FormControlLabel
-              sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.8125rem' } }}
-              control={
-                <Checkbox
-                  size="small"
-                  checked={formData.tipped ?? false}
-                  onChange={(e) => setFormData({ ...formData, tipped: e.target.checked })}
+              onChange={(_, newValue: string | null) => {
+                if (newValue) setFormData({ ...formData, state: newValue });
+              }}
+              filterOptions={(options, state) => filterStateOptions(options, state.inputValue)}
+              getOptionLabel={(code) => formatStateOption(code)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  required
+                  label={t('jobForm.state')}
+                  placeholder={t('jobForm.state')}
                 />
-              }
-              label={t('jobForm.tipped')}
+              )}
             />
 
-            {formData.tipped ? (
+            <Box sx={twoColumnGrid}>
               <Box>
                 <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25, fontSize: '0.8125rem' }}>
-                  {t('jobForm.averageTip')}
+                  {t('jobForm.hourlyWage')}
                   <Typography component="span" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
-                    {(formData.averageTip?.[0] ?? 12).toFixed(1)} $/h
+                    {(formData.hourlyWage ?? 12).toFixed(2)} $/h
                   </Typography>
                 </Typography>
                 <Slider
                   size="small"
                   sx={sliderSx}
-                  value={formData.averageTip?.[0] ?? 12}
-                  min={0}
-                  max={30}
-                  step={0.5}
+                  value={formData.hourlyWage ?? 12}
+                  min={7.25}
+                  max={40}
+                  step={0.25}
                   valueLabelDisplay="auto"
                   onChange={(_, value) => {
                     const next = Array.isArray(value) ? value[0] : value;
-                    setFormData({ ...formData, averageTip: [next, next] });
+                    setFormData({ ...formData, hourlyWage: next });
                   }}
                 />
               </Box>
-            ) : null}
+              <Box>
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25, fontSize: '0.8125rem' }}>
+                  {t('jobForm.avgHoursPerWeek')}
+                  <Typography component="span" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
+                    {formData.avgHoursPerWeek ?? 40} h
+                  </Typography>
+                </Typography>
+                <Slider
+                  size="small"
+                  sx={sliderSx}
+                  value={formData.avgHoursPerWeek ?? 40}
+                  min={20}
+                  max={60}
+                  step={1}
+                  valueLabelDisplay="auto"
+                  onChange={(_, value) => {
+                    const next = Array.isArray(value) ? value[0] : value;
+                    setFormData({ ...formData, avgHoursPerWeek: next });
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: formData.tipped ? 'auto 1fr' : '1fr' },
+                gap: 1.25,
+                alignItems: 'center',
+              }}
+            >
+              <FormControlLabel
+                sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.8125rem' } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={formData.tipped ?? false}
+                    onChange={(e) => setFormData({ ...formData, tipped: e.target.checked })}
+                  />
+                }
+                label={t('jobForm.tipped')}
+              />
+              {formData.tipped ? (
+                <Box>
+                  <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25, fontSize: '0.8125rem' }}>
+                    {t('jobForm.averageTip')}
+                    <Typography component="span" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
+                      {(formData.averageTip?.[0] ?? 12).toFixed(1)} $/h
+                    </Typography>
+                  </Typography>
+                  <Slider
+                    size="small"
+                    sx={sliderSx}
+                    value={formData.averageTip?.[0] ?? 12}
+                    min={0}
+                    max={30}
+                    step={0.5}
+                    valueLabelDisplay="auto"
+                    onChange={(_, value) => {
+                      const next = Array.isArray(value) ? value[0] : value;
+                      setFormData({ ...formData, averageTip: [next, next] });
+                    }}
+                  />
+                </Box>
+              ) : null}
+            </Box>
+
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: formData.hasHousing ? 'auto 1fr' : '1fr' },
+                gap: 1.25,
+                alignItems: 'center',
+              }}
+            >
+              <FormControlLabel
+                sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.8125rem' } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={formData.hasHousing ?? false}
+                    onChange={(e) => setFormData({ ...formData, hasHousing: e.target.checked })}
+                  />
+                }
+                label={t('jobForm.hasHousing')}
+              />
+              {formData.hasHousing ? (
+                <Box>
+                  <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25, fontSize: '0.8125rem' }}>
+                    {t('jobForm.housingCostPerWeek')}
+                    <Typography component="span" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
+                      ${formData.housingCostPerWeek ?? 120}/{t('jobForm.perWeek')}
+                    </Typography>
+                  </Typography>
+                  <Slider
+                    size="small"
+                    sx={sliderSx}
+                    value={formData.housingCostPerWeek ?? 120}
+                    min={0}
+                    max={250}
+                    step={5}
+                    valueLabelDisplay="auto"
+                    onChange={(_, value) => {
+                      const next = Array.isArray(value) ? value[0] : value;
+                      setFormData({ ...formData, housingCostPerWeek: next });
+                    }}
+                  />
+                </Box>
+              ) : null}
+            </Box>
+
+            <Box sx={twoColumnGrid}>
+              <DateField
+                label={t('jobForm.projectStartDate')}
+                value={projectStartDate}
+                format="YYYY-MM-DD"
+                maxDate={projectEndDate}
+                onChange={setProjectStartDate}
+                slotProps={dateFieldSlotProps}
+              />
+              <DateField
+                label={t('jobForm.projectEndDate')}
+                value={projectEndDate}
+                format="YYYY-MM-DD"
+                minDate={projectStartDate}
+                onChange={setProjectEndDate}
+                slotProps={dateFieldSlotProps}
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: -0.5 }}>
+              {t('jobForm.projectDates')} · {projectDurationWeeks} {t('jobForm.perWeek')}
+            </Typography>
 
             <Accordion disableGutters sx={accordionSx}>
               <AccordionSummary expandIcon={<ExpandMoreIcon fontSize="small" />}>
@@ -363,103 +504,6 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                     }}
                   />
                 </Box>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion disableGutters sx={accordionSx}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon fontSize="small" />}>
-                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                  {t('jobForm.moreHousing')}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, pt: 0, pb: 1 }}>
-                <FormControlLabel
-                  sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.8125rem' } }}
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={formData.hasHousing ?? false}
-                      onChange={(e) => setFormData({ ...formData, hasHousing: e.target.checked })}
-                    />
-                  }
-                  label={t('jobForm.hasHousing')}
-                />
-                {formData.hasHousing ? (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      ${formData.housingCostPerWeek ?? 120}/{t('jobForm.perWeek')}
-                    </Typography>
-                    <Slider
-                      size="small"
-                      sx={sliderSx}
-                      value={formData.housingCostPerWeek ?? 120}
-                      min={0}
-                      max={250}
-                      step={5}
-                      onChange={(_, value) => {
-                        const next = Array.isArray(value) ? value[0] : value;
-                        setFormData({ ...formData, housingCostPerWeek: next });
-                      }}
-                    />
-                  </Box>
-                ) : null}
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.25 }}>
-                  <DatePicker
-                    label={t('jobForm.projectStartDate')}
-                    value={projectStartDate}
-                    format="YYYY-MM-DD"
-                    maxDate={projectEndDate}
-                    onChange={(newValue) => {
-                      if (newValue) {
-                        setFormData({ ...formData, projectStartDate: newValue.format('YYYY-MM-DD') });
-                      }
-                    }}
-                    slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-                  />
-                  <DatePicker
-                    label={t('jobForm.projectEndDate')}
-                    value={projectEndDate}
-                    format="YYYY-MM-DD"
-                    minDate={projectStartDate}
-                    onChange={(newValue) => {
-                      if (newValue) {
-                        setFormData({ ...formData, projectEndDate: newValue.format('YYYY-MM-DD') });
-                      }
-                    }}
-                    slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-                  />
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion disableGutters sx={accordionSx}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon fontSize="small" />}>
-                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                  {t('jobForm.moreOptional')}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, pt: 0, pb: 1 }}>
-                <Autocomplete
-                  fullWidth
-                  freeSolo
-                  size="small"
-                  options={JOB_TITLE_OPTIONS}
-                  value={formData.jobTitle ?? ''}
-                  onChange={(_, newValue: string | null) =>
-                    setFormData({ ...formData, jobTitle: newValue ?? '' })
-                  }
-                  onInputChange={(_, newInputValue: string) =>
-                    setFormData({ ...formData, jobTitle: newInputValue })
-                  }
-                  renderInput={(params) => <TextField {...params} label={t('jobForm.jobTitle')} />}
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label={t('jobForm.company')}
-                  value={formData.company ?? ''}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                />
               </AccordionDetails>
             </Accordion>
           </CardContent>

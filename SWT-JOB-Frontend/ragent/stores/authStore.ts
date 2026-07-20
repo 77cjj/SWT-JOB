@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 import type { User } from "@/types";
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "@/services/authService";
+import { getCurrentUser, login as loginRequest, loginWithGoogleIdToken, logout as logoutRequest } from "@/services/authService";
 import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
@@ -17,6 +17,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
@@ -74,6 +75,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       toast.success("登录成功");
     } catch (error) {
       toast.error((error as Error).message || "登录失败");
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  loginWithGoogle: async (idToken) => {
+    set({ isLoading: true });
+    try {
+      const data = await loginWithGoogleIdToken(idToken);
+      const user = {
+        userId: data.userId,
+        username: data.username,
+        role: data.role,
+        token: data.token,
+        avatar: data.avatar,
+      };
+      storage.setToken(user.token);
+      storage.setUser(user);
+      setAuthToken(user.token);
+      set({ user, token: user.token, isAuthenticated: true });
+      get().fetchCurrentUser().catch(() => null);
+      useChatStore.getState().cancelGeneration();
+      useChatStore.setState({
+        sessions: [],
+        currentSessionId: null,
+        messages: [],
+        isLoading: false,
+        isStreaming: false,
+        isCreatingNew: true,
+        deepThinkingEnabled: false,
+        thinkingStartAt: null,
+        streamTaskId: null,
+        streamAbort: null,
+        streamingMessageId: null,
+        cancelRequested: false,
+      });
+      toast.success("Google 登录成功");
+    } catch (error) {
+      toast.error((error as Error).message || "Google 登录失败");
       throw error;
     } finally {
       set({ isLoading: false });

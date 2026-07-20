@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service;
+package com.nageoffer.ai.ragent.user.controller.request;
 
-import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
-import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
+import lombok.Data;
 
-public interface AuthService {
+@Data
+public class GoogleLoginRequest {
 
-    LoginVO login(LoginRequest requestParam);
-
-    LoginVO loginWithGoogle(GoogleLoginRequest requestParam);
-
-    void logout();
+    /**
+     * Google Identity Services 返回的 ID Token（JWT）
+     */
+    private String idToken;
 }

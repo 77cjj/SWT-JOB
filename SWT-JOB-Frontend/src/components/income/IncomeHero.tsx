@@ -54,7 +54,7 @@ function DeductionLines({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: compact ? 0.75 : 1,
+        gap: compact ? 0.65 : 0.85,
         width: '100%',
       }}
     >
@@ -62,33 +62,34 @@ function DeductionLines({
         <Box
           key={row.key}
           sx={{
-            display: 'flex',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 1.5,
-            minHeight: compact ? 28 : 32,
+            columnGap: 1.5,
+            minHeight: compact ? 26 : 30,
           }}
         >
           <Typography
-            variant="caption"
+            component="span"
             color="text.secondary"
             sx={{
               fontSize: compact ? '0.6875rem' : '0.75rem',
-              lineHeight: 1.3,
-              flex: 1,
+              lineHeight: 1.25,
+              fontWeight: 500,
               minWidth: 0,
             }}
           >
             {row.label}
           </Typography>
           <Typography
-            variant="body2"
+            component="span"
             fontWeight={700}
             color={row.value === '—' ? 'text.disabled' : 'error.main'}
             sx={{
               fontSize: compact ? '0.8125rem' : '0.875rem',
               fontVariantNumeric: 'tabular-nums',
-              flexShrink: 0,
+              letterSpacing: '-0.01em',
+              lineHeight: 1.2,
             }}
           >
             {row.value}
@@ -108,14 +109,15 @@ export default function IncomeHero({
 }) {
   const { t, tWithParams } = useI18n();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  /** 窄屏用折叠；≥sm 右侧内联明细，填满金额旁空白 */
+  const useInlineDetails = useMediaQuery(theme.breakpoints.up('sm'));
   const [detailsOpen, setDetailsOpen] = useState(false);
   const weeks = Number.isFinite(projectWeeks) && projectWeeks > 0 ? projectWeeks : 0;
   const scale = weeks > 0 ? weeks : 1;
   const projectNet = income ? income.netIncomeWithSecondJob * scale : 0;
   const weeklyNet = income?.netIncomeWithSecondJob ?? 0;
   const ready = Boolean(income && weeks > 0);
-  const showMobileCollapse = ready && income && isMobile;
+  const showMobileCollapse = ready && Boolean(income) && !useInlineDetails;
 
   return (
     <Paper
@@ -123,10 +125,10 @@ export default function IncomeHero({
       elevation={0}
       sx={{
         p: { xs: 2, md: 2.5 },
-        borderRadius: 4,
+        borderRadius: 3,
         border: '1px solid',
         borderColor: (th) =>
-          th.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.35)' : 'divider',
+          th.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.28)' : 'divider',
         background: (th) =>
           th.palette.mode === 'light'
             ? 'linear-gradient(145deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.06) 100%)'
@@ -140,30 +142,44 @@ export default function IncomeHero({
       <Typography
         variant="subtitle2"
         color="primary"
-        sx={{ fontWeight: 700, display: 'block', mb: 1.25, fontSize: '0.8125rem', letterSpacing: '0.02em' }}
+        sx={{
+          fontWeight: 700,
+          display: 'block',
+          mb: { xs: 1, sm: 1.5 },
+          fontSize: '0.75rem',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+        }}
       >
         {t('income.heroLabel')}
       </Typography>
 
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'stretch', sm: 'stretch' },
-          gap: { xs: 1.5, sm: 2.5 },
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'minmax(0, 1.15fr) minmax(200px, 0.85fr)',
+          },
+          gap: { xs: 1.25, sm: 2.5 },
+          alignItems: 'stretch',
         }}
       >
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <RollingCurrency
             value={ready ? projectNet : 0}
             sx={{
-              fontSize: { xs: 'clamp(2rem, 9vw, 2.75rem)', sm: 'clamp(2.25rem, 4vw, 3.25rem)' },
+              fontSize: { xs: 'clamp(2rem, 9vw, 2.75rem)', sm: 'clamp(2.35rem, 3.6vw, 3.15rem)' },
               fontWeight: 800,
               color: ready ? 'success.main' : 'text.disabled',
-              lineHeight: 1.05,
+              lineHeight: 1.02,
+              letterSpacing: '-0.02em',
             }}
           />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, fontSize: '0.8125rem' }}>
+          <Typography
+            color="text.secondary"
+            sx={{ mt: 0.85, fontSize: '0.8125rem', lineHeight: 1.4, fontWeight: 500 }}
+          >
             {ready
               ? tWithParams('income.heroWeekly', {
                   weekly: fmt(weeklyNet),
@@ -172,36 +188,39 @@ export default function IncomeHero({
               : t('income.heroHint')}
           </Typography>
           {ready && income ? (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            <Typography color="text.secondary" sx={{ display: 'block', mt: 0.35, fontSize: '0.75rem', lineHeight: 1.35 }}>
               {tWithParams('income.heroRmb', { amount: fmt(income.incomeRmb * scale) })}
             </Typography>
           ) : null}
         </Box>
 
-        {ready && income && !isMobile ? (
+        {ready && income && useInlineDetails ? (
           <Box
             sx={{
-              flex: { sm: '0 0 auto', md: '0 0 240px' },
-              width: { sm: '100%', md: 240 },
-              maxWidth: '100%',
-              alignSelf: 'stretch',
+              minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              borderRadius: 2.5,
+              borderRadius: 2,
               border: '1px solid',
               borderColor: (th) =>
-                th.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.2)' : 'divider',
+                th.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.18)' : 'divider',
               bgcolor: (th) =>
-                th.palette.mode === 'light' ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.2)',
-              px: 1.75,
-              py: 1.5,
+                th.palette.mode === 'light' ? 'rgba(255,255,255,0.78)' : 'rgba(0,0,0,0.22)',
+              px: { sm: 1.75, md: 2 },
+              py: { sm: 1.5, md: 1.75 },
             }}
           >
             <Typography
-              variant="caption"
               color="text.secondary"
-              sx={{ fontWeight: 700, mb: 0.75, display: 'block', fontSize: '0.6875rem' }}
+              sx={{
+                fontWeight: 700,
+                mb: 1,
+                display: 'block',
+                fontSize: '0.6875rem',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
             >
               {t('income.heroDetails')}
             </Typography>
@@ -213,30 +232,39 @@ export default function IncomeHero({
       {showMobileCollapse ? (
         <>
           <Box
+            component="button"
+            type="button"
+            onClick={() => setDetailsOpen((o) => !o)}
+            aria-expanded={detailsOpen}
             sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 0.25,
               mt: 1.25,
+              width: '100%',
+              border: 0,
+              background: 'transparent',
+              cursor: 'pointer',
+              py: 0.25,
+              color: 'text.secondary',
             }}
           >
             <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ cursor: 'pointer', userSelect: 'none', fontWeight: 600 }}
-              onClick={() => setDetailsOpen((o) => !o)}
+              component="span"
+              sx={{ fontSize: '0.75rem', fontWeight: 600, userSelect: 'none' }}
             >
               {t('income.heroDetails')}
             </Typography>
             <IconButton
               size="small"
-              aria-expanded={detailsOpen}
-              aria-label={t('income.heroDetails')}
-              onClick={() => setDetailsOpen((o) => !o)}
+              tabIndex={-1}
+              aria-hidden
               sx={{
+                pointerEvents: 'none',
                 transform: detailsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                 transition: 'transform 0.2s',
+                color: 'inherit',
               }}
             >
               <ExpandMoreIcon fontSize="small" />
@@ -245,20 +273,23 @@ export default function IncomeHero({
           <Collapse in={detailsOpen}>
             <Box
               sx={{
-                mt: 1,
+                mt: 0.75,
                 pt: 1.25,
                 borderTop: '1px dashed',
                 borderColor: 'divider',
               }}
             >
-              <DeductionLines income={income} scale={scale} compact />
+              <DeductionLines income={income!} scale={scale} compact />
             </Box>
           </Collapse>
         </>
       ) : null}
 
       {ready && income ? (
-        <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1.25, lineHeight: 1.45 }}>
+        <Typography
+          color="text.disabled"
+          sx={{ display: 'block', mt: 1.25, fontSize: '0.6875rem', lineHeight: 1.45 }}
+        >
           {tWithParams('income.footerNote', { weeks })}
         </Typography>
       ) : null}

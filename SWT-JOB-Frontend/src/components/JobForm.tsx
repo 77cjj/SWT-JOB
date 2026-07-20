@@ -70,40 +70,45 @@ const DEFAULT_FORM: Partial<JobRecord> = {
   projectEndDate: '2026-09-15',
 };
 
-const SLIDER_BLOCK_MIN_HEIGHT = 72;
-const TOGGLE_SLIDER_MIN_HEIGHT = 88;
+/** 固定滑块行高度，勾选后不再撑开页面 */
+const METRIC_ROW_H = 68;
+const TOGGLE_ROW_H = 72;
 
-const labelSx = {
-  fontSize: '0.75rem',
+const fieldLabelSx = {
+  fontSize: '0.8125rem',
   fontWeight: 600,
-  lineHeight: 1.35,
-  letterSpacing: '0.01em',
+  lineHeight: 1.2,
+  color: 'text.primary',
 } as const;
 
-const valueSx = {
-  fontSize: '0.75rem',
-  fontWeight: 600,
+const fieldValueSx = {
+  fontSize: '0.8125rem',
+  fontWeight: 700,
+  lineHeight: 1.2,
   color: 'text.secondary',
   fontVariantNumeric: 'tabular-nums',
+  letterSpacing: '-0.01em',
 } as const;
 
+const sectionLabelSx = {
+  fontSize: '0.6875rem',
+  fontWeight: 700,
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase' as const,
+  color: 'text.secondary',
+  lineHeight: 1.2,
+};
+
 const sliderSx = {
-  mt: 0.5,
-  py: 0.5,
+  mt: 0.25,
+  mb: 0,
+  py: 0.75,
   '& .MuiSlider-thumb': { width: 14, height: 14 },
   '& .MuiSlider-rail': { height: 3 },
   '& .MuiSlider-track': { height: 3 },
 } as const;
 
-const checkboxLabelSx = {
-  m: 0,
-  alignItems: 'center',
-  minHeight: 40,
-  '& .MuiCheckbox-root': { py: 0.5 },
-  '& .MuiFormControlLabel-label': { ...labelSx, fontSize: '0.8125rem' },
-} as const;
-
-function FormSlider({
+function MetricSlider({
   label,
   valueLabel,
   value,
@@ -123,22 +128,37 @@ function FormSlider({
   onChange: (next: number) => void;
 }) {
   return (
-    <Box sx={{ minHeight: SLIDER_BLOCK_MIN_HEIGHT }}>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
-        <Typography component="span" sx={labelSx}>
+    <Box
+      sx={{
+        height: METRIC_ROW_H,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        opacity: disabled ? 0.38 : 1,
+        transition: 'opacity 0.15s ease',
+        pointerEvents: disabled ? 'none' : 'auto',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          minHeight: 20,
+        }}
+      >
+        <Typography component="span" sx={fieldLabelSx}>
           {label}
         </Typography>
-        <Typography component="span" sx={valueSx}>
+        <Typography component="span" sx={fieldValueSx}>
           {valueLabel}
         </Typography>
       </Box>
       <Slider
         size="small"
         disabled={disabled}
-        sx={{
-          ...sliderSx,
-          ...(disabled ? { opacity: 0.35, pointerEvents: 'none' as const } : {}),
-        }}
+        sx={sliderSx}
         value={value}
         min={min}
         max={max}
@@ -153,7 +173,10 @@ function FormSlider({
   );
 }
 
-function ToggleSliderRow({
+/**
+ * 勾选 + 滑块同一行：滑块始终占位，勾选只改变可用态，避免整页跳动。
+ */
+function ToggleMetricRow({
   checked,
   onCheckedChange,
   checkLabel,
@@ -180,14 +203,31 @@ function ToggleSliderRow({
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'minmax(9.5rem, auto) minmax(0, 1fr)' },
-        gap: { xs: 0.5, sm: 1.5 },
-        alignItems: { sm: 'center' },
-        minHeight: TOGGLE_SLIDER_MIN_HEIGHT,
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'minmax(7.5rem, 9.25rem) minmax(0, 1fr)',
+        },
+        columnGap: 1.5,
+        rowGap: 0.25,
+        alignItems: 'center',
+        minHeight: { xs: TOGGLE_ROW_H + 36, sm: TOGGLE_ROW_H },
       }}
     >
       <FormControlLabel
-        sx={checkboxLabelSx}
+        sx={{
+          m: 0,
+          mr: 0,
+          height: 40,
+          alignItems: 'center',
+          '& .MuiCheckbox-root': {
+            p: 0.75,
+            mr: 0.25,
+          },
+          '& .MuiFormControlLabel-label': {
+            ...fieldLabelSx,
+            fontSize: '0.8125rem',
+          },
+        }}
         control={
           <Checkbox
             size="small"
@@ -197,18 +237,16 @@ function ToggleSliderRow({
         }
         label={checkLabel}
       />
-      <Box sx={{ minWidth: 0, minHeight: { xs: SLIDER_BLOCK_MIN_HEIGHT, sm: SLIDER_BLOCK_MIN_HEIGHT } }}>
-        <FormSlider
-          label={sliderLabel}
-          valueLabel={valueLabel}
-          value={sliderValue}
-          min={min}
-          max={max}
-          step={step}
-          disabled={!checked}
-          onChange={onSliderChange}
-        />
-      </Box>
+      <MetricSlider
+        label={sliderLabel}
+        valueLabel={valueLabel}
+        value={sliderValue}
+        min={min}
+        max={max}
+        step={step}
+        disabled={!checked}
+        onChange={onSliderChange}
+      />
     </Box>
   );
 }
@@ -362,27 +400,11 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
     setFormData({ ...formData, projectEndDate: newValue.format('YYYY-MM-DD') });
   };
 
-  const accordionSx = {
-    bgcolor: 'transparent',
-    '&:before': { display: 'none' },
-    boxShadow: 'none',
-    borderTop: '1px solid',
-    borderColor: 'divider',
-    '& .MuiAccordionSummary-root': {
-      minHeight: 44,
-      px: 0,
-      alignItems: 'center',
-    },
-    '& .MuiAccordionSummary-content': {
-      my: 0,
-      alignItems: 'center',
-    },
-  } as const;
-
   const twoCol = {
     display: 'grid',
     gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-    gap: 1.5,
+    gap: { xs: 1.25, sm: 1.5 },
+    alignItems: 'center',
   } as const;
 
   const dateFieldSlotProps = {
@@ -393,8 +415,6 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
     },
   };
 
-  const sectionGap = 1.75;
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -403,7 +423,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             sx={{
               display: 'flex',
               flexDirection: 'column',
-              gap: sectionGap,
+              gap: 2,
               py: 2,
               px: { xs: 1.5, sm: 2 },
               '&:last-child': { pb: 2 },
@@ -457,57 +477,81 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
               )}
             />
 
-            <Box sx={twoCol}>
-              <FormSlider
-                label={t('jobForm.hourlyWage')}
-                valueLabel={`${(formData.hourlyWage ?? 12).toFixed(2)} $/h`}
-                value={formData.hourlyWage ?? 12}
-                min={7.25}
-                max={40}
-                step={0.25}
-                onChange={(next) => setFormData({ ...formData, hourlyWage: next })}
+            <Box>
+              <Typography sx={{ ...sectionLabelSx, mb: 1 }}>{t('jobForm.salary')}</Typography>
+              <Box sx={twoCol}>
+                <MetricSlider
+                  label={t('jobForm.hourlyWage')}
+                  valueLabel={`${(formData.hourlyWage ?? 12).toFixed(2)} $/h`}
+                  value={formData.hourlyWage ?? 12}
+                  min={7.25}
+                  max={40}
+                  step={0.25}
+                  onChange={(next) => setFormData({ ...formData, hourlyWage: next })}
+                />
+                <MetricSlider
+                  label={t('jobForm.avgHoursPerWeek')}
+                  valueLabel={`${formData.avgHoursPerWeek ?? 40} h`}
+                  value={formData.avgHoursPerWeek ?? 40}
+                  min={20}
+                  max={60}
+                  step={1}
+                  onChange={(next) => setFormData({ ...formData, avgHoursPerWeek: next })}
+                />
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <ToggleMetricRow
+                checked={formData.tipped ?? false}
+                onCheckedChange={(tipped) => setFormData({ ...formData, tipped })}
+                checkLabel={t('jobForm.tipped')}
+                sliderLabel={t('jobForm.averageTip')}
+                valueLabel={`${(formData.averageTip?.[0] ?? 12).toFixed(1)} $/h`}
+                sliderValue={formData.averageTip?.[0] ?? 12}
+                min={0}
+                max={30}
+                step={0.5}
+                onSliderChange={(next) => setFormData({ ...formData, averageTip: [next, next] })}
               />
-              <FormSlider
-                label={t('jobForm.avgHoursPerWeek')}
-                valueLabel={`${formData.avgHoursPerWeek ?? 40} h`}
-                value={formData.avgHoursPerWeek ?? 40}
-                min={20}
-                max={60}
-                step={1}
-                onChange={(next) => setFormData({ ...formData, avgHoursPerWeek: next })}
+              <ToggleMetricRow
+                checked={formData.hasHousing ?? false}
+                onCheckedChange={(hasHousing) => setFormData({ ...formData, hasHousing })}
+                checkLabel={t('jobForm.hasHousing')}
+                sliderLabel={t('jobForm.housingCostPerWeek')}
+                valueLabel={`$${formData.housingCostPerWeek ?? 120}/${t('jobForm.perWeek')}`}
+                sliderValue={formData.housingCostPerWeek ?? 120}
+                min={0}
+                max={250}
+                step={5}
+                onSliderChange={(next) => setFormData({ ...formData, housingCostPerWeek: next })}
               />
             </Box>
 
-            <ToggleSliderRow
-              checked={formData.tipped ?? false}
-              onCheckedChange={(tipped) => setFormData({ ...formData, tipped })}
-              checkLabel={t('jobForm.tipped')}
-              sliderLabel={t('jobForm.averageTip')}
-              valueLabel={`${(formData.averageTip?.[0] ?? 12).toFixed(1)} $/h`}
-              sliderValue={formData.averageTip?.[0] ?? 12}
-              min={0}
-              max={30}
-              step={0.5}
-              onSliderChange={(next) => setFormData({ ...formData, averageTip: [next, next] })}
-            />
-
-            <ToggleSliderRow
-              checked={formData.hasHousing ?? false}
-              onCheckedChange={(hasHousing) => setFormData({ ...formData, hasHousing })}
-              checkLabel={t('jobForm.hasHousing')}
-              sliderLabel={t('jobForm.housingCostPerWeek')}
-              valueLabel={`$${formData.housingCostPerWeek ?? 120}/${t('jobForm.perWeek')}`}
-              sliderValue={formData.housingCostPerWeek ?? 120}
-              min={0}
-              max={250}
-              step={5}
-              onSliderChange={(next) => setFormData({ ...formData, housingCostPerWeek: next })}
-            />
-
             <Box>
-              <Typography sx={{ ...labelSx, mb: 1, color: 'text.primary' }}>
-                {t('jobForm.projectDates')}
-              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  mb: 1,
+                  minHeight: 20,
+                }}
+              >
+                <Typography sx={sectionLabelSx}>{t('jobForm.projectDates')}</Typography>
+                <Typography
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: projectDurationWeeks > 0 ? 'text.secondary' : 'text.disabled',
+                    fontVariantNumeric: 'tabular-nums',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {projectDurationWeeks > 0 ? `${projectDurationWeeks} ${t('jobForm.perWeek')}` : '—'}
+                </Typography>
+              </Box>
               <Box sx={twoCol}>
                 <DateField
                   label={t('jobForm.projectStartDate')}
@@ -526,21 +570,39 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                   slotProps={dateFieldSlotProps}
                 />
               </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.75, display: 'block' }}>
-                {projectDurationWeeks > 0
-                  ? `${projectDurationWeeks} ${t('jobForm.perWeek')}`
-                  : t('income.setValidDates')}
-              </Typography>
             </Box>
 
-            <Accordion disableGutters sx={accordionSx}>
+            <Accordion
+              disableGutters
+              sx={{
+                bgcolor: 'transparent',
+                boxShadow: 'none',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                '&:before': { display: 'none' },
+                '& .MuiAccordionSummary-root': {
+                  minHeight: 44,
+                  px: 0,
+                  alignItems: 'center',
+                },
+                '& .MuiAccordionSummary-content': {
+                  my: 0,
+                  alignItems: 'center',
+                },
+                '& .MuiAccordionSummary-expandIconWrapper': {
+                  color: 'text.secondary',
+                },
+              }}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon fontSize="small" />}>
-                <Typography sx={{ ...labelSx, fontSize: '0.8125rem' }}>
+                <Typography sx={{ ...fieldLabelSx, fontSize: '0.8125rem' }}>
                   {t('jobForm.moreSecondJob')}
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5, pb: 0.5, px: 0 }}>
-                <FormSlider
+              <AccordionDetails
+                sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pt: 0.25, pb: 0.5, px: 0 }}
+              >
+                <MetricSlider
                   label={t('jobForm.secondJobHours')}
                   valueLabel={`${formData.secondJobHours ?? 12} h`}
                   value={formData.secondJobHours ?? 12}
@@ -549,7 +611,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                   step={1}
                   onChange={(next) => setFormData({ ...formData, secondJobHours: next })}
                 />
-                <FormSlider
+                <MetricSlider
                   label={t('jobForm.secondJobHourlyWage')}
                   valueLabel={`${(formData.secondJobHourlyWage ?? 13).toFixed(2)} $/h`}
                   value={formData.secondJobHourlyWage ?? 13}

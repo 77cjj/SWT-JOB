@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Collapse,
@@ -14,8 +14,15 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { IncomeSummary } from '../../utils/jobMetrics';
 import { useI18n } from '../../context/I18nContext';
 import { RollingCurrency } from './RollingCurrency';
+import {
+  convertFromUsd,
+  currenciesForLanguage,
+  CURRENCIES,
+  nextCurrency,
+  type CurrencyCode,
+} from '../../utils/displayCurrency';
 
-function fmt(value: number) {
+function fmtUsd(value: number) {
   return Math.round(value).toLocaleString('en-US');
 }
 
@@ -33,19 +40,19 @@ function DeductionLines({
     {
       key: 'federal',
       label: t('income.federalTaxLabel'),
-      value: `−$${fmt(income.federalTax * scale)}`,
+      value: `−$${fmtUsd(income.federalTax * scale)}`,
     },
     {
       key: 'state',
       label: tWithParams('income.stateTaxLabel', {
         rate: (income.stateTaxRateEffective * 100).toFixed(1),
       }),
-      value: `−$${fmt(income.stateTax * scale)}`,
+      value: `−$${fmtUsd(income.stateTax * scale)}`,
     },
     {
       key: 'housing',
       label: t('income.totalHousing'),
-      value: income.housing * scale > 0 ? `−$${fmt(income.housing * scale)}` : '—',
+      value: income.housing * scale > 0 ? `−$${fmtUsd(income.housing * scale)}` : '—',
     },
   ];
 
@@ -54,7 +61,7 @@ function DeductionLines({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: compact ? 0.65 : 0.85,
+        gap: compact ? 0.5 : 0.75,
         width: '100%',
       }}
     >
@@ -66,7 +73,7 @@ function DeductionLines({
             gridTemplateColumns: '1fr auto',
             alignItems: 'center',
             columnGap: 1.5,
-            minHeight: compact ? 26 : 30,
+            minHeight: compact ? 24 : 28,
           }}
         >
           <Typography
@@ -84,7 +91,7 @@ function DeductionLines({
           <Typography
             component="span"
             fontWeight={700}
-            color={row.value === '—' ? 'text.disabled' : 'error.main'}
+            color={row.value === '—' ? 'text.disabled' : 'text.primary'}
             sx={{
               fontSize: compact ? '0.8125rem' : '0.875rem',
               fontVariantNumeric: 'tabular-nums',
@@ -107,32 +114,46 @@ export default function IncomeHero({
   income: IncomeSummary | null;
   projectWeeks: number;
 }) {
-  const { t, tWithParams } = useI18n();
+  const { t, tWithParams, language } = useI18n();
   const theme = useTheme();
-  /** 窄屏用折叠；≥sm 右侧内联明细，填满金额旁空白 */
   const useInlineDetails = useMediaQuery(theme.breakpoints.up('sm'));
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const availableCurrencies = useMemo(() => currenciesForLanguage(language), [language]);
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(
+    () => availableCurrencies[0] ?? 'USD',
+  );
+
+  useEffect(() => {
+    if (!availableCurrencies.includes(displayCurrency)) {
+      setDisplayCurrency(availableCurrencies[0] ?? 'USD');
+    }
+  }, [availableCurrencies, displayCurrency]);
+
   const weeks = Number.isFinite(projectWeeks) && projectWeeks > 0 ? projectWeeks : 0;
   const scale = weeks > 0 ? weeks : 1;
-  const projectNet = income ? income.netIncomeWithSecondJob * scale : 0;
-  const weeklyNet = income?.netIncomeWithSecondJob ?? 0;
+  const projectNetUsd = income ? income.netIncomeWithSecondJob * scale : 0;
+  const weeklyNetUsd = income?.netIncomeWithSecondJob ?? 0;
   const ready = Boolean(income && weeks > 0);
   const showMobileCollapse = ready && Boolean(income) && !useInlineDetails;
+  const currencyMeta = CURRENCIES[displayCurrency];
+  const canCycleCurrency = availableCurrencies.length > 1;
+
+  const handleCycleCurrency = () => {
+    if (!ready || !canCycleCurrency) return;
+    setDisplayCurrency((prev) => nextCurrency(prev, language));
+  };
 
   return (
     <Paper
       data-tour="income-preview"
       elevation={0}
       sx={{
-        p: { xs: 2, md: 2.5 },
-        borderRadius: 3,
+        p: { xs: 2, md: 2.25 },
+        borderRadius: 2,
         border: '1px solid',
-        borderColor: (th) =>
-          th.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.28)' : 'divider',
-        background: (th) =>
-          th.palette.mode === 'light'
-            ? 'linear-gradient(145deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.06) 100%)'
-            : 'linear-gradient(145deg, rgba(99,102,241,0.15) 0%, rgba(16,185,129,0.08) 100%)',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
         position: { xs: 'sticky', md: 'static' },
         top: { xs: 56, md: 'auto' },
         zIndex: { xs: 20, md: 'auto' },
@@ -140,15 +161,14 @@ export default function IncomeHero({
       }}
     >
       <Typography
-        variant="subtitle2"
-        color="primary"
         sx={{
-          fontWeight: 700,
+          fontWeight: 600,
           display: 'block',
-          mb: { xs: 1, sm: 1.5 },
+          mb: { xs: 1, sm: 1.25 },
           fontSize: '0.75rem',
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
+          color: 'text.secondary',
         }}
       >
         {t('income.heroLabel')}
@@ -159,37 +179,68 @@ export default function IncomeHero({
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
-            sm: 'minmax(0, 1.15fr) minmax(200px, 0.85fr)',
+            sm: 'minmax(0, 1.15fr) minmax(180px, 0.85fr)',
           },
-          gap: { xs: 1.25, sm: 2.5 },
+          gap: { xs: 1.25, sm: 3 },
           alignItems: 'stretch',
         }}
       >
         <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <RollingCurrency
-            value={ready ? projectNet : 0}
+          <Box
+            component={ready && canCycleCurrency ? 'button' : 'div'}
+            type={ready && canCycleCurrency ? 'button' : undefined}
+            onClick={ready && canCycleCurrency ? handleCycleCurrency : undefined}
+            aria-label={
+              canCycleCurrency
+                ? tWithParams('income.cycleCurrency', { currency: displayCurrency })
+                : undefined
+            }
+            title={canCycleCurrency ? t('income.cycleCurrencyHint') : undefined}
             sx={{
-              fontSize: { xs: 'clamp(2rem, 9vw, 2.75rem)', sm: 'clamp(2.35rem, 3.6vw, 3.15rem)' },
-              fontWeight: 800,
-              color: ready ? 'success.main' : 'text.disabled',
-              lineHeight: 1.02,
-              letterSpacing: '-0.02em',
+              display: 'inline-flex',
+              alignItems: 'flex-start',
+              alignSelf: 'flex-start',
+              border: 0,
+              background: 'transparent',
+              p: 0,
+              m: 0,
+              cursor: ready && canCycleCurrency ? 'pointer' : 'default',
+              textAlign: 'left',
+              color: 'inherit',
+              borderRadius: 1,
+              '&:focus-visible': {
+                outline: '2px solid',
+                outlineColor: 'text.primary',
+                outlineOffset: 2,
+              },
             }}
-          />
+          >
+            <RollingCurrency
+              value={ready ? convertFromUsd(projectNetUsd, displayCurrency) : 0}
+              prefix={currencyMeta.symbol}
+              sx={{
+                fontSize: { xs: 'clamp(2rem, 9vw, 2.75rem)', sm: 'clamp(2.35rem, 3.6vw, 3.15rem)' },
+                fontWeight: 800,
+                color: ready ? 'text.primary' : 'text.disabled',
+                lineHeight: 1.02,
+                letterSpacing: '-0.02em',
+              }}
+            />
+          </Box>
           <Typography
             color="text.secondary"
-            sx={{ mt: 0.85, fontSize: '0.8125rem', lineHeight: 1.4, fontWeight: 500 }}
+            sx={{ mt: 0.75, fontSize: '0.8125rem', lineHeight: 1.4, fontWeight: 500 }}
           >
             {ready
               ? tWithParams('income.heroWeekly', {
-                  weekly: fmt(weeklyNet),
+                  weekly: fmtUsd(weeklyNetUsd),
                   weeks,
                 })
               : t('income.heroHint')}
           </Typography>
-          {ready && income ? (
-            <Typography color="text.secondary" sx={{ display: 'block', mt: 0.35, fontSize: '0.75rem', lineHeight: 1.35 }}>
-              {tWithParams('income.heroRmb', { amount: fmt(income.incomeRmb * scale) })}
+          {ready && canCycleCurrency ? (
+            <Typography color="text.disabled" sx={{ mt: 0.35, fontSize: '0.6875rem', lineHeight: 1.3 }}>
+              {tWithParams('income.showingCurrency', { currency: displayCurrency })}
             </Typography>
           ) : null}
         </Box>
@@ -201,21 +252,16 @@ export default function IncomeHero({
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: (th) =>
-                th.palette.mode === 'light' ? 'rgba(99, 102, 241, 0.18)' : 'divider',
-              bgcolor: (th) =>
-                th.palette.mode === 'light' ? 'rgba(255,255,255,0.78)' : 'rgba(0,0,0,0.22)',
-              px: { sm: 1.75, md: 2 },
-              py: { sm: 1.5, md: 1.75 },
+              pl: { sm: 2.5 },
+              borderLeft: { sm: '1px solid' },
+              borderColor: { sm: 'divider' },
             }}
           >
             <Typography
               color="text.secondary"
               sx={{
-                fontWeight: 700,
-                mb: 1,
+                fontWeight: 600,
+                mb: 0.85,
                 display: 'block',
                 fontSize: '0.6875rem',
                 letterSpacing: '0.04em',
@@ -275,7 +321,7 @@ export default function IncomeHero({
               sx={{
                 mt: 0.75,
                 pt: 1.25,
-                borderTop: '1px dashed',
+                borderTop: '1px solid',
                 borderColor: 'divider',
               }}
             >

@@ -28,14 +28,41 @@ import { computeIncome, type IncomeSummary } from '../utils/jobMetrics';
 import { getStateMaxMarginalRate } from '../utils/stateTax';
 import { useI18n } from '../context/I18nContext';
 
-const JOB_TITLE_OPTIONS = [
-  'Host',
+/** 常见 SWT 岗位（列表默认置顶）；搜索时可匹配全部 */
+const JOB_TITLE_FEATURED = [
   'Server',
+  'Host',
   'Housekeeping',
-  'Food & Beverage',
-  'Barista',
-  'Retail',
+  'Lifeguard',
+  'Cashier',
+  'Food Runner',
+  'Amusement Attendant',
 ];
+
+const JOB_TITLE_ALL = [
+  ...JOB_TITLE_FEATURED,
+  'Busser',
+  'Barista',
+  'Bartender',
+  'Cook',
+  'Dishwasher',
+  'Retail Associate',
+  'Ride Operator',
+  'Front Desk',
+  'Concierge',
+  'Bellhop',
+  'Pool Attendant',
+  'Camp Counselor',
+  'Maintenance',
+  'Landscaping',
+  'Warehouse Associate',
+  'Stock Clerk',
+  'Ticket Taker',
+  'Greeter',
+  'Banquet Server',
+];
+
+const JOB_TITLE_OPTIONS = Array.from(new Set(JOB_TITLE_ALL));
 
 const STATE_OPTIONS = (taxTable as { personal_income_tax_rates: Array<{ state: string }> })
   .personal_income_tax_rates
@@ -70,9 +97,9 @@ const DEFAULT_FORM: Partial<JobRecord> = {
   projectEndDate: '2026-09-15',
 };
 
-/** 固定滑块行高度，勾选后不再撑开页面 */
-const METRIC_ROW_H = 68;
-const TOGGLE_ROW_H = 72;
+/** 预留行高：未勾选时隐藏滑块但不塌陷 */
+const METRIC_ROW_H = 56;
+const TOGGLE_ROW_H = 56;
 
 const fieldLabelSx = {
   fontSize: '0.8125rem',
@@ -90,20 +117,11 @@ const fieldValueSx = {
   letterSpacing: '-0.01em',
 } as const;
 
-const sectionLabelSx = {
-  fontSize: '0.6875rem',
-  fontWeight: 700,
-  letterSpacing: '0.05em',
-  textTransform: 'uppercase' as const,
-  color: 'text.secondary',
-  lineHeight: 1.2,
-};
-
 const sliderSx = {
-  mt: 0.25,
+  mt: 0.15,
   mb: 0,
-  py: 0.75,
-  '& .MuiSlider-thumb': { width: 14, height: 14 },
+  py: 0.5,
+  '& .MuiSlider-thumb': { width: 13, height: 13 },
   '& .MuiSlider-rail': { height: 3 },
   '& .MuiSlider-track': { height: 3 },
 } as const;
@@ -174,7 +192,7 @@ function MetricSlider({
 }
 
 /**
- * 勾选 + 滑块同一行：滑块始终占位，勾选只改变可用态，避免整页跳动。
+ * 勾选 + 滑块：未勾选时隐藏滑块内容，但预留等高空间，避免页面跳动。
  */
 function ToggleMetricRow({
   checked,
@@ -205,22 +223,22 @@ function ToggleMetricRow({
         display: 'grid',
         gridTemplateColumns: {
           xs: '1fr',
-          sm: 'minmax(7.5rem, 9.25rem) minmax(0, 1fr)',
+          sm: 'minmax(7.25rem, 9rem) minmax(0, 1fr)',
         },
-        columnGap: 1.5,
-        rowGap: 0.25,
+        columnGap: 1.25,
+        rowGap: 0,
         alignItems: 'center',
-        minHeight: { xs: TOGGLE_ROW_H + 36, sm: TOGGLE_ROW_H },
+        minHeight: { xs: TOGGLE_ROW_H + 32, sm: TOGGLE_ROW_H },
       }}
     >
       <FormControlLabel
         sx={{
           m: 0,
           mr: 0,
-          height: 40,
+          height: 36,
           alignItems: 'center',
           '& .MuiCheckbox-root': {
-            p: 0.75,
+            p: 0.5,
             mr: 0.25,
           },
           '& .MuiFormControlLabel-label': {
@@ -237,16 +255,24 @@ function ToggleMetricRow({
         }
         label={checkLabel}
       />
-      <MetricSlider
-        label={sliderLabel}
-        valueLabel={valueLabel}
-        value={sliderValue}
-        min={min}
-        max={max}
-        step={step}
-        disabled={!checked}
-        onChange={onSliderChange}
-      />
+      <Box
+        sx={{
+          minHeight: METRIC_ROW_H,
+          visibility: checked ? 'visible' : 'hidden',
+          pointerEvents: checked ? 'auto' : 'none',
+        }}
+        aria-hidden={!checked}
+      >
+        <MetricSlider
+          label={sliderLabel}
+          valueLabel={valueLabel}
+          value={sliderValue}
+          min={min}
+          max={max}
+          step={step}
+          onChange={onSliderChange}
+        />
+      </Box>
     </Box>
   );
 }
@@ -282,6 +308,14 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
       const label = formatStateOption(code).toLowerCase();
       return code.toLowerCase().includes(query) || label.includes(query);
     });
+  };
+
+  const filterJobTitleOptions = (options: string[], inputValue: string) => {
+    const query = inputValue.trim().toLowerCase();
+    if (!query) {
+      return JOB_TITLE_FEATURED.filter((title) => options.includes(title));
+    }
+    return options.filter((title) => title.toLowerCase().includes(query));
   };
 
   const estimatedIncome = useMemo(() => {
@@ -423,10 +457,10 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             sx={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 2,
-              py: 2,
+              gap: 1.5,
+              py: 1.75,
               px: { xs: 1.5, sm: 2 },
-              '&:last-child': { pb: 2 },
+              '&:last-child': { pb: 1.75 },
             }}
           >
             {error ? (
@@ -448,6 +482,10 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                 onInputChange={(_, newInputValue: string) =>
                   setFormData({ ...formData, jobTitle: newInputValue })
                 }
+                filterOptions={(options, state) => filterJobTitleOptions(options, state.inputValue)}
+                ListboxProps={{
+                  style: { maxHeight: 7 * 36 },
+                }}
                 renderInput={(params) => (
                   <TextField {...params} label={t('jobForm.jobTitle')} />
                 )}
@@ -472,36 +510,36 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
               }}
               filterOptions={(options, state) => filterStateOptions(options, state.inputValue)}
               getOptionLabel={(code) => formatStateOption(code)}
+              ListboxProps={{
+                style: { maxHeight: 7 * 36 },
+              }}
               renderInput={(params) => (
                 <TextField {...params} required label={t('jobForm.state')} />
               )}
             />
 
-            <Box>
-              <Typography sx={{ ...sectionLabelSx, mb: 1 }}>{t('jobForm.salary')}</Typography>
-              <Box sx={twoCol}>
-                <MetricSlider
-                  label={t('jobForm.hourlyWage')}
-                  valueLabel={`${(formData.hourlyWage ?? 12).toFixed(2)} $/h`}
-                  value={formData.hourlyWage ?? 12}
-                  min={7.25}
-                  max={40}
-                  step={0.25}
-                  onChange={(next) => setFormData({ ...formData, hourlyWage: next })}
-                />
-                <MetricSlider
-                  label={t('jobForm.avgHoursPerWeek')}
-                  valueLabel={`${formData.avgHoursPerWeek ?? 40} h`}
-                  value={formData.avgHoursPerWeek ?? 40}
-                  min={20}
-                  max={60}
-                  step={1}
-                  onChange={(next) => setFormData({ ...formData, avgHoursPerWeek: next })}
-                />
-              </Box>
+            <Box sx={twoCol}>
+              <MetricSlider
+                label={t('jobForm.hourlyWage')}
+                valueLabel={`${(formData.hourlyWage ?? 12).toFixed(2)} $/h`}
+                value={formData.hourlyWage ?? 12}
+                min={7.25}
+                max={40}
+                step={0.25}
+                onChange={(next) => setFormData({ ...formData, hourlyWage: next })}
+              />
+              <MetricSlider
+                label={t('jobForm.avgHoursPerWeek')}
+                valueLabel={`${formData.avgHoursPerWeek ?? 40} h`}
+                value={formData.avgHoursPerWeek ?? 40}
+                min={20}
+                max={60}
+                step={1}
+                onChange={(next) => setFormData({ ...formData, avgHoursPerWeek: next })}
+              />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               <ToggleMetricRow
                 checked={formData.tipped ?? false}
                 onCheckedChange={(tipped) => setFormData({ ...formData, tipped })}
@@ -529,30 +567,7 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
             </Box>
 
             <Box>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  mb: 1,
-                  minHeight: 20,
-                }}
-              >
-                <Typography sx={sectionLabelSx}>{t('jobForm.projectDates')}</Typography>
-                <Typography
-                  sx={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: projectDurationWeeks > 0 ? 'text.secondary' : 'text.disabled',
-                    fontVariantNumeric: 'tabular-nums',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {projectDurationWeeks > 0 ? `${projectDurationWeeks} ${t('jobForm.perWeek')}` : '—'}
-                </Typography>
-              </Box>
-              <Box sx={twoCol}>
+              <Box sx={{ ...twoCol, mb: 0 }}>
                 <DateField
                   label={t('jobForm.projectStartDate')}
                   value={projectStartDate}
@@ -570,6 +585,18 @@ export default function JobForm({ onSubmit, initialData, onCancel, onPreviewChan
                   slotProps={dateFieldSlotProps}
                 />
               </Box>
+              <Typography
+                sx={{
+                  mt: 0.75,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: projectDurationWeeks > 0 ? 'text.secondary' : 'text.disabled',
+                  fontVariantNumeric: 'tabular-nums',
+                  textAlign: 'right',
+                }}
+              >
+                {projectDurationWeeks > 0 ? `${projectDurationWeeks} ${t('jobForm.perWeek')}` : '—'}
+              </Typography>
             </Box>
 
             <Accordion

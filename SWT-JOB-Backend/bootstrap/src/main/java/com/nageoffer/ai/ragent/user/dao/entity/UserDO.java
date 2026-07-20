@@ -54,6 +54,12 @@ public class UserDO {
      */
     private String role;
 
+    /**
+     * Google 账号唯一标识（sub）
+     */
+    @TableField("google_sub")
+    private String googleSub;
+
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 

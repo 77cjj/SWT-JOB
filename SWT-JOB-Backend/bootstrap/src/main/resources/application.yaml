@@ -229,3 +229,7 @@ sa-token:
 
 app:
   demo-mode: false
+
+google:
+  # 与前端 NEXT_PUBLIC_GOOGLE_CLIENT_ID 一致；未配置时 /auth/google 会提示未配置
+  client-id: ${GOOGLE_CLIENT_ID:}

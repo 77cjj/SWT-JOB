@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.user.controller;
 
+import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
@@ -43,6 +44,14 @@ public class AuthController {
     @PostMapping("/auth/login")
     public Result<LoginVO> login(@RequestBody LoginRequest requestParam) {
         return Results.success(authService.login(requestParam));
+    }
+
+    /**
+     * Google ID Token 登录 / 自动注册
+     */
+    @PostMapping("/auth/google")
+    public Result<LoginVO> loginWithGoogle(@RequestBody GoogleLoginRequest requestParam) {
+        return Results.success(authService.loginWithGoogle(requestParam));
     }
 
     /**

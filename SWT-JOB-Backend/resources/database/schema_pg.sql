@@ -14,6 +14,7 @@ CREATE TABLE t_user (
     password     VARCHAR(128) NOT NULL,
     role         VARCHAR(32)  NOT NULL,
     avatar       VARCHAR(128),
+    google_sub   VARCHAR(128),
     create_time  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
     update_time  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
     deleted      SMALLINT     DEFAULT 0,
@@ -25,6 +26,7 @@ COMMENT ON COLUMN t_user.username IS '用户名，唯一';
 COMMENT ON COLUMN t_user.password IS '密码';
 COMMENT ON COLUMN t_user.role IS '角色：admin/user';
 COMMENT ON COLUMN t_user.avatar IS '用户头像';
+COMMENT ON COLUMN t_user.google_sub IS 'Google 账号 sub，用于 OAuth 登录';
 COMMENT ON COLUMN t_user.create_time IS '创建时间';
 COMMENT ON COLUMN t_user.update_time IS '更新时间';
 COMMENT ON COLUMN t_user.deleted IS '是否删除 0：正常 1：删除';

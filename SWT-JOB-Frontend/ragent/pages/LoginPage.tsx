@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 export function LoginPage() {
   const router = useRouter();
@@ -27,7 +28,8 @@ export function LoginPage() {
       if (!remember) {
         // 如需仅在内存中保存登录态，可在此扩展。
       }
-      void router.push("/chat");
+      const redirect = typeof router.query.redirect === 'string' ? router.query.redirect : '/chat';
+      void router.push(redirect);
     } catch (err) {
       setError((err as Error).message || "登录失败，请稍后重试。");
     }
@@ -43,6 +45,16 @@ export function LoginPage() {
             登录后继续你的检索增强对话。
           </p>
         </div>
+
+        <div className="mb-4 flex justify-center">
+          <GoogleLoginButton />
+        </div>
+
+        <div className="relative my-5 text-center text-xs text-muted-foreground">
+          <span className="relative z-10 bg-background/80 px-2">或使用用户名登录</span>
+          <div className="absolute inset-x-0 top-1/2 border-t border-border/70" />
+        </div>
+
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

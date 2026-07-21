@@ -44,6 +44,7 @@ import type {
   OrderStatus,
   UserMarketStats,
   WalletAccount,
+  WalletTransaction,
 } from '../lib/marketplace/types';
 import { US_STATE_OPTIONS } from '../lib/member/profile';
 import { referralPrograms } from '../data/referralDeals';
@@ -125,6 +126,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [orders, setOrders] = useState<(MarketOrder & { intelDetail?: string })[]>([]);
   const [wallet, setWallet] = useState<WalletAccount | null>(null);
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [stats, setStats] = useState<UserMarketStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -162,6 +164,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     const data = await fetchWallet();
     setWallet(data.wallet);
     setStats(data.stats);
+    setWalletTransactions(data.transactions);
   }, [fetchWallet, isAuthenticated]);
 
   useEffect(() => {
@@ -180,6 +183,17 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   }, [router.isReady, router.query.tab, router.query.deposit, t, refreshWallet]);
 
   useEffect(() => {
+    if (!router.isReady || router.query.deposit !== 'success' || !isAuthenticated) return;
+    let attempts = 0;
+    const id = window.setInterval(() => {
+      attempts += 1;
+      void refreshWallet();
+      if (attempts >= 8) window.clearInterval(id);
+    }, 2500);
+    return () => window.clearInterval(id);
+  }, [router.isReady, router.query.deposit, isAuthenticated, refreshWallet]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
 
@@ -194,6 +208,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
             if (!cancelled) {
               setWallet(data.wallet);
               setStats(data.stats);
+              setWalletTransactions(data.transactions);
             }
           }
         } else {
@@ -414,6 +429,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
         <WalletSection
           wallet={wallet}
           stats={stats}
+          transactions={walletTransactions}
           depositAmount={depositAmount}
           onDepositAmount={setDepositAmount}
           onDeposit={handleDeposit}
@@ -498,6 +514,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 function WalletSection({
   wallet,
   stats,
+  transactions,
   depositAmount,
   onDepositAmount,
   onDeposit,
@@ -507,6 +524,7 @@ function WalletSection({
 }: {
   wallet: WalletAccount | null;
   stats: UserMarketStats | null;
+  transactions: WalletTransaction[];
   depositAmount: string;
   onDepositAmount: (v: string) => void;
   onDeposit: () => void;
@@ -556,6 +574,22 @@ function WalletSection({
           {stripeEnabled ? t('marketplace.depositStripe') : t('marketplace.deposit')}
         </Button>
       </Box>
+      {transactions.length > 0 ? (
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            {t('marketplace.walletRecentTx')}
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+            {transactions.slice(0, 12).map((tx) => (
+              <Typography component="li" variant="body2" key={tx.id} sx={{ mb: 0.75 }}>
+                {new Date(tx.createdAt).toLocaleString()} · {t(`marketplace.walletTx_${tx.type}`)} ·{' '}
+                {fmtUsd(tx.amount)}
+                {tx.note ? ` — ${tx.note}` : ''}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+      ) : null}
     </Box>
   );
 }

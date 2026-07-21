@@ -20,6 +20,7 @@ import {
 import type { JobRecord } from '../../types/job';
 import { computeJobTrust } from '../../lib/jobs/jobTrust';
 import { useI18n } from '../../context/I18nContext';
+import { IntelSourceContributors } from './IntelSourceContributors';
 
 function tierLabel(t: (k: string) => string, tier?: JobRecord['accessTier']) {
   if (tier === 'premium') return t('historicalJobs.tierLabelPremium');
@@ -121,7 +122,8 @@ export function JobIntelDetailPanel({
         },
       }}
     >
-      <Box>
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1 }}>
           <Chip size="small" label={job.state} />
           <Chip size="small" label={tierLabel(t, tier)} variant="outlined" />
@@ -144,6 +146,8 @@ export function JobIntelDetailPanel({
             </Typography>
           </Box>
         ) : null}
+        </Box>
+        {job.intelSource ? <IntelSourceContributors source={job.intelSource} /> : null}
       </Box>
 
       <Box

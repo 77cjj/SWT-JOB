@@ -1,6 +1,58 @@
 import type { JobRecord } from '../types/job';
+import type { JobIntelSource } from '../types/intelSource';
 
-export const historicalJobsData: JobRecord[] = [
+const INTEL_SOURCES: Record<string, JobIntelSource> = {
+  '2024-AK-LIFE-001': {
+    kind: 'official',
+    contributors: [{ userId: 'official-swt', contributedAt: '2024-10-05', role: 'primary' }],
+  },
+  '2024-NJ-SERV-032': {
+    kind: 'community',
+    contributors: [
+      { userId: 'u-maya-2025', contributedAt: '2024-09-12', role: 'primary' },
+      { userId: 'u-sam-2025', contributedAt: '2024-09-20', role: 'verifier' },
+      { userId: 'u-alex-2024', contributedAt: '2024-10-02', role: 'verifier' },
+    ],
+  },
+  '2024-WI-HOUS-044': {
+    kind: 'community',
+    contributors: [
+      { userId: 'u-alex-2024', contributedAt: '2024-08-28', role: 'primary' },
+      { userId: 'u-maya-2025', contributedAt: '2024-09-03', role: 'verifier' },
+    ],
+  },
+  '2023-FL-RETL-021': {
+    kind: 'community',
+    contributors: [{ userId: 'u-sam-2025', contributedAt: '2023-11-01', role: 'primary' }],
+  },
+  '2023-CA-SERV-015': {
+    kind: 'community',
+    contributors: [
+      { userId: 'u-maya-2025', contributedAt: '2023-10-15', role: 'primary' },
+      { userId: 'u-alex-2024', contributedAt: '2023-10-22', role: 'verifier' },
+      { userId: 'u-sam-2025', contributedAt: '2023-11-08', role: 'verifier' },
+      { userId: 'u-maya-2025', contributedAt: '2023-11-20', role: 'editor' },
+    ],
+  },
+  '2023-MT-RANCH-008': {
+    kind: 'official',
+    officialLabel: '官方 · 实地核验',
+    contributors: [{ userId: 'official-swt', contributedAt: '2023-09-01', role: 'primary' }],
+  },
+  '2022-NY-HOTEL-012': {
+    kind: 'community',
+    contributors: [
+      { userId: 'u-alex-2024', contributedAt: '2022-10-01', role: 'primary' },
+      { userId: 'u-sam-2025', contributedAt: '2022-10-18', role: 'verifier' },
+    ],
+  },
+  '2022-TX-AMUS-025': {
+    kind: 'community',
+    contributors: [{ userId: 'u-maya-2025', contributedAt: '2022-09-20', role: 'primary' }],
+  },
+};
+
+const RAW_HISTORICAL_JOBS: JobRecord[] = [
   {
     jobId: '2024-AK-LIFE-001',
     jobTitle: 'Ocean Park Lifeguard',
@@ -283,3 +335,17 @@ export const historicalJobsData: JobRecord[] = [
     verifiedCount: 2,
   },
 ];
+
+export const historicalJobsData: JobRecord[] = RAW_HISTORICAL_JOBS.map((job) => ({
+  ...job,
+  intelSource: INTEL_SOURCES[job.jobId] ?? {
+    kind: 'community' as const,
+    contributors: [
+      {
+        userId: 'u-maya-2025',
+        contributedAt: `${job.year ?? 2024}-07-01`,
+        role: 'primary' as const,
+      },
+    ],
+  },
+}));

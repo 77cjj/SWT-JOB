@@ -12,6 +12,17 @@ export type DemoMember = {
 };
 
 export const DEMO_MEMBERS: Record<string, DemoMember> = {
+  'official-swt': {
+    id: 'official-swt',
+    displayName: 'SWT-JOB 官方',
+    avatarColor: '#4f46e5',
+    programYear: '—',
+    workState: 'US',
+    badge: 'verified',
+    bio: '平台运营与审核团队。录入经交叉核验的公开岗位情报，可在主页留言联系。',
+    joinedAt: '2024-01-01',
+    contributionCount: 48,
+  },
   'u-maya-2025': {
     id: 'u-maya-2025',
     displayName: 'Maya L.',

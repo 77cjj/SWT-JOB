@@ -411,6 +411,16 @@ export const en = {
     compensation: 'Compensation',
     tipPerHour: 'tips/h',
     housingShort: 'housing',
+    intelSource: 'Source',
+    sourceOfficial: 'Official',
+    sourceCommunity: 'Community',
+    viewProfileContact: 'View profile & contact',
+    allContributors: 'All contributors',
+    contributorCount: '{count} contributors',
+    contributorRolePrimary: 'Primary',
+    contributorRoleVerifier: 'Verified update',
+    contributorRoleEditor: 'Edited',
+    contributorRoleDefault: 'Contributed',
   },
 
   // Refer deals

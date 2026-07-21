@@ -56,23 +56,19 @@ public class SaTokenConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册 SaToken 登录拦截器
         registry.addInterceptor(new SaInterceptor(handler -> {
-                    // 异步调度请求跳过登录检查（SSE 完成回调会触发 asyncDispatch，此时 SaToken 上下文已丢失）
                     ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-                    if (attrs != null) {
-                        HttpServletRequest request = attrs.getRequest();
-                        // 判断是否为异步调度请求，如果是则跳过登录检查
+                    HttpServletRequest request = attrs != null ? attrs.getRequest() : null;
+                    if (request != null) {
                         if (request.getDispatcherType() == DispatcherType.ASYNC) {
                             return;
                         }
-                        // 预检请求直接放行，避免 CORS 被拦截
                         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
                             return;
                         }
+                        if (PublicAnonymousPathMatcher.matches(request)) {
+                            return;
+                        }
                     }
-                    if (PublicAnonymousPathMatcher.matches(attrs.getRequest())) {
-                        return;
-                    }
-                    // 执行登录检查
                     StpUtil.checkLogin();
                 }))
                 // 拦截所有路径

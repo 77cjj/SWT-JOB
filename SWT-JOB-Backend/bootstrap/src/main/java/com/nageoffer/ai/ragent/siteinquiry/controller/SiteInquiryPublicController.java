@@ -27,6 +27,9 @@ import com.nageoffer.ai.ragent.siteinquiry.controller.request.SiteInquiryRequest
 import com.nageoffer.ai.ragent.siteinquiry.service.SiteInquiryService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,11 +47,28 @@ public class SiteInquiryPublicController {
     private final SiteInquiryService siteInquiryService;
     private final SiteInquiryProperties properties;
 
-    @PostMapping("/public/site-inquiry")
+    /**
+     * 推荐 {@code /auth/site-inquiry-webhook}：与登录接口同属 {@code /auth/**}，Sa-Token 白名单稳定生效。
+     * {@code /public/site-inquiry} 保留兼容旧配置。
+     */
+    @PostMapping({"/auth/site-inquiry-webhook", "/public/site-inquiry"})
     public Result<Void> acceptInquiry(@RequestBody SiteInquiryRequest body, HttpServletRequest request) {
         verifySharedSecret(request);
         siteInquiryService.forwardToWeWork(body);
         return Results.success();
+    }
+
+    /** 无需登录，用于确认后端版本与企微 Webhook 是否已配置 */
+    @GetMapping("/auth/site-inquiry-ping")
+    public Result<Map<String, Object>> ping() {
+        return Results.success(
+                Map.of(
+                        "ok",
+                        true,
+                        "weworkConfigured",
+                        StrUtil.isNotBlank(properties.getWeworkWebhookUrl()),
+                        "secretRequired",
+                        StrUtil.isNotBlank(properties.getWebhookSecret())));
     }
 
     private void verifySharedSecret(HttpServletRequest request) {

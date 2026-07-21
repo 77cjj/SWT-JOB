@@ -14,23 +14,37 @@ public final class PublicAnonymousPathMatcher {
         if (request == null) {
             return false;
         }
-        String servletPath = normalize(request.getServletPath());
-        if (matchesPath(servletPath)) {
-            return true;
-        }
+        return matchesPath(pathWithinApplication(request));
+    }
+
+    /** Spring context-path 下的路径，例如 /public/site-inquiry */
+    static String pathWithinApplication(HttpServletRequest request) {
         String uri = normalize(request.getRequestURI());
-        if (uri.contains("/api/ragent")) {
-            uri = normalize(uri.substring(uri.indexOf("/api/ragent") + "/api/ragent".length()));
+        String ctx = normalize(request.getContextPath());
+        if (StrUtil.isNotBlank(ctx) && uri.startsWith(ctx)) {
+            uri = normalize(uri.substring(ctx.length()));
         }
-        return matchesPath(uri);
+        if (StrUtil.isNotBlank(uri)) {
+            return uri;
+        }
+        String servletPath = normalize(request.getServletPath());
+        String pathInfo = normalize(request.getPathInfo());
+        if (StrUtil.isBlank(pathInfo)) {
+            return servletPath;
+        }
+        if (StrUtil.isBlank(servletPath) || "/".equals(servletPath)) {
+            return normalize(pathInfo);
+        }
+        return normalize(servletPath + pathInfo);
     }
 
     private static boolean matchesPath(String path) {
         if (StrUtil.isBlank(path)) {
             return false;
         }
-        return path.startsWith("/public/")
-            || path.equals("/public/site-inquiry")
+        return path.equals("/auth/site-inquiry-webhook")
+            || path.equals("/auth/site-inquiry-ping")
+            || path.startsWith("/public/")
             || path.startsWith("/referral-deals/public")
             || path.startsWith("/auth/")
             || path.equals("/rag/sample-questions")

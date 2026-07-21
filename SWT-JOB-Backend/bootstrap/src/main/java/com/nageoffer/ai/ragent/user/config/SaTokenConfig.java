@@ -69,26 +69,29 @@ public class SaTokenConfig implements WebMvcConfigurer {
                             return;
                         }
                     }
+                    if (PublicAnonymousPathMatcher.matches(attrs.getRequest())) {
+                        return;
+                    }
                     // 执行登录检查
                     StpUtil.checkLogin();
                 }))
                 // 拦截所有路径
                 .addPathPatterns("/**")
                 // 排除认证相关路径和错误页面
-                .excludePathPatterns("/auth/**", "/error", "/rag/sample-questions", "/rag/demo-conversations", "/rag/capabilities", "/referral-deals/public", "/referral-deals/public/**", "/public/site-inquiry", "/public/doc-polls/**", "/public/job-intel/**");
+                .excludePathPatterns("/auth/**", "/error", "/rag/sample-questions", "/rag/demo-conversations", "/rag/capabilities", "/referral-deals/public", "/referral-deals/public/**", "/public/**");
 
         // 注册体验环境只读模式拦截器
         registry.addInterceptor(demoModeInterceptor)
                 // 拦截所有路径
                 .addPathPatterns("/**")
                 // 排除认证相关路径和错误页面
-                .excludePathPatterns("/auth/**", "/error", "/rag/sample-questions", "/rag/demo-conversations", "/rag/capabilities", "/referral-deals/public", "/referral-deals/public/**", "/public/site-inquiry", "/public/doc-polls/**", "/public/job-intel/**");
+                .excludePathPatterns("/auth/**", "/error", "/rag/sample-questions", "/rag/demo-conversations", "/rag/capabilities", "/referral-deals/public", "/referral-deals/public/**", "/public/**");
 
         // 注册用户上下文拦截器
         registry.addInterceptor(userContextInterceptor)
                 // 拦截所有路径
                 .addPathPatterns("/**")
                 // 排除认证相关路径和错误页面
-                .excludePathPatterns("/auth/**", "/error", "/rag/sample-questions", "/rag/demo-conversations", "/rag/capabilities", "/referral-deals/public", "/referral-deals/public/**", "/public/site-inquiry", "/public/doc-polls/**", "/public/job-intel/**");
+                .excludePathPatterns("/auth/**", "/error", "/rag/sample-questions", "/rag/demo-conversations", "/rag/capabilities", "/referral-deals/public", "/referral-deals/public/**", "/public/**");
     }
 }

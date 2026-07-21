@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.siteinquiry.controller;
 
+import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.util.StrUtil;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequiredArgsConstructor
+@SaIgnore
 public class SiteInquiryPublicController {
 
     private static final String SECRET_HEADER = "X-Site-Inquiry-Secret";

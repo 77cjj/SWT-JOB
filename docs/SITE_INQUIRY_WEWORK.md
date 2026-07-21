@@ -41,6 +41,19 @@ curl -sS -X POST 'http://127.0.0.1:9090/api/ragent/public/site-inquiry' \
 
 返回 `code: "0"` 且企微群收到消息即成功。
 
+## 若返回 `未登录或登录已过期`（code A000001）
+
+说明请求被 **Sa-Token 登录拦截** 拦住了，常见原因：
+
+1. **ECS 上的后端还是旧版本**（还没有 `SiteInquiryPublicController` / 未放行 `/public/site-inquiry`）。在服务器执行：
+   ```bash
+   cd /root/SWT-JOB && git pull
+   ./server.sh restart backend --build --force
+   ```
+2. 拉代码并重新编译后再用文档里的 `curl` 测一遍。
+
+Secret 配错时返回的是 **`Webhook 鉴权失败`**，不是「未登录」。
+
 ## 安全说明
 
 - Webhook URL 中的 `key` 等同于密码，泄露后他人可向群内发消息；若已在聊天中暴露，请在企微群机器人设置里**重置 key**。

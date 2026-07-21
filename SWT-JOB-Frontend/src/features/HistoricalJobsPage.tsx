@@ -27,6 +27,8 @@ import { importIntelJobToCompare } from '../lib/jobs/importToCompare';
 import { JobIntelExplorer } from '../components/jobs/JobIntelExplorer';
 import { useI18n } from '../context/I18nContext';
 import type { JobRecord } from '../types/job';
+import { submitJobIntelContribution } from '../lib/jobs/jobIntelApi';
+import { useAuthStore } from '@/stores/authStore';
 
 const UNLOCK_STORAGE_KEY = 'swt-job-intel-unlocked-until';
 
@@ -51,6 +53,10 @@ export default function HistoricalJobsPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [snackOpen, setSnackOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [form, setForm] = useState({
     state: '',
     jobTitle: '',
@@ -82,12 +88,32 @@ export default function HistoricalJobsPage() {
     });
   }, [searchTerm, stateFilter]);
 
-  const handleContribute = () => {
-    setUnlockedDays(30);
-    setUnlocked(true);
-    setDialogOpen(false);
-    setForm({ state: '', jobTitle: '', hourlyWage: '', notes: '' });
-    setSnackOpen(true);
+  const handleContribute = async () => {
+    if (!isAuthenticated) {
+      openLoginDialog('登录后即可提交岗位情报');
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const wageRaw = form.hourlyWage.trim();
+      const hourlyWage = wageRaw ? Number(wageRaw) : undefined;
+      await submitJobIntelContribution({
+        state: form.state.trim(),
+        jobTitle: form.jobTitle.trim(),
+        hourlyWage: hourlyWage != null && Number.isFinite(hourlyWage) ? hourlyWage : undefined,
+        notes: form.notes.trim(),
+      });
+      setUnlockedDays(30);
+      setUnlocked(true);
+      setDialogOpen(false);
+      setForm({ state: '', jobTitle: '', hourlyWage: '', notes: '' });
+      setSnackOpen(true);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : t('historicalJobs.contributeApiError'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleImportToCompare = (job: JobRecord) => {
@@ -175,7 +201,7 @@ export default function HistoricalJobsPage() {
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>{t('historicalJobs.contributeDialogTitle')}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <Alert severity="warning">{t('historicalJobs.contributePrototypeNote')}</Alert>
+          {submitError ? <Alert severity="error">{submitError}</Alert> : null}
           <TextField
             label={t('historicalJobs.state')}
             value={form.state}
@@ -207,15 +233,15 @@ export default function HistoricalJobsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
-          <Button variant="contained" disabled={!canSubmit} onClick={handleContribute}>
-            {t('historicalJobs.contributeButton')}
+          <Button variant="contained" disabled={!canSubmit || submitting} onClick={() => void handleContribute()}>
+            {submitting ? t('historicalJobs.contributeSubmitting') : t('historicalJobs.contributeButton')}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Snackbar open={snackOpen} autoHideDuration={4000} onClose={() => setSnackOpen(false)}>
         <Alert severity="success" onClose={() => setSnackOpen(false)}>
-          {t('historicalJobs.contributeSuccess')}
+          {t('historicalJobs.contributeSaved')}
         </Alert>
       </Snackbar>
     </Box>

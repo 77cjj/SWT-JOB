@@ -188,6 +188,10 @@ export default function FloatingSupportWidget() {
   const submitHuman = useCallback(async () => {
     const message = humanMessage.trim();
     if (message.length < 4 || humanSending) return;
+    if (!isAuthenticated) {
+      openLoginDialog('登录后即可给站长留言');
+      return;
+    }
     setHumanSending(true);
     setHumanError('');
     setHumanDone(false);
@@ -199,10 +203,11 @@ export default function FloatingSupportWidget() {
           message,
           contact: humanContact.trim(),
           pageUrl: typeof window !== 'undefined' ? window.location.href : '',
-          topic: tab === 'human' && router.pathname.startsWith('/deals') ? 'deals' : 'general',
+          topic: router.pathname.startsWith('/deals') ? 'deals' : 'general',
         }),
       });
-      const data = (await res.json()) as { ok?: boolean; message?: string };
+      const { parseJsonResponse } = await import('../../lib/api/parseJsonResponse');
+      const data = await parseJsonResponse<{ ok?: boolean; message?: string }>(res);
       if (!res.ok || !data.ok) {
         throw new Error(data.message || t('support.humanError'));
       }
@@ -213,7 +218,7 @@ export default function FloatingSupportWidget() {
     } finally {
       setHumanSending(false);
     }
-  }, [humanContact, humanMessage, humanSending, router.pathname, t, tab]);
+  }, [humanContact, humanMessage, humanSending, isAuthenticated, openLoginDialog, router.pathname, t]);
 
   if (hidden) return null;
 
@@ -332,7 +337,7 @@ export default function FloatingSupportWidget() {
               </Box>
             </>
           ) : (
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5, pb: 2, display: 'flex', flexDirection: 'column', gap: 1.2 }}>
               <Typography variant="body2" color="text.secondary">
                 {t('support.humanDesc')}
               </Typography>
@@ -359,7 +364,9 @@ export default function FloatingSupportWidget() {
               {humanError ? <Alert severity="error">{humanError}</Alert> : null}
               {humanDone ? <Alert severity="success">{t('support.humanSuccess')}</Alert> : null}
               <Button
+                type="button"
                 variant="contained"
+                fullWidth
                 onClick={() => void submitHuman()}
                 disabled={humanSending || humanMessage.trim().length < 4}
                 startIcon={humanSending ? <CircularProgress size={16} color="inherit" /> : <Send />}

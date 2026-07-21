@@ -78,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
     } else if (webhookUrl) {
       await notifyWebhook(webhookUrl, payload);
-    } else if (process.env.NODE_ENV === 'development') {
+    } else if (process.env.NODE_ENV !== 'production' || process.env.SITE_INQUIRY_ALLOW_DEV_FALLBACK === 'true') {
       console.info('[site-inquiry]', payload);
     } else {
       return res.status(503).json({

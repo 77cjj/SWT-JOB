@@ -5,6 +5,10 @@ export interface UserItem {
   username: string;
   role: string;
   avatar?: string | null;
+  officialVerified?: boolean;
+  accountStatus?: string;
+  restrictionNote?: string | null;
+  displayName?: string | null;
   createTime?: string | null;
   updateTime?: string | null;
 }
@@ -29,6 +33,10 @@ export interface UserUpdatePayload {
   password?: string;
   role?: string;
   avatar?: string | null;
+  officialVerified?: boolean;
+  accountStatus?: string;
+  restrictionNote?: string;
+  displayName?: string;
 }
 
 export interface ChangePasswordPayload {
@@ -44,6 +52,10 @@ export async function getUsersPage(
   return api.get<PageResult<UserItem>, PageResult<UserItem>>("/users", {
     params: { current, size, keyword: keyword || undefined }
   });
+}
+
+export async function getUserById(id: string): Promise<UserItem> {
+  return api.get<UserItem, UserItem>(`/users/${id}`);
 }
 
 export async function createUser(payload: UserCreatePayload): Promise<string> {

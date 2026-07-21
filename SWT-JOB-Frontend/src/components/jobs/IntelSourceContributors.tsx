@@ -6,12 +6,8 @@ import {
   AvatarGroup,
   Box,
   Chip,
-  Collapse,
   IconButton,
   List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   Popover,
   Stack,
   Tooltip,
@@ -57,40 +53,38 @@ function ContributorRow({
   if (!member) return null;
 
   return (
-    <ListItem
+    <Box
       component={Link}
       href={`/u/${member.id}`}
       sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.25,
+        py: 0.75,
+        px: 1,
         borderRadius: 1,
         textDecoration: 'none',
         color: 'inherit',
         '&:hover': { bgcolor: 'action.hover' },
       }}
     >
-      <ListItemAvatar>
-        <Avatar sx={{ bgcolor: member.avatarColor, width: 36, height: 36 }}>
-          {member.displayName.slice(0, 1)}
-        </Avatar>
-      </ListItemAvatar>
-      <ListItemText
-        primary={
-          <Typography variant="body2" fontWeight={600}>
-            {member.displayName}
-          </Typography>
-        }
-        secondary={
-          <Typography variant="caption" color="text.secondary" component="span">
-            {roleLabel(t, contributor.role)} · {formatContributedAt(contributor.contributedAt, locale)}
-          </Typography>
-        }
-      />
-    </ListItem>
+      <Avatar sx={{ bgcolor: member.avatarColor, width: 36, height: 36 }}>
+        {member.displayName.slice(0, 1)}
+      </Avatar>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="body2" fontWeight={600}>
+          {member.displayName}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {roleLabel(t, contributor.role)} · {formatContributedAt(contributor.contributedAt, locale)}
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 
 export function IntelSourceContributors({ source }: { source: JobIntelSource }) {
   const { t, tWithParams, language } = useI18n();
-  const [expanded, setExpanded] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const sorted = useMemo(
@@ -106,17 +100,10 @@ export function IntelSourceContributors({ source }: { source: JobIntelSource }) 
   const primaryMember = primaryUserId ? getDemoMember(primaryUserId) : null;
   const multi = sorted.length > 1;
 
-  const openPopover = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
   if (!primaryMember && sorted.length === 0) return null;
 
   return (
-    <Box sx={{ textAlign: 'right', minWidth: 0, flexShrink: 0 }}>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-        {t('historicalJobs.intelSource')}
-      </Typography>
+    <Box sx={{ textAlign: 'right', minWidth: 0, flexShrink: 0, position: 'relative' }}>
       <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="flex-end">
         {isOfficial ? (
           <Chip
@@ -153,13 +140,8 @@ export function IntelSourceContributors({ source }: { source: JobIntelSource }) 
             <IconButton
               size="small"
               aria-label={t('historicalJobs.allContributors')}
-              onClick={(e) => {
-                if (sorted.length <= 4) {
-                  setExpanded((v) => !v);
-                } else {
-                  openPopover(e);
-                }
-              }}
+              aria-expanded={Boolean(anchorEl)}
+              onClick={(e) => setAnchorEl(e.currentTarget)}
               sx={{ ml: -0.5 }}
             >
               <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem' } }}>
@@ -176,27 +158,21 @@ export function IntelSourceContributors({ source }: { source: JobIntelSource }) 
               <ExpandMoreIcon
                 fontSize="small"
                 sx={{
-                  transform: expanded ? 'rotate(180deg)' : 'none',
+                  transform: anchorEl ? 'rotate(180deg)' : 'none',
                   transition: 'transform 0.2s',
                 }}
               />
             </IconButton>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
               {tWithParams('historicalJobs.contributorCount', { count: sorted.length })}
             </Typography>
           </>
+        ) : sorted.length === 1 ? (
+          <Typography variant="caption" color="text.secondary">
+            {tWithParams('historicalJobs.contributorCount', { count: 1 })}
+          </Typography>
         ) : null}
       </Stack>
-
-      {multi && sorted.length <= 4 ? (
-        <Collapse in={expanded}>
-          <List dense disablePadding sx={{ mt: 1, maxWidth: 280, ml: 'auto' }}>
-            {sorted.map((c) => (
-              <ContributorRow key={`${c.userId}-${c.contributedAt}`} contributor={c} locale={language} />
-            ))}
-          </List>
-        </Collapse>
-      ) : null}
 
       <Popover
         open={Boolean(anchorEl)}
@@ -204,16 +180,28 @@ export function IntelSourceContributors({ source }: { source: JobIntelSource }) 
         onClose={() => setAnchorEl(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.5,
+              width: 300,
+              maxHeight: 360,
+              overflow: 'auto',
+              boxShadow: 8,
+            },
+          },
+        }}
+        disableScrollLock
       >
-        <Box sx={{ p: 1.5, width: 300, maxHeight: 360, overflow: 'auto' }}>
+        <Box sx={{ p: 1.5 }}>
           <Typography variant="subtitle2" fontWeight={700} gutterBottom>
             {t('historicalJobs.allContributors')}
           </Typography>
-          <List dense disablePadding>
+          <Stack spacing={0}>
             {sorted.map((c) => (
-              <ContributorRow key={`${c.userId}-${c.contributedAt}-pop`} contributor={c} locale={language} />
+              <ContributorRow key={`${c.userId}-${c.contributedAt}`} contributor={c} locale={language} />
             ))}
-          </List>
+          </Stack>
         </Box>
       </Popover>
     </Box>

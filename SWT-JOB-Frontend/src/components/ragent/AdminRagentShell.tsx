@@ -14,10 +14,12 @@ import { KnowledgeListPage } from "@/pages/admin/knowledge/KnowledgeListPage";
 import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTermMappingPage";
 import { SampleQuestionPage } from "@/pages/admin/sample-questions/SampleQuestionPage";
 import { ReferralDealsAdminPage } from "@/pages/admin/referral-deals/ReferralDealsAdminPage";
+import { JobIntelAdminPage } from "@/pages/admin/job-intel/JobIntelAdminPage";
 import { SystemSettingsPage } from "@/pages/admin/settings/SystemSettingsPage";
 import { RagTraceDetailPage } from "@/pages/admin/traces/RagTraceDetailPage";
 import { RagTracePage } from "@/pages/admin/traces/RagTracePage";
 import { UserListPage } from "@/pages/admin/users/UserListPage";
+import { UserDetailAdminPage } from "@/pages/admin/users/UserDetailAdminPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 function resolveAdminPage(segments: string[]): ReactNode {
@@ -66,10 +68,18 @@ function resolveAdminPage(segments: string[]): ReactNode {
       return segments.length === 1 ? <SampleQuestionPage /> : <NotFoundPage />;
     case "referral-deals":
       return segments.length === 1 ? <ReferralDealsAdminPage /> : <NotFoundPage />;
+    case "job-intel":
+      return segments.length === 1 ? <JobIntelAdminPage /> : <NotFoundPage />;
     case "mappings":
       return segments.length === 1 ? <QueryTermMappingPage /> : <NotFoundPage />;
     case "users":
-      return segments.length === 1 ? <UserListPage /> : <NotFoundPage />;
+      if (segments.length === 1) {
+        return <UserListPage />;
+      }
+      if (segments.length === 2) {
+        return <UserDetailAdminPage />;
+      }
+      return <NotFoundPage />;
     default:
       return <NotFoundPage />;
   }

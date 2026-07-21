@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Pencil, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
-import { toast } from "sonner";
+import Link from "next/link";
+import { Pencil, Plus, RefreshCw, Trash2, UserPlus, UserRound } from "lucide-react";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { PageResult, UserItem, UserCreatePayload, UserUpdatePayload } from "@/services/userService";
 import { createUser, deleteUser, getUsersPage, updateUser } from "@/services/userService";
 import { getErrorMessage } from "@/utils/error";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -225,6 +226,12 @@ export function UserListPage() {
                       <TableCell className="text-muted-foreground">{formatDate(user.updateTime)}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/admin/users/${user.id}`}>
+                              <UserRound className="w-4 h-4 mr-0.5" />
+                              详情
+                            </Link>
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"

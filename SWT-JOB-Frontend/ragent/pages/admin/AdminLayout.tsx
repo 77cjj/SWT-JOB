@@ -130,6 +130,11 @@ const menuGroups: MenuGroup[] = [
         icon: Users
       },
       {
+        path: "/admin/job-intel",
+        label: "岗位情报审核",
+        icon: ClipboardList
+      },
+      {
         path: "/admin/referral-deals",
         label: "薅羊毛项目",
         icon: Gift
@@ -157,6 +162,7 @@ const breadcrumbMap: Record<string, string> = {
   traces: "链路追踪",
   "sample-questions": "示例问题",
   "referral-deals": "薅羊毛项目",
+  "job-intel": "岗位情报审核",
   mappings: "关键词映射",
   settings: "系统设置",
   users: "用户管理"

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.dao.entity;
+package com.nageoffer.ai.ragent.jobintel.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -28,41 +28,38 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@TableName("t_user")
-public class UserDO {
+@TableName("t_job_intel_contribution")
+public class JobIntelContributionDO {
 
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
 
-    private String username;
+    private String jobId;
 
-    private String password;
+    private String submitterId;
 
-    /**
-     * 用户头像 URL
-     */
-    private String avatar;
+    private String stateCode;
 
-    /**
-     * 角色：admin / user
-     */
-    private String role;
+    private String jobTitle;
 
-    /** 1=官方认证 */
-    private Integer officialVerified;
+    private BigDecimal hourlyWage;
 
-    /** active | restricted | banned */
-    private String accountStatus;
+    private String notes;
 
-    private String restrictionNote;
+    /** pending | approved | rejected */
+    private String status;
 
-    private String displayName;
+    private String adminSummary;
+
+    /** 1 展示在站点 */
+    private Integer published;
 
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;

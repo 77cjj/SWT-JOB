@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Box, Chip, Typography } from '@mui/material';
 import type { JobRecord } from '../../types/job';
-import { computeJobTrust } from '../../lib/jobs/jobTrust';
 import { useI18n } from '../../context/I18nContext';
 
 export function JobIntelListItem({
@@ -17,10 +16,7 @@ export function JobIntelListItem({
 }) {
   const { t, tWithParams } = useI18n();
   const [popping, setPopping] = useState(false);
-  const trust = computeJobTrust(job);
-
-  const trustColor =
-    trust.level === 'high' ? 'success.main' : trust.level === 'medium' ? 'warning.main' : 'error.main';
+  const contributorCount = job.intelSource?.contributors?.length ?? job.verifiedCount ?? 0;
 
   const handleActivate = () => {
     setPopping(true);
@@ -71,37 +67,22 @@ export function JobIntelListItem({
             {job.state} · ${job.hourlyWage.toFixed(2)}/h
           </Typography>
         </Box>
-        <Box
-          sx={{
-            flexShrink: 0,
-            minWidth: 40,
-            textAlign: 'center',
-            px: 0.75,
-            py: 0.25,
-            borderRadius: 1.5,
-            bgcolor: (theme) =>
-              theme.palette.mode === 'light' ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.15)',
-          }}
-        >
-          <Typography variant="caption" fontWeight={800} sx={{ color: trustColor, display: 'block', lineHeight: 1.2 }}>
-            {trust.score}
+        {contributorCount > 0 ? (
+          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+            {tWithParams('historicalJobs.contributorCount', { count: contributorCount })}
           </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-            {t('historicalJobs.trustShort')}
-          </Typography>
-        </Box>
+        ) : null}
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-        {job.verifiedCount ? (
-          <Chip
-            size="small"
-            label={tWithParams('historicalJobs.verified', { count: job.verifiedCount })}
-            sx={{ height: 20, fontSize: '0.65rem' }}
-          />
-        ) : null}
         <Chip
           size="small"
           label={`${t('historicalJobs.secondJob')} ${job.secondJobPossible}`}
+          variant="outlined"
+          sx={{ height: 20, fontSize: '0.65rem' }}
+        />
+        <Chip
+          size="small"
+          label={`${job.avgHoursPerWeek}h/w`}
           variant="outlined"
           sx={{ height: 20, fontSize: '0.65rem' }}
         />

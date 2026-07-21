@@ -15,41 +15,36 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.controller.request;
+package com.nageoffer.ai.ragent.docpoll.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * 用户更新请求
- */
+import java.util.Date;
+
 @Data
-public class UserUpdateRequest {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("t_doc_poll_vote")
+public class DocPollVoteDO {
 
-    /**
-     * 用户名
-     */
-    private String username;
+    @TableId(type = com.baomidou.mybatisplus.annotation.IdType.ASSIGN_ID)
+    private String id;
 
-    /**
-     * 新密码（可选）
-     */
-    private String password;
+    private String pollId;
 
-    /**
-     * 角色（admin/user）
-     */
-    private String role;
+    private String userId;
 
-    /**
-     * 头像地址
-     */
-    private String avatar;
+    private String optionId;
 
-    private Boolean officialVerified;
+    private String workState;
 
-    private String accountStatus;
+    private String programYear;
 
-    private String restrictionNote;
-
-    private String displayName;
+    private Date votedAt;
 }

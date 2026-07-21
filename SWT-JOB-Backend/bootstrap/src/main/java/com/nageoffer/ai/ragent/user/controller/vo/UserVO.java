@@ -37,6 +37,10 @@ public class UserVO {
     private String username;
     private String role;
     private String avatar;
+    private Boolean officialVerified;
+    private String accountStatus;
+    private String restrictionNote;
+    private String displayName;
     private Date createTime;
     private Date updateTime;
 }

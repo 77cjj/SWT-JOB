@@ -119,6 +119,26 @@ public class UserServiceImpl implements UserService {
             record.setPassword(password);
         }
 
+        if (requestParam.getOfficialVerified() != null) {
+            record.setOfficialVerified(Boolean.TRUE.equals(requestParam.getOfficialVerified()) ? 1 : 0);
+        }
+        if (requestParam.getAccountStatus() != null) {
+            String status = StrUtil.trimToNull(requestParam.getAccountStatus());
+            if (status != null) {
+                Assert.isTrue(
+                        "active".equals(status) || "restricted".equals(status) || "banned".equals(status),
+                        () -> new ClientException("账号状态不合法")
+                );
+                record.setAccountStatus(status);
+            }
+        }
+        if (requestParam.getRestrictionNote() != null) {
+            record.setRestrictionNote(StrUtil.trimToNull(requestParam.getRestrictionNote()));
+        }
+        if (requestParam.getDisplayName() != null) {
+            record.setDisplayName(StrUtil.trimToNull(requestParam.getDisplayName()));
+        }
+
         userMapper.updateById(record);
     }
 
@@ -149,6 +169,11 @@ public class UserServiceImpl implements UserService {
         }
         record.setPassword(next);
         userMapper.updateById(record);
+    }
+
+    @Override
+    public UserVO getById(String id) {
+        return toVO(loadById(id));
     }
 
     private UserDO loadById(String id) {
@@ -206,6 +231,10 @@ public class UserServiceImpl implements UserService {
                 .username(record.getUsername())
                 .role(record.getRole())
                 .avatar(record.getAvatar())
+                .officialVerified(record.getOfficialVerified() != null && record.getOfficialVerified() == 1)
+                .accountStatus(StrUtil.blankToDefault(record.getAccountStatus(), "active"))
+                .restrictionNote(record.getRestrictionNote())
+                .displayName(record.getDisplayName())
                 .createTime(record.getCreateTime())
                 .updateTime(record.getUpdateTime())
                 .build();

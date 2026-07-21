@@ -72,6 +72,12 @@ public class UserController {
         return Results.success(userService.pageQuery(requestParam));
     }
 
+    @GetMapping("/users/{id}")
+    public Result<UserVO> getById(@PathVariable String id) {
+        StpUtil.checkRole("admin");
+        return Results.success(userService.getById(id));
+    }
+
     /**
      * 创建用户
      */

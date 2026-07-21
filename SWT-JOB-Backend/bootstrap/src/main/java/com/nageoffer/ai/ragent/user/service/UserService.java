@@ -50,4 +50,6 @@ public interface UserService {
      * 修改当前用户密码
      */
     void changePassword(ChangePasswordRequest requestParam);
+
+    UserVO getById(String id);
 }

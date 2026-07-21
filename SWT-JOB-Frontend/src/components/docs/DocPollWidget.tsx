@@ -20,6 +20,7 @@ import { storage } from '@/utils/storage';
 import { RAGENT_BYPASS_AUTH } from '@/config/runtimeEnv';
 import { useI18n } from '../../context/I18nContext';
 import { getDocPollDefinition } from '../../lib/docs/polls/definitions';
+import { parseJsonResponse } from '../../lib/api/parseJsonResponse';
 import {
   isMemberProfileComplete,
   readMemberProfile,
@@ -81,12 +82,12 @@ export function DocPollWidget({ pollId }: { pollId: string }) {
       const res = await fetch(`/api/doc-polls/${pollId}`, {
         headers: authHeaders,
       });
-      const data = (await res.json()) as {
+      const data = await parseJsonResponse<{
         ok?: boolean;
         results?: PollResults;
         myVote?: string | null;
         message?: string;
-      };
+      }>(res);
       if (!res.ok || !data.ok || !data.results) {
         throw new Error(data.message || t('docPolls.loadError'));
       }
@@ -144,12 +145,12 @@ export function DocPollWidget({ pollId }: { pollId: string }) {
           programYear: profile.programYear,
         }),
       });
-      const data = (await res.json()) as {
+      const data = await parseJsonResponse<{
         ok?: boolean;
         results?: PollResults;
         myVote?: string;
         message?: string;
-      };
+      }>(res);
       if (!res.ok || !data.ok || !data.results) {
         throw new Error(data.message || t('docPolls.submitError'));
       }

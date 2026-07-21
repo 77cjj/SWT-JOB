@@ -16,7 +16,16 @@ export type PollStoreData = {
   votes: Record<string, PollVoteRecord>;
 };
 
-const STORE_PATH = path.join(process.cwd(), '.data/doc-poll-votes.json');
+function resolveStorePath() {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return '/tmp/swt-doc-poll-votes.json';
+  }
+  return path.join(process.cwd(), '.data/doc-poll-votes.json');
+}
+
+function storePath() {
+  return resolveStorePath();
+}
 
 function emptyStore(): PollStoreData {
   const counts: PollStoreData['counts'] = {};
@@ -27,6 +36,7 @@ function emptyStore(): PollStoreData {
 }
 
 async function ensureStoreFile() {
+  const STORE_PATH = storePath();
   await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
   try {
     await fs.access(STORE_PATH);
@@ -37,6 +47,7 @@ async function ensureStoreFile() {
 
 export async function readPollStore(): Promise<PollStoreData> {
   await ensureStoreFile();
+  const STORE_PATH = storePath();
   try {
     const raw = await fs.readFile(STORE_PATH, 'utf8');
     const parsed = JSON.parse(raw) as PollStoreData;
@@ -51,6 +62,7 @@ export async function readPollStore(): Promise<PollStoreData> {
 
 export async function writePollStore(data: PollStoreData) {
   await ensureStoreFile();
+  const STORE_PATH = storePath();
   await fs.writeFile(STORE_PATH, JSON.stringify(data, null, 2), 'utf8');
 }
 

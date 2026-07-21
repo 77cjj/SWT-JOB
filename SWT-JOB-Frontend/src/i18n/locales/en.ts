@@ -504,6 +504,7 @@ export const en = {
     footerHint: 'See docs for the full guide, or share codes on the',
     marketLink: 'Community marketplace',
     viewGuide: 'Claim guide',
+    detailInfo: 'Details',
     detailNotFound: 'This offer was not found—it may be unpublished or the link is wrong.',
     backToList: 'Back to deals',
     siteRebateTitle: 'Extra cashback from this site (admin-configured)',

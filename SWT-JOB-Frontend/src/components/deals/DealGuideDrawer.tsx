@@ -112,7 +112,7 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
         onClose={onClose}
         PaperProps={{
           sx: {
-            width: { xs: '100%', sm: 440, md: 480 },
+            width: { xs: '100%', sm: 520, md: 600 },
             maxWidth: '100vw',
           },
         }}
@@ -129,13 +129,26 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
               borderColor: 'divider',
             }}
           >
-            <Box sx={{ minWidth: 0 }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography variant="overline" color="text.secondary">
-                {t('deals.viewGuide')}
+                {t('deals.detailInfo')}
               </Typography>
-              <Typography variant="h6" fontWeight={800}>
-                {title}
-              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mt: 0.25 }}>
+                <Typography variant="h6" fontWeight={800} sx={{ flex: '1 1 auto', minWidth: 0 }}>
+                  {title}
+                </Typography>
+                {!isStale && edition.referralUrl ? (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<OpenInNew />}
+                    sx={{ flexShrink: 0 }}
+                    onClick={() => setExternalLink({ url: edition.referralUrl!, label: title })}
+                  >
+                    {t('deals.openReferralLink')}
+                  </Button>
+                ) : null}
+              </Box>
               <Typography variant="subtitle1" color="primary.main" fontWeight={700}>
                 {pickLang(edition.reward, lang)}
               </Typography>

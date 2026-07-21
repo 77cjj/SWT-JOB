@@ -15,7 +15,6 @@ import {
 } from '@mui/material';
 import {
   ContentCopy,
-  OpenInNew,
   AccountBalance,
   MoreHoriz,
   ExpandMore,
@@ -95,6 +94,15 @@ function DealCard({
 
   return (
     <Box
+      role="button"
+      tabIndex={0}
+      onClick={onOpenGuide}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenGuide();
+        }
+      }}
       sx={{
         border: 1,
         borderColor: isStale ? 'action.disabled' : 'divider',
@@ -105,6 +113,7 @@ function DealCard({
         flexDirection: 'column',
         gap: 1.25,
         height: '100%',
+        cursor: 'pointer',
         transition: 'box-shadow 0.2s, opacity 0.2s',
         ...(isStale
           ? {
@@ -120,20 +129,11 @@ function DealCard({
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
             <Typography
-              component="button"
-              type="button"
+              component="span"
               variant="subtitle1"
               fontWeight={700}
-              onClick={onOpenGuide}
               sx={{
                 color: isStale ? 'text.disabled' : 'text.primary',
-                textDecoration: 'none',
-                border: 0,
-                background: 'none',
-                cursor: 'pointer',
-                p: 0,
-                textAlign: 'left',
-                '&:hover': { textDecoration: isStale ? 'none' : 'underline' },
               }}
             >
               {title}
@@ -146,7 +146,10 @@ function DealCard({
                 <IconButton
                   size="small"
                   aria-label={t('deals.officialInfo')}
-                  onClick={() => onOpenExternal(officialUrl, t('deals.officialTerms'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenExternal(officialUrl, t('deals.officialTerms'));
+                  }}
                   sx={{
                     p: 0.35,
                     color: 'primary.main',
@@ -226,7 +229,7 @@ function DealCard({
         </Box>
       </Collapse>
 
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
         <IconButton size="small" onClick={() => setExpanded((v) => !v)} aria-label="toggle details">
           {expanded ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
@@ -235,31 +238,19 @@ function DealCard({
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }}>
-        {!isStale ? (
-          <Button variant="outlined" size="small" onClick={onOpenGuide}>
-            {t('deals.viewGuide')}
-          </Button>
-        ) : null}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }} onClick={(e) => e.stopPropagation()}>
+        <Button variant="outlined" size="small" onClick={onOpenGuide}>
+          {t('deals.detailInfo')}
+        </Button>
         {!isStale && showReferral ? (
-          <>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<OpenInNew />}
-              onClick={() => onOpenExternal(edition.referralUrl!, title)}
-            >
-              {t('deals.openReferralLink')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ContentCopy />}
-              onClick={() => onCopy(edition.referralUrl!, title)}
-            >
-              {t('deals.copyReferralLink')}
-            </Button>
-          </>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ContentCopy />}
+            onClick={() => onCopy(edition.referralUrl!, title)}
+          >
+            {t('deals.copyReferralLink')}
+          </Button>
         ) : null}
         {program.editions.length > 1 ? (
           <Button

@@ -3,6 +3,9 @@
 rag:
   mcp:
     servers: []
+  knowledge:
+    chunk:
+      use-message-queue: false
 
 rocketmq:
   consumer:

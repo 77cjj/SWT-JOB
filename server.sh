@@ -752,6 +752,10 @@ write_server_config() {
 rag:
   mcp:
     servers: []
+  knowledge:
+    chunk:
+      # server.sh 关闭 RocketMQ 消费者时同步关闭 MQ 投递，改 JVM 内异步分块
+      use-message-queue: false
 
 rocketmq:
   consumer:

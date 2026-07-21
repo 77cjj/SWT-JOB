@@ -36,6 +36,7 @@ import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
 import com.nageoffer.ai.ragent.core.chunk.VectorChunk;
 import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
 import com.nageoffer.ai.ragent.core.parser.ParserType;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
@@ -45,6 +46,7 @@ import com.nageoffer.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.nageoffer.ai.ragent.ingestion.domain.pipeline.PipelineDefinition;
 import com.nageoffer.ai.ragent.ingestion.engine.IngestionEngine;
 import com.nageoffer.ai.ragent.ingestion.service.IngestionPipelineService;
+import com.nageoffer.ai.ragent.knowledge.config.KnowledgeChunkProperties;
 import com.nageoffer.ai.ragent.knowledge.config.KnowledgeScheduleProperties;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
@@ -90,6 +92,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -113,6 +116,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final TransactionOperations transactionOperations;
     private final MessageQueueProducer messageQueueProducer;
     private final KnowledgeScheduleProperties scheduleProperties;
+    private final KnowledgeChunkProperties chunkProperties;
     private final RemoteFileFetcher remoteFileFetcher;
 
     @Value("knowledge-document-chunk_topic${unique-name:}")
@@ -155,34 +159,64 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public void startChunk(String docId) {
+        if (!chunkProperties.isUseMessageQueue()) {
+            dispatchChunkInProcess(docId);
+            return;
+        }
         KnowledgeDocumentChunkEvent event = KnowledgeDocumentChunkEvent.builder()
                 .docId(docId)
                 .operator(UserContext.getUsername())
                 .build();
 
-        messageQueueProducer.sendInTransaction(
-                chunkTopic,
-                docId,
-                "文档分块",
-                event,
-                arg -> {
-                    int updated = documentMapper.update(
-                            new LambdaUpdateWrapper<KnowledgeDocumentDO>()
-                                    .set(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
-                                    .set(KnowledgeDocumentDO::getUpdatedBy, event.getOperator())
-                                    .eq(KnowledgeDocumentDO::getId, docId)
-                                    .ne(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
-                    );
-                    if (updated == 0) {
-                        KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
-                        Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
-                        throw new ClientException("文档分块操作正在进行中，请稍后再试");
-                    }
-                    KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
-                    event.setKbId(documentDO.getKbId());
-                    scheduleService.upsertSchedule(documentDO);
-                }
+        try {
+            messageQueueProducer.sendInTransaction(
+                    chunkTopic,
+                    docId,
+                    "文档分块",
+                    event,
+                    arg -> prepareChunkRunning(docId, event)
+            );
+        } catch (Exception ex) {
+            log.warn("RocketMQ 分块投递失败，改用进程内异步分块 docId={}", docId, ex);
+            dispatchChunkInProcess(docId);
+        }
+    }
+
+    private void dispatchChunkInProcess(String docId) {
+        KnowledgeDocumentChunkEvent event = KnowledgeDocumentChunkEvent.builder()
+                .docId(docId)
+                .operator(UserContext.getUsername())
+                .build();
+        prepareChunkRunning(docId, event);
+        String operator = event.getOperator();
+        CompletableFuture.runAsync(() -> {
+            UserContext.set(LoginUser.builder().username(operator).build());
+            try {
+                executeChunk(docId);
+            } catch (Exception ex) {
+                log.error("进程内分块失败 docId={}", docId, ex);
+            } finally {
+                UserContext.clear();
+            }
+        });
+    }
+
+    private void prepareChunkRunning(String docId, KnowledgeDocumentChunkEvent event) {
+        int updated = documentMapper.update(
+                new LambdaUpdateWrapper<KnowledgeDocumentDO>()
+                        .set(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
+                        .set(KnowledgeDocumentDO::getUpdatedBy, event.getOperator())
+                        .eq(KnowledgeDocumentDO::getId, docId)
+                        .ne(KnowledgeDocumentDO::getStatus, DocumentStatus.RUNNING.getCode())
         );
+        if (updated == 0) {
+            KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
+            Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
+            throw new ClientException("文档分块操作正在进行中，请稍后再试");
+        }
+        KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
+        event.setKbId(documentDO.getKbId());
+        scheduleService.upsertSchedule(documentDO);
     }
 
     @Override

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Eye, EyeOff, Lock, User, X } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -57,15 +57,7 @@ export function LoginDialog() {
           }
         }}
       >
-        <DialogHeader className="relative space-y-2 px-6 pt-6 text-left">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="absolute right-4 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-muted"
-            aria-label="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
+        <DialogHeader className="space-y-2 px-6 pt-6 text-left">
           <DialogTitle className="font-display text-xl">登录后继续</DialogTitle>
           <DialogDescription>
             {reason || "登录后可使用 AI 问答、保存对话历史。不登录也可以浏览示例问题与站点内容。"}

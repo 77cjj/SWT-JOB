@@ -84,6 +84,8 @@ rag:
       lock-seconds: 900
       batch-size: 20
       min-interval-seconds: 60
+    chunk:
+      use-message-queue: true
 
   mcp:
     servers: []

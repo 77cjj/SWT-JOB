@@ -862,9 +862,38 @@ prompt_backend_update_action() {
   done
 }
 
+reset_server_generated_configs() {
+  local rel
+  for rel in \
+    "SWT-JOB-Backend/bootstrap/config/application.yaml" \
+    "SWT-JOB-Backend/bootstrap/config/application-server.yaml"; do
+    if git -C "$ROOT" diff --quiet -- "$rel" 2>/dev/null && \
+      git -C "$ROOT" diff --cached --quiet -- "$rel" 2>/dev/null; then
+      continue
+    fi
+    warn "还原 server.sh 自动写入的配置（避免 pull 冲突）: ${rel}"
+    git -C "$ROOT" checkout -- "$rel" 2>/dev/null || \
+      git -C "$ROOT" restore --source=HEAD -- "$rel" 2>/dev/null || true
+  done
+}
+
 git_pull_and_build() {
   info "拉取最新代码..."
-  git -C "$ROOT" pull --ff-only || fail "git pull 失败，请手动解决后重试"
+  reset_server_generated_configs
+
+  if [[ "${GIT_PULL_FORCE}" == "true" || "${GIT_PULL_FORCE}" == "1" ]]; then
+    local upstream ref
+    upstream="$(git_upstream_ref)"
+    ref="${upstream#origin/}"
+    git -C "$ROOT" fetch origin "$ref" || fail "git fetch 失败"
+    warn "GIT_PULL_FORCE=1：丢弃本地未推送提交，与 ${upstream} 对齐"
+    git -C "$ROOT" reset --hard "$upstream" || fail "git reset --hard 失败"
+  else
+    git -C "$ROOT" pull --ff-only origin master 2>/dev/null || \
+      git -C "$ROOT" pull --ff-only || fail "git pull 失败。可执行: GIT_PULL_FORCE=1 ./server.sh restart backend --build --force"
+  fi
+
+  ensure_server_config
   build_backend
 }
 

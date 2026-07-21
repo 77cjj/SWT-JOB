@@ -4,6 +4,7 @@ import { Brain, Lightbulb, Send, Square } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
 
 export function ChatInput() {
@@ -20,6 +21,8 @@ export function ChatInput() {
     setDeepThinkingEnabled,
     inputFocusKey
   } = useChatStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -51,6 +54,10 @@ export function ChatInput() {
       return;
     }
     if (!value.trim()) return;
+    if (!isAuthenticated) {
+      openLoginDialog("登录后即可开始 AI 对话");
+      return;
+    }
     const next = value;
     setValue("");
     focusInput();

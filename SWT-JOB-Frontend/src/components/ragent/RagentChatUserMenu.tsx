@@ -38,6 +38,7 @@ export function RagentChatUserMenu() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
   const logout = useAuthStore((s) => s.logout);
   const [anchor, setAnchor] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchor);
@@ -64,8 +65,16 @@ export function RagentChatUserMenu() {
   const handleLogout = async () => {
     setAnchor(null);
     await logout();
-    void router.push("/login");
+    void router.push("/chat");
   };
+
+  if (!isAuthenticated) {
+    return (
+      <Button variant="outlined" size="small" onClick={() => openLoginDialog("登录后可保存对话与使用完整 AI 功能")}>
+        请登录
+      </Button>
+    );
+  }
 
   const handleOpenPassword = () => {
     setAnchor(null);

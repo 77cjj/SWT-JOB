@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
+import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { toast } from "sonner";
 
 export function LoginPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuthStore();
+  const { login, googleLogin, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = React.useState(false);
   const [remember, setRemember] = React.useState(true);
   const [form, setForm] = React.useState({ username: "admin", password: "admin" });
@@ -91,6 +94,30 @@ export function LoginPage() {
             <span className="text-xs text-muted-foreground">账号由管理员初始化</span>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {GOOGLE_CLIENT_ID ? (
+            <div className="flex justify-center py-1 [&>div]:w-full">
+              <GoogleLogin
+                onSuccess={async (response: CredentialResponse) => {
+                  if (!response.credential) {
+                    toast.error("Google 登录失败");
+                    return;
+                  }
+                  try {
+                    await googleLogin(response.credential);
+                    void router.push("/chat");
+                  } catch {
+                    // handled in store
+                  }
+                }}
+                onError={() => toast.error("Google 登录失败")}
+                useOneTap={false}
+                theme="outline"
+                size="large"
+                width="320"
+                text="signin_with"
+              />
+            </div>
+          ) : null}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "正在登录..." : "登录"}
           </Button>

@@ -227,5 +227,9 @@ sa-token:
   is-log: false
   is-print: false
 
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID:}
+
 app:
   demo-mode: false

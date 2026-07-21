@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 import type { User } from "@/types";
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "@/services/authService";
+import { getCurrentUser, login as loginRequest, loginWithGoogle as loginWithGoogleRequest, logout as logoutRequest } from "@/services/authService";
 import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
@@ -16,10 +16,15 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  loginDialogOpen: boolean;
+  loginDialogReason: string | null;
   login: (username: string, password: string) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
+  openLoginDialog: (reason?: string) => void;
+  closeLoginDialog: () => void;
 }
 
 /** 仅在非生产环境且显式开启时，跳过真实登录校验。 */
@@ -40,6 +45,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   token: storage.getToken() || (BYPASS_AUTH ? DEV_BYPASS_TOKEN : null),
   isAuthenticated: BYPASS_AUTH ? true : Boolean(storage.getToken()),
   isLoading: false,
+  loginDialogOpen: false,
+  loginDialogReason: null,
+  openLoginDialog: (reason) => {
+    set({ loginDialogOpen: true, loginDialogReason: reason?.trim() || null });
+  },
+  closeLoginDialog: () => {
+    set({ loginDialogOpen: false, loginDialogReason: null });
+  },
   login: async (username, password) => {
     set({ isLoading: true });
     try {
@@ -74,6 +87,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       toast.success("登录成功");
     } catch (error) {
       toast.error((error as Error).message || "登录失败");
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  googleLogin: async (idToken) => {
+    set({ isLoading: true });
+    try {
+      const data = await loginWithGoogleRequest(idToken);
+      const user = {
+        userId: data.userId,
+        username: data.username || data.userId,
+        role: data.role,
+        token: data.token,
+        avatar: data.avatar,
+      };
+      storage.setToken(user.token);
+      storage.setUser(user);
+      setAuthToken(user.token);
+      set({ user, token: user.token, isAuthenticated: true });
+      get().fetchCurrentUser().catch(() => null);
+      useChatStore.getState().cancelGeneration();
+      useChatStore.setState({
+        sessions: [],
+        currentSessionId: null,
+        messages: [],
+        isLoading: false,
+        isStreaming: false,
+        isCreatingNew: true,
+        deepThinkingEnabled: false,
+        thinkingStartAt: null,
+        streamTaskId: null,
+        streamAbort: null,
+        streamingMessageId: null,
+        cancelRequested: false,
+      });
+      toast.success("Google 登录成功");
+    } catch (error) {
+      toast.error((error as Error).message || "Google 登录失败");
       throw error;
     } finally {
       set({ isLoading: false });
@@ -147,10 +199,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       storage.setUser(nextUser);
       set({ user: nextUser, token, isAuthenticated: true });
     } catch {
+      if (BYPASS_AUTH) return;
       storage.clearAuth();
       setAuthToken(null);
       set({ user: null, token: null, isAuthenticated: false });
       return;
     }
-  }
+  },
 }));

@@ -8,6 +8,10 @@ export async function login(username: string, password: string) {
   return api.post<LoginResponse>("/auth/login", { username, password });
 }
 
+export async function loginWithGoogle(idToken: string) {
+  return api.post<LoginResponse>("/auth/google", { idToken });
+}
+
 export async function logout() {
   return api.post<void>("/auth/logout");
 }

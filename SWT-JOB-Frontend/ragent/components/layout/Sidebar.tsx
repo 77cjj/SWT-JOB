@@ -55,7 +55,7 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
     fetchSessions
   } = useChatStore();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAuthenticated, openLoginDialog } = useAuthStore();
   const [query, setQuery] = React.useState("");
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
@@ -67,10 +67,11 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
   const renameInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
+    if (!isAuthenticated) return;
     if (sessions.length === 0) {
       fetchSessions().catch(() => null);
     }
-  }, [fetchSessions, sessions.length]);
+  }, [fetchSessions, sessions.length, isAuthenticated]);
 
   const filteredSessions = React.useMemo(() => {
     const keyword = query.trim().toLowerCase();

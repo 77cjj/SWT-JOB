@@ -5,6 +5,7 @@ import { ArrowUpRight, BookOpen, Bot, Brain, Calculator, Gift, Lightbulb, MapPin
 import { cn } from "@/lib/utils";
 import { listSampleQuestions } from "@/services/sampleQuestionService";
 import { useChatStore } from "@/stores/chatStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
 
 type PromptPreset = {
@@ -55,6 +56,8 @@ export function WelcomeScreen() {
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const { sendMessage, isStreaming, cancelGeneration, deepThinkingEnabled, setDeepThinkingEnabled } =
     useChatStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -134,6 +137,10 @@ export function WelcomeScreen() {
       return;
     }
     if (!value.trim()) return;
+    if (!isAuthenticated) {
+      openLoginDialog("登录后即可开始 AI 对话");
+      return;
+    }
     const next = value;
     setValue("");
     focusInput();

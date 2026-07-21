@@ -17,10 +17,11 @@ import {
   renameSession as renameSessionRequest
 } from "@/services/sessionService";
 import { stopTask, submitFeedback } from "@/services/chatService";
-import { RAGENT_API_BASE_URL } from "@/config/runtimeEnv";
+import { RAGENT_API_BASE_URL, RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { buildQuery } from "@/utils/helpers";
 import { createStreamResponse } from "@/hooks/useStreamResponse";
 import { storage } from "@/utils/storage";
+import { useAuthStore } from "@/stores/authStore";
 
 interface ChatState {
   sessions: Session[];
@@ -123,6 +124,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   cancelRequested: false,
   newChatStaleSessionId: null,
   fetchSessions: async () => {
+    if (!storage.getToken() && !RAGENT_BYPASS_AUTH) {
+      set({ sessions: [], sessionsLoaded: true, isLoading: false });
+      return;
+    }
     set({ isLoading: true });
     try {
       const data = await listSessions();
@@ -282,6 +287,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const trimmed = content.trim();
     if (!trimmed) return;
     if (get().isStreaming) return;
+
+    const token = storage.getToken();
+    if (!RAGENT_BYPASS_AUTH && !token) {
+      useAuthStore.getState().openLoginDialog("登录后即可开始 AI 对话");
+      return;
+    }
+
     const deepThinkingEnabled = get().deepThinkingEnabled;
     const inputFocusKey = Date.now();
 
@@ -322,7 +334,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       deepThinking: deepThinkingEnabled ? true : undefined
     });
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${query}`;
-    const token = storage.getToken();
 
     const handlers = {
       onMeta: (payload: { conversationId: string; taskId: string }) => {

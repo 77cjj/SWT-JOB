@@ -15,16 +15,19 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service;
+package com.nageoffer.ai.ragent.user.config;
 
-import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-public interface AuthService {
+@Data
+@Component
+@ConfigurationProperties(prefix = "google.oauth")
+public class GoogleOAuthProperties {
 
-    LoginVO login(LoginRequest requestParam);
-
-    LoginVO loginWithGoogle(String idToken);
-
-    void logout();
+    /**
+     * Google Cloud OAuth Web Client ID（与前端 NEXT_PUBLIC_GOOGLE_CLIENT_ID 一致）
+     */
+    private String clientId = "";
 }

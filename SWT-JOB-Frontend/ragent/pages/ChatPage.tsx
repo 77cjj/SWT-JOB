@@ -6,9 +6,11 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { MessageList } from "@/components/chat/MessageList";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useChatStore } from "@/stores/chatStore";
+import { useAuthStore } from "@/stores/authStore";
 
 export function ChatPage() {
   const router = useRouter();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const sessionId =
     typeof router.query.sessionId === "string" ? router.query.sessionId : undefined;
   const {
@@ -31,6 +33,10 @@ export function ChatPage() {
   }, [sessionId, sessions]);
 
   React.useEffect(() => {
+    if (!isAuthenticated) {
+      setSessionsReady(true);
+      return;
+    }
     let active = true;
     fetchSessions()
       .catch(() => null)
@@ -42,7 +48,7 @@ export function ChatPage() {
     return () => {
       active = false;
     };
-  }, [fetchSessions]);
+  }, [fetchSessions, isAuthenticated]);
 
   React.useEffect(() => {
     if (!sessionId) {
@@ -51,6 +57,16 @@ export function ChatPage() {
   }, [sessionId]);
 
   React.useEffect(() => {
+    if (!isAuthenticated) {
+      if (!sessionId) {
+        useChatStore.setState({
+          currentSessionId: null,
+          messages: [],
+          isCreatingNew: true,
+        });
+      }
+      return;
+    }
     if (sessionId) {
       if (sessionsReady && !sessionExists) {
         // 新建对话首条消息：onMeta 已把 currentSessionId 设为 URL 中的 id，但 listSessions 可能尚未包含该会话
@@ -91,7 +107,8 @@ export function ChatPage() {
     currentSessionId,
     selectSession,
     createSession,
-    router
+    router,
+    isAuthenticated,
   ]);
 
   // 仅在仍停留在 /chat（无 session 段）但流式首包已写入 conversationId 时，把 URL 补全为 /chat/:id。

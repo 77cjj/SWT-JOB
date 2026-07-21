@@ -25,9 +25,13 @@ import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.service.GoogleOAuthService;
+import com.nageoffer.ai.ragent.user.service.GoogleOAuthService.VerifiedGoogleUser;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
 
     private final UserMapper userMapper;
+    private final GoogleOAuthService googleOAuthService;
 
     @Override
     public LoginVO login(LoginRequest requestParam) {
@@ -57,6 +62,31 @@ public class AuthServiceImpl implements AuthService {
         }
         if (user.getId() == null) {
             throw new ClientException("用户信息异常");
+        }
+        String loginId = user.getId().toString();
+        StpUtil.login(loginId);
+        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
+        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+    }
+
+    @Override
+    public LoginVO loginWithGoogle(String idToken) {
+        VerifiedGoogleUser googleUser = googleOAuthService.verifyIdToken(idToken);
+        UserDO user = findByUsername(googleUser.email());
+        if (user == null) {
+            user = UserDO.builder()
+                    .username(googleUser.email())
+                    .password("oauth:" + UUID.randomUUID())
+                    .role("user")
+                    .avatar(StrUtil.blankToDefault(googleUser.picture(), DEFAULT_AVATAR_URL))
+                    .build();
+            userMapper.insert(user);
+        } else if (StrUtil.isNotBlank(googleUser.picture()) && StrUtil.isBlank(user.getAvatar())) {
+            user.setAvatar(googleUser.picture());
+            userMapper.updateById(user);
+        }
+        if (user.getId() == null) {
+            throw new ClientException("Google 登录失败：用户创建异常");
         }
         String loginId = user.getId().toString();
         StpUtil.login(loginId);

@@ -21,6 +21,8 @@ function resolveApiBaseUrl() {
 
 export const RAGENT_API_BASE_URL = resolveApiBaseUrl();
 
+export const GOOGLE_CLIENT_ID = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+
 const rawBypassAuth = process.env.NEXT_PUBLIC_RAGENT_BYPASS_AUTH === "true";
 export const RAGENT_BYPASS_AUTH = rawBypassAuth && !isProduction;
 

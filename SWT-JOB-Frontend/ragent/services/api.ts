@@ -69,7 +69,8 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       storage.clearAuth();
-      if (window.location.pathname !== "/login") {
+      const path = window.location.pathname;
+      if (path !== "/login" && !path.startsWith("/chat")) {
         window.location.href = "/login";
       }
     }

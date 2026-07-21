@@ -92,7 +92,11 @@ export function readLocalComments(): LocalDocComment[] {
 export function appendLocalComment(comment: LocalDocComment) {
   const all = readLocalComments();
   all.unshift(comment);
-  writeJson(LOCAL_COMMENTS_KEY, all.slice(0, 80));
+  writeJson(LOCAL_COMMENTS_KEY, all.slice(0, 120));
+}
+
+export function appendLocalReply(parentId: string, comment: LocalDocComment) {
+  appendLocalComment({ ...comment, parentId });
 }
 
 export function mergeComments(base: DocComment[], docSlug: string): DocComment[] {

@@ -41,6 +41,7 @@ export default async function handler(_req: NextApiRequest, res: NextApiResponse
       description: item.description,
       question: item.question,
       answer: item.answer,
+      turns: item.turns,
       sortOrder: item.sortOrder,
       pinned: item.pinned,
     })),

@@ -1,9 +1,16 @@
+export type DemoTurn = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export interface DemoConversation {
   id: string;
   title?: string | null;
   description?: string | null;
   question: string;
   answer?: string | null;
+  /** 多轮对话；有则优先于 question/answer */
+  turns?: DemoTurn[];
   sortOrder?: number | null;
   pinned?: number | null;
 }

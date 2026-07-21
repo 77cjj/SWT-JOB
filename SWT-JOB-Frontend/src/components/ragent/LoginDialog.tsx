@@ -75,9 +75,21 @@ export function LoginDialog() {
         <div className="space-y-4 px-6 pb-6 pt-2">
           {GOOGLE_CLIENT_ID ? (
             <>
-              <GoogleSignInButton width={280} preferRedirect showSetupHints={false} />
+              <GoogleSignInButton
+                width={280}
+                preferRedirect={false}
+                showSetupHints={false}
+                onCredential={async (token) => {
+                  try {
+                    await useAuthStore.getState().googleLogin(token);
+                    closeLoginDialog();
+                  } catch {
+                    // toast in store
+                  }
+                }}
+              />
               <p className="text-center text-xs text-muted-foreground">
-                点击后将跳转 Google 验证，完成后自动回到本站。
+                使用 Google 弹窗登录，无需离开当前页面。
               </p>
             </>
           ) : (

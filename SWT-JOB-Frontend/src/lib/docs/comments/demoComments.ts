@@ -8,6 +8,8 @@ export type DocComment = {
   workState: string;
   /** 项目周次描述，如 Summer · 12–24 周 */
   workWeek?: string;
+  /** 回复某条评论；空为顶级 */
+  parentId?: string | null;
   helpfulCount: number;
   dislikeCount?: number;
   createdAt: string;
@@ -26,6 +28,32 @@ export const DEMO_DOC_COMMENTS: DocComment[] = [
     helpfulCount: 14,
     dislikeCount: 1,
     createdAt: '2025-10-12',
+  },
+  {
+    id: 'c-interview-1-r1',
+    docSlug: 'apply/interview',
+    parentId: 'c-interview-1',
+    userId: 'u-sam-2025',
+    body: '同感，我背了 90 秒自我介绍也被打断，他们只想确认 availability。',
+    programYear: '2025',
+    workState: 'AK',
+    workWeek: 'Peak · 20–32 周',
+    helpfulCount: 6,
+    dislikeCount: 0,
+    createdAt: '2025-10-13',
+  },
+  {
+    id: 'c-interview-1-r2',
+    docSlug: 'apply/interview',
+    parentId: 'c-interview-1-r1',
+    userId: 'u-maya-2025',
+    body: '对，我准备了两句「周末/晚上都可以」比长篇自我介绍有用。',
+    programYear: '2025',
+    workState: 'NJ',
+    workWeek: 'Summer · 12–24 周',
+    helpfulCount: 4,
+    dislikeCount: 0,
+    createdAt: '2025-10-14',
   },
   {
     id: 'c-interview-2',
@@ -98,6 +126,32 @@ export const DEMO_DOC_COMMENTS: DocComment[] = [
     helpfulCount: 22,
     dislikeCount: 3,
     createdAt: '2024-08-02',
+  },
+  {
+    id: 'c-work-3-r1',
+    docSlug: 'living/work-rules',
+    parentId: 'c-work-3',
+    userId: 'u-alex-2024',
+    body: '我们 Dells 那家 OT 也要书面批，没批直接打卡会被 HR 改回去。',
+    programYear: '2024',
+    workState: 'WI',
+    workWeek: 'Summer · 14–26 周',
+    helpfulCount: 9,
+    dislikeCount: 0,
+    createdAt: '2024-08-03',
+  },
+  {
+    id: 'c-work-3-r2',
+    docSlug: 'living/work-rules',
+    parentId: 'c-work-3-r1',
+    userId: 'u-park-2024',
+    body: 'NY 这边还要在 app 里选 OT reason code，选错 code 也算 invalid。',
+    programYear: '2024',
+    workState: 'NY',
+    workWeek: 'Summer · 16–28 周',
+    helpfulCount: 5,
+    dislikeCount: 1,
+    createdAt: '2024-08-04',
   },
   {
     id: 'c-work-4',

@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 import type { User } from "@/types";
-import { getCurrentUser, login as loginRequest, loginWithGoogle as loginWithGoogleRequest, logout as logoutRequest } from "@/services/authService";
+import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "@/services/authService";
 import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
@@ -95,7 +95,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   googleLogin: async (idToken) => {
     set({ isLoading: true });
     try {
-      const data = await loginWithGoogleRequest(idToken);
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      const payload = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        data?: { userId?: string; role?: string; token?: string; avatar?: string; username?: string };
+      };
+      if (!res.ok || !payload.ok || !payload.data?.token) {
+        throw new Error(payload.message || "Google 登录失败");
+      }
+      const data = payload.data;
       const user = {
         userId: data.userId,
         username: data.username || data.userId,

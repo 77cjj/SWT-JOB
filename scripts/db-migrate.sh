@@ -35,9 +35,11 @@ usage() {
   ./scripts/db-migrate.sh up           按顺序执行未记录的迁移
   ./scripts/db-migrate.sh sync         只登记「结构上已存在、但未写入记录表」的迁移（不重复执行 SQL）
   ./scripts/db-migrate.sh up --dry-run  仅打印将要执行的文件
+  ./scripts/db-migrate.sh doctor       排查「跑不起来」（路径/容器/连接）
 
 等价短命令（项目根）:
   ./server.sh db
+  ./server.sh db doctor
   ./server.sh db up
   ./server.sh db sync
 
@@ -53,10 +55,12 @@ EOF
 
 load_env() {
   if [[ -f "$ENV_FILE" ]]; then
+    set +u
     set -a
     # shellcheck disable=SC1090
-    source "$ENV_FILE"
+    source "$ENV_FILE" 2>/dev/null || warn "加载 ${ENV_FILE} 失败（可检查语法）；继续使用默认 PG 变量"
     set +a
+    set -u
   fi
   PGHOST="${PGHOST:-127.0.0.1}"
   PGPORT="${PGPORT:-5432}"
@@ -64,6 +68,94 @@ load_env() {
   PGPASSWORD="${PGPASSWORD:-postgres}"
   PGDATABASE="${PGDATABASE:-ragent}"
   PG_CONTAINER="${PG_CONTAINER:-ragent-postgres}"
+}
+
+list_running_containers() {
+  local rt="$1"
+  "$rt" ps --format '{{.Names}}' 2>/dev/null || true
+}
+
+guess_postgres_container() {
+  local rt name
+  for rt in docker podman; do
+    command -v "$rt" >/dev/null 2>&1 || continue
+    while IFS= read -r name; do
+      [[ -z "$name" ]] && continue
+      if [[ "$name" == *postgres* || "$name" == *pg-* || "$name" == ragent-postgres ]]; then
+        echo "${rt}:${name}"
+        return 0
+      fi
+    done < <(list_running_containers "$rt")
+  done
+  return 1
+}
+
+print_container_hint() {
+  warn "当前运行的容器（供核对 PG_CONTAINER）："
+  for rt in docker podman; do
+    command -v "$rt" >/dev/null 2>&1 || continue
+    local lines
+    lines="$(list_running_containers "$rt")"
+    if [[ -n "$lines" ]]; then
+      echo "  [$rt]"
+      echo "$lines" | sed 's/^/    /'
+    fi
+  done
+}
+
+run_doctor() {
+  echo ""
+  info "项目根: ${ROOT}"
+  info "迁移目录: ${DB_DIR}"
+
+  if [[ ! -f "$ROOT/scripts/db-migrate.sh" ]]; then
+    fail "缺少 scripts/db-migrate.sh，请在仓库根目录 git pull origin master"
+  fi
+  if [[ ! -x "$ROOT/scripts/db-migrate.sh" ]]; then
+    warn "脚本无执行位，可运行: chmod +x scripts/db-migrate.sh"
+  fi
+  if [[ ! -d "$DB_DIR" ]]; then
+    fail "缺少数据库目录 ${DB_DIR}（是否在错误目录执行？应在 SWT-JOB 仓库根）"
+  fi
+  if ! grep -q 'db|migrate|sql' "$ROOT/server.sh" 2>/dev/null; then
+    warn "当前 server.sh 没有 db 子命令 → 请 git pull，或用: bash scripts/db-migrate.sh status"
+  fi
+
+  load_env
+
+  if container_running "$PG_CONTAINER" >/dev/null; then
+    ok "Postgres 容器 ${PG_CONTAINER} 正在运行"
+    resolve_psql
+    if run_psql -c "SELECT 1" >/dev/null 2>&1; then
+      ok "psql 连接成功（库 ${PGDATABASE}）"
+    else
+      fail "容器在运行但 psql 连不上，请检查 PGUSER/PGDATABASE/PGPASSWORD（可在 .env 设置）"
+    fi
+    return 0
+  fi
+
+  warn "未找到运行中的容器: ${PG_CONTAINER}"
+  print_container_hint
+
+  local guessed
+  if guessed="$(guess_postgres_container)"; then
+    PSQL_RT="${guessed%%:*}"
+    PG_CONTAINER="${guessed#*:}"
+    warn "尝试自动匹配: ${PSQL_RT} / ${PG_CONTAINER}"
+    PSQL_MODE=container
+    if run_psql -c "SELECT 1" >/dev/null 2>&1; then
+      ok "用 ${PG_CONTAINER} 连接成功。建议在 .env 加: PG_CONTAINER=${PG_CONTAINER}"
+      return 0
+    fi
+  fi
+
+  if command -v psql >/dev/null 2>&1 && PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c "SELECT 1" >/dev/null 2>&1; then
+    ok "本机 psql 连接 ${PGHOST}:${PGPORT} 成功"
+    return 0
+  fi
+
+  echo ""
+  fail "无法连接数据库。请先 ./server.sh infra，再 ./server.sh db doctor；或设置 .env 里 PG_CONTAINER=你的postgres容器名"
 }
 
 container_running() {
@@ -89,11 +181,20 @@ resolve_psql() {
     PSQL_RT="$rt"
     return 0
   fi
+  local guessed
+  if guessed="$(guess_postgres_container)"; then
+    PSQL_RT="${guessed%%:*}"
+    PG_CONTAINER="${guessed#*:}"
+    PSQL_MODE=container
+    info "使用 Postgres 容器: ${PG_CONTAINER}（可在 .env 设置 PG_CONTAINER 固定）"
+    return 0
+  fi
   if command -v psql >/dev/null 2>&1; then
     PSQL_MODE=local
     return 0
   fi
-  fail "找不到 psql，且容器 ${PG_CONTAINER} 未运行。请先 ./server.sh infra 或安装 postgresql-client。"
+  print_container_hint
+  fail "找不到 psql，且容器 ${PG_CONTAINER} 未运行。请先: ./server.sh infra  →  ./server.sh db doctor"
 }
 
 run_psql() {
@@ -300,6 +401,11 @@ main() {
 
   if [[ "$cmd" == help || "$cmd" == -h || "$cmd" == --help ]]; then
     usage
+    exit 0
+  fi
+
+  if [[ "$cmd" == doctor || "$cmd" == diag ]]; then
+    run_doctor
     exit 0
   fi
 

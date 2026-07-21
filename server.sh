@@ -74,7 +74,7 @@ SWT-JOB 服务器一键启停脚本
   stop        停止后端（默认保留 Docker / Nginx）
   restart     重启后端，或 restart all 重启全部
   status      查看容器 / 后端 / Nginx 状态
-  db          数据库迁移：status | up | sync（见 ./scripts/db-migrate.sh help）
+  db          数据库迁移：status | up | sync | doctor（见 ./scripts/db-migrate.sh help）
   doctor      诊断 502 / 启动卡住原因
   logs        查看日志（backend | nginx | rustfs | postgres | redis）
 

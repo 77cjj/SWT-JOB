@@ -13,6 +13,7 @@
 
 ```bash
 ./server.sh db          # 查看哪些 upgrade 已跑、哪些未跑
+./server.sh db doctor   # 连不上库时先跑这个
 ./server.sh db up       # 执行所有「未登记且结构缺失」的 upgrade
 ./server.sh db sync     # 以前手动 psql 跑过、但未写记录表时，只登记不重复执行
 ```

@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.jobintel.controller.vo;
+package com.nageoffer.ai.ragent.siteinquiry.controller;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Value;
 
-import java.util.Date;
-
-@Data
+@Value
 @Builder
-public class JobIntelContributionVO {
-    private String id;
-    private String jobId;
-    private String submitterId;
-    private String stateCode;
-    private String jobTitle;
-    private Double hourlyWage;
-    private String notes;
-    private String status;
-    private String adminSummary;
-    private Boolean published;
-    private Date createTime;
-    private Date updateTime;
+public class SiteInquiryPingVO {
+    boolean ok;
+    boolean weworkConfigured;
+    boolean secretRequired;
 }

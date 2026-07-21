@@ -27,8 +27,6 @@ import com.nageoffer.ai.ragent.siteinquiry.controller.request.SiteInquiryRequest
 import com.nageoffer.ai.ragent.siteinquiry.service.SiteInquiryService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import java.util.Map;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,16 +57,14 @@ public class SiteInquiryPublicController {
     }
 
     /** 无需登录，用于确认后端版本与企微 Webhook 是否已配置 */
-    @GetMapping("/auth/site-inquiry-ping")
-    public Result<Map<String, Object>> ping() {
+    @GetMapping({"/auth/site-inquiry-ping", "/public/site-inquiry-ping"})
+    public Result<SiteInquiryPingVO> ping() {
         return Results.success(
-                Map.of(
-                        "ok",
-                        true,
-                        "weworkConfigured",
-                        StrUtil.isNotBlank(properties.getWeworkWebhookUrl()),
-                        "secretRequired",
-                        StrUtil.isNotBlank(properties.getWebhookSecret())));
+                SiteInquiryPingVO.builder()
+                        .ok(true)
+                        .weworkConfigured(StrUtil.isNotBlank(properties.getWeworkWebhookUrl()))
+                        .secretRequired(StrUtil.isNotBlank(properties.getWebhookSecret()))
+                        .build());
     }
 
     private void verifySharedSecret(HttpServletRequest request) {

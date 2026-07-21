@@ -77,6 +77,20 @@ curl -sS -X POST 'http://127.0.0.1:9090/api/ragent/public/site-inquiry' \
 
 Secret 配错时返回的是 **`Webhook 鉴权失败`**，不是「未登录」。
 
+## 若 ping 返回 `B000001` / `系统执行出错`
+
+说明当前跑的 **不是最新 jar**（常见：`git pull` 后 **编译失败**，脚本仍在用旧包）。在服务器执行：
+
+```bash
+cd /root/SWT-JOB/SWT-JOB-Backend && ./mvnw -q package -DskipTests
+```
+
+若编译报错，先 `git pull` 拉取最新代码再编。成功后再：
+
+```bash
+cd /root/SWT-JOB && ./server.sh restart backend --build --force
+```
+
 ## 安全说明
 
 - Webhook URL 中的 `key` 等同于密码，泄露后他人可向群内发消息；若已在聊天中暴露，请在企微群机器人设置里**重置 key**。

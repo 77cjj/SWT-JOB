@@ -116,6 +116,10 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
   };
 
   return [...items].sort((a, b) => {
+    const staleA = a.isStale ? 1 : 0;
+    const staleB = b.isStale ? 1 : 0;
+    if (staleA !== staleB) return staleA - staleB;
+
     const pinA = a.program.pinned ? 0 : 1;
     const pinB = b.program.pinned ? 0 : 1;
     if (pinA !== pinB) return pinA - pinB;

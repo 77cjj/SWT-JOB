@@ -47,6 +47,7 @@ import type {
 import { US_STATE_OPTIONS } from '../lib/member/profile';
 import { referralPrograms } from '../data/referralDeals';
 import { formatFetchError } from '../lib/formatFetchError';
+import { validateMarketplaceListingForm } from '../lib/marketplace/validateListingForm';
 
 type ListingFormState = {
   title: string;
@@ -207,6 +208,11 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
   const handleCreate = async () => {
     if (!requireLogin()) return;
+    const validationError = validateMarketplaceListingForm(createType, form);
+    if (validationError) {
+      setSnack({ open: true, message: validationError, severity: 'error' });
+      return;
+    }
     try {
       const body =
         createType === 'refer'
@@ -751,7 +757,13 @@ function CreateListingDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" onClick={onSubmit}>{t('common.confirm')}</Button>
+        <Button
+          variant="contained"
+          onClick={onSubmit}
+          disabled={Boolean(validateMarketplaceListingForm(createType, form))}
+        >
+          {t('common.confirm')}
+        </Button>
       </DialogActions>
     </Dialog>
   );

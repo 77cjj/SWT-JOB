@@ -30,6 +30,30 @@ SITE_INQUIRY_WEBHOOK_SECRET=请自行生成一段随机字符串
 
 Redeploy 前端后，在站点「联系站长」发测试留言。
 
+## 显示成功但没收到？
+
+按顺序排查（最常见在前）：
+
+1. **Vercel 环境变量**  
+   - 是否配置了 `SITE_INQUIRY_WEBHOOK_URL`（指向 ECS 的 `/api/ragent/public/site-inquiry`）或 `SITE_INQUIRY_PUSHPLUS_TOKEN`？  
+   - 若两者都未配置，生产环境会返回 **503「留言通道尚未配置」**；若你仍看到成功，可能是旧版前端或浏览器缓存。
+
+2. **PushPlus 优先**  
+   - 若同时配置了 `SITE_INQUIRY_PUSHPLUS_TOKEN` 与 Webhook，**只会走 PushPlus**，不会进企业微信。不需要 PushPlus 时请删除该变量。
+
+3. **Webhook Secret 不一致**  
+   - Vercel 的 `SITE_INQUIRY_WEBHOOK_SECRET` 须与 ECS `SITE_INQUIRY_WEBHOOK_SECRET` 完全一致，否则后端会拒绝转发（前端可能显示 502「通知发送失败」）。
+
+4. **ECS 后端**  
+   - `SITE_INQUIRY_WEWORK_WEBHOOK` 是否配置？是否已 `./server.sh restart backend --build --force`？  
+   - 用下方 curl 在服务器自测，确认企微群能收到。
+
+5. **企微机器人**  
+   - Webhook key 是否过期或被重置？群是否静音/免打扰？
+
+6. **Vercel 函数日志**  
+   - 在 Vercel → Project → Logs 搜索 `[site-inquiry]`，查看 notify 失败原因。
+
 ## 自测（服务器已部署且已配 WEWORK）
 
 ```bash

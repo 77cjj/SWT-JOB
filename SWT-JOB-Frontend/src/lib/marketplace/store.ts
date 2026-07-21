@@ -3,8 +3,11 @@ import path from 'node:path';
 
 import type { MarketStoreData } from './types';
 import { buildSeedListings, DEMO_SELLER_ID, isSeedListing } from './seed';
+import { getMarketplaceStorePath } from './storePath';
 
-const STORE_PATH = path.join(process.cwd(), '.data/marketplace.json');
+function storePath() {
+  return getMarketplaceStorePath();
+}
 
 export function emptyMarketStore(): MarketStoreData {
   return {
@@ -17,18 +20,19 @@ export function emptyMarketStore(): MarketStoreData {
 }
 
 async function ensureStoreFile() {
-  await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
+  const file = storePath();
+  await fs.mkdir(path.dirname(file), { recursive: true });
   try {
-    await fs.access(STORE_PATH);
+    await fs.access(file);
   } catch {
-    await fs.writeFile(STORE_PATH, JSON.stringify(emptyMarketStore(), null, 2), 'utf8');
+    await fs.writeFile(file, JSON.stringify(emptyMarketStore(), null, 2), 'utf8');
   }
 }
 
 async function readRawMarketStore(): Promise<MarketStoreData> {
   await ensureStoreFile();
   try {
-    const raw = await fs.readFile(STORE_PATH, 'utf8');
+    const raw = await fs.readFile(storePath(), 'utf8');
     const parsed = JSON.parse(raw) as MarketStoreData;
     return {
       listings: parsed.listings ?? {},
@@ -93,7 +97,7 @@ export async function readMarketStore(): Promise<MarketStoreData> {
 
 export async function writeMarketStore(data: MarketStoreData) {
   await ensureStoreFile();
-  await fs.writeFile(STORE_PATH, JSON.stringify(data, null, 2), 'utf8');
+  await fs.writeFile(storePath(), JSON.stringify(data, null, 2), 'utf8');
 }
 
 export function newId(prefix: string) {

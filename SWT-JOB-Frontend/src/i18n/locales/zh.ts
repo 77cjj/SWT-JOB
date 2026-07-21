@@ -500,6 +500,7 @@ export const zh = {
     footerHint: '完整攻略见文档；有邀请码可到',
     marketLink: '社区 Refer 市集',
     viewGuide: '领取攻略',
+    detailInfo: '详情',
     detailNotFound: '未找到该项目，可能已下架或 ID 不正确。',
     backToList: '返回薅羊毛列表',
     siteRebateTitle: '本站额外返现（由管理员配置）',

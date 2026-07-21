@@ -35,11 +35,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Optional;
-
-/**
  * 全局异常处理器
  * 拦截指定异常并通过优雅构建方式返回前端信息
  */
@@ -131,6 +130,19 @@ public class GlobalExceptionHandler {
                 BaseErrorCode.CLIENT_ERROR.code(),
                 "接口不存在或未部署最新后端，请在服务器执行: ./server.sh restart backend --build"
         );
+    }
+
+    /**
+     * 数据库访问异常（常见：未执行 upgrade SQL、表不存在）
+     */
+    @ExceptionHandler(value = DataAccessException.class)
+    public Result<Void> dataAccessException(HttpServletRequest request, DataAccessException ex) {
+        log.error("[{}] {} [db] {}", request.getMethod(), getUrl(request), ex.getMessage());
+        String hint = "数据库访问失败，请确认已执行 resources/database 下的 upgrade SQL 并重启后端";
+        if (ex.getMessage() != null && ex.getMessage().contains("does not exist")) {
+            hint = "数据库表缺失，请在服务器执行 upgrade_v1.3_to_v1.4.sql、upgrade_v1.4_to_v1.5.sql 后重启后端";
+        }
+        return Results.failure(BaseErrorCode.SERVICE_ERROR.code(), hint);
     }
 
     /**

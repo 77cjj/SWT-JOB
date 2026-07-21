@@ -113,8 +113,17 @@ export function demoConversationToSession(item: DemoConversation, index: number)
   return {
     id: demoSessionId(item.id),
     title: item.title || item.question.slice(0, 28),
+    preview: item.description || item.question.slice(0, 48),
     lastTime,
+    isDemo: true,
   };
+}
+
+/** 同步兜底：API 慢或失败时侧栏立刻有示例条目 */
+export function loadGuestDemoSessionsSync(): Session[] {
+  const sorted = sortDemos(STATIC_DEMO_CONVERSATIONS);
+  refreshDemoIndex(sorted);
+  return sorted.map((item, index) => demoConversationToSession(item, index));
 }
 
 export function demoConversationToMessages(item: DemoConversation): Message[] {

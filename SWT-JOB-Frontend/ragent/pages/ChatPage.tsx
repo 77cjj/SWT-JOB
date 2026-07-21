@@ -46,7 +46,7 @@ export function ChatPage() {
     return () => {
       active = false;
     };
-  }, [fetchSessions]);
+  }, [fetchSessions, isAuthenticated]);
 
   React.useEffect(() => {
     if (!sessionId) {
@@ -68,6 +68,12 @@ export function ChatPage() {
           messages: [],
           isCreatingNew: true,
         });
+        if (sessionsReady && sessions.length > 0 && !isCreatingNew) {
+          const firstDemo = sessions.find((s) => isDemoSessionId(s.id));
+          if (firstDemo) {
+            void router.replace(`/chat/${firstDemo.id}`);
+          }
+        }
       }
       return;
     }
@@ -113,6 +119,7 @@ export function ChatPage() {
     createSession,
     router,
     isAuthenticated,
+    sessions,
   ]);
 
   React.useEffect(() => {

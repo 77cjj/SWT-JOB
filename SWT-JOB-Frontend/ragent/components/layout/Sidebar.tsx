@@ -82,6 +82,18 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
   }, [query, sessions, t]);
 
   const groupedSessions = React.useMemo(() => {
+    const guestDemoList =
+      !isAuthenticated && filteredSessions.length > 0 && filteredSessions.every((s) => isDemoSessionId(s.id));
+
+    if (guestDemoList) {
+      return [
+        {
+          label: t("chat.demoSessionsGroup"),
+          items: filteredSessions,
+        },
+      ];
+    }
+
     const now = new Date();
     const groups = new Map<string, typeof filteredSessions>();
     const order: string[] = [];
@@ -109,7 +121,7 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
       label,
       items: groups.get(label) || []
     }));
-  }, [filteredSessions, t]);
+  }, [filteredSessions, t, isAuthenticated]);
 
   React.useEffect(() => {
     if (renamingId) {
@@ -266,11 +278,18 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
                             className="h-6 flex-1 rounded-md border border-neutral-200 bg-white px-2 text-[14px] leading-[22px] text-neutral-900 focus:border-indigo-500 focus:outline-none dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
                           />
                         ) : (
-                          <span className="min-w-0 flex-1 truncate font-normal">
-                            {session.title || t("chat.defaultSessionTitle")}
-                            {isDemoSessionId(session.id) ? (
-                              <span className="ml-1.5 text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
-                                {t("chat.demoSessionBadge")}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-normal">
+                              {session.title || t("chat.defaultSessionTitle")}
+                              {isDemoSessionId(session.id) ? (
+                                <span className="ml-1.5 text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
+                                  {t("chat.demoSessionBadge")}
+                                </span>
+                              ) : null}
+                            </span>
+                            {session.preview ? (
+                              <span className="mt-0.5 block truncate text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+                                {session.preview}
                               </span>
                             ) : null}
                           </span>

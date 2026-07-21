@@ -27,6 +27,7 @@ import {
   getDemoConversationBySessionId,
   isDemoSessionId,
   loadGuestDemoSessions,
+  loadGuestDemoSessionsSync,
 } from "@/lib/demoConversations";
 
 interface ChatState {
@@ -130,15 +131,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   cancelRequested: false,
   newChatStaleSessionId: null,
   fetchSessions: async () => {
-    if (!storage.getToken() && !RAGENT_BYPASS_AUTH) {
-      set({ isLoading: true });
+    const authed = Boolean(storage.getToken()) || RAGENT_BYPASS_AUTH;
+    if (!authed) {
+      const syncList = loadGuestDemoSessionsSync();
+      set({ sessions: syncList, sessionsLoaded: true, isLoading: false });
       try {
         const demoSessions = await loadGuestDemoSessions();
-        set({ sessions: demoSessions });
+        if (demoSessions.length > 0) {
+          set({ sessions: demoSessions });
+        }
       } catch {
-        set({ sessions: [] });
-      } finally {
-        set({ isLoading: false, sessionsLoaded: true });
+        // 保持 sync 列表
       }
       return;
     }

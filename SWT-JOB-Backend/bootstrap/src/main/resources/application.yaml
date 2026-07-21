@@ -235,3 +235,6 @@ google:
 
 app:
   demo-mode: false
+  site-inquiry:
+    wework-webhook-url: ${SITE_INQUIRY_WEWORK_WEBHOOK:}
+    webhook-secret: ${SITE_INQUIRY_WEBHOOK_SECRET:}

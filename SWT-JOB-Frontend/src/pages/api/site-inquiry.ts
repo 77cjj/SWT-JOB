@@ -23,9 +23,14 @@ async function notifyPushPlus(token: string, title: string, content: string) {
 }
 
 async function notifyWebhook(url: string, payload: Record<string, unknown>) {
+  const secret = process.env.SITE_INQUIRY_WEBHOOK_SECRET?.trim();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (secret) {
+    headers['X-Site-Inquiry-Secret'] = secret;
+  }
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   });
   if (!res.ok) {

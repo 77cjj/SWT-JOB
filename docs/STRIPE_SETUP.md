@@ -14,6 +14,39 @@
 
 ---
 
+## Vercel 和云端 ECS 分别放什么？
+
+市集 Stripe **全部跑在 Next.js（Vercel）**，Java 后端 **没有任何 Stripe 代码**，也 **不需要** 在阿里云 ECS 的 `.env` 里配 Stripe。
+
+| 部署位置 | 要不要配 Stripe | 配什么 |
+|----------|-----------------|--------|
+| **Vercel**（`swtjob` 前端项目） | **要，线上必配** | 下面三个环境变量 **都放在这里** |
+| **阿里云 ECS**（`SWT-JOB-Backend`） | **不要** | 与 Stripe 无关；继续只配数据库、Sa-Token、企业微信等 |
+| **本机**（`npm run dev`） | 可选 | `SWT-JOB-Frontend/.env.local` 里同样三个变量 |
+
+在 Vercel 打开：**你的前端 Project → Settings → Environment Variables → Add**，名称必须一字不差：
+
+1. `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` → 值填 Stripe 里的 **Publishable key**（`pk_test_…`）
+2. `STRIPE_SECRET_KEY` → 值填 **Secret key**（`sk_test_…`），**不要**勾选 Expose to Browser
+3. `STRIPE_WEBHOOK_SECRET` → 值填你在 Dashboard 里为这个端点拿到的 **`whsec_…`**
+
+Environment 建议至少勾选 **Production**；若预览域名也要测支付，Preview 里也加一套（可用同一套 test 密钥）。
+
+改完变量后点 **Deployments → 最新一次 → Redeploy**，否则旧实例读不到新环境变量。
+
+### 你拿到的 Webhook 签名（`whsec_`）放哪？
+
+取决于这个 `whsec` 是从哪来的：
+
+| 来源 | 放哪里 |
+|------|--------|
+| Stripe Dashboard → Webhooks → 端点 `https://swtjob.vercel.app/api/marketplace/stripe/webhook` → **Signing secret** | **只放 Vercel** 的 `STRIPE_WEBHOOK_SECRET`（Production） |
+| 本机 `stripe listen --forward-to localhost:3000/...` 终端里打印的 `whsec_…` | **只放** `SWT-JOB-Frontend/.env.local`，**不要**写进 Vercel |
+
+两种 `whsec_` **不是同一个值**：Dashboard 给线上 Vercel 用；`stripe listen` 给本地开发用。你在 Dashboard 已经建好线上 Webhook 的话，把那个 **Signing secret 填进 Vercel 即可**，ECS 不用填。
+
+---
+
 ## 本地开发
 
 在 **`SWT-JOB-Frontend/.env.local`**（该文件已在 `.gitignore`）：

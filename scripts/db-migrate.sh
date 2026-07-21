@@ -298,6 +298,11 @@ main() {
   local cmd="${1:-status}"
   shift || true
 
+  if [[ "$cmd" == help || "$cmd" == -h || "$cmd" == --help ]]; then
+    usage
+    exit 0
+  fi
+
   load_env
   resolve_psql
 
@@ -322,9 +327,6 @@ main() {
       sync_detected
       echo ""
       print_status
-      ;;
-    help|-h|--help)
-      usage
       ;;
     *)
       fail "未知子命令: ${cmd}。运行 ./scripts/db-migrate.sh help"

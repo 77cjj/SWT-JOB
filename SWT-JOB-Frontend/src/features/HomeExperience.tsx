@@ -83,12 +83,6 @@ export default function HomeExperience() {
   return (
     <Container maxWidth="xl" sx={{ pt: 0, pb: 4 }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
-        <Box data-tour="compare-header">
-          <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '1.125rem' }}>
-            {t('home.pageTitle')}
-          </Typography>
-        </Box>
-
         <IncomeHero
           income={preview?.income ?? null}
           projectWeeks={preview?.projectWeeks ?? 0}
@@ -110,42 +104,49 @@ export default function HomeExperience() {
           </Box>
 
           <Box data-tour="saved-jobs" sx={{ minWidth: 0 }}>
-            <Box
-              sx={{
-                mb: 2,
-                display: 'flex',
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                justifyContent: 'space-between',
-                gap: 2,
-                flexWrap: 'wrap',
-              }}
-            >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {t('home.title')}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
-                  {tWithParams('home.compareSelected', { count: jobs.length })}
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                variant={compareIds.length ? 'contained' : 'outlined'}
-                disabled={!compareIds.length}
-                onClick={() => setCompareOpen(true)}
+            <Box sx={{ mb: 1.5 }} data-tour="compare-header">
+              <Typography variant="subtitle2" fontWeight={700}>
+                {t('home.title')}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
+                {tWithParams('home.compareSelected', { count: jobs.length })}
+              </Typography>
+              <Box
+                sx={{
+                  mt: 1.25,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 1,
+                }}
               >
-                {t('home.compare')} ({compareIds.length}/3)
-              </Button>
+                <Button
+                  component={Link}
+                  href="/jobs"
+                  size="small"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ minWidth: 0 }}
+                >
+                  {t('home.browseJobIntel')}
+                </Button>
+                <Button
+                  size="small"
+                  variant={compareIds.length ? 'contained' : 'outlined'}
+                  disabled={!compareIds.length}
+                  fullWidth
+                  sx={{ minWidth: 0 }}
+                  onClick={() => setCompareOpen(true)}
+                >
+                  {t('home.compare')} ({compareIds.length}/3)
+                </Button>
+              </Box>
             </Box>
 
             {jobs.length === 0 ? (
               <Paper variant="outlined" sx={{ p: 2, mb: 1.5, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
+                <Typography variant="caption" color="text.secondary">
                   {t('home.noJobsDescription')}
                 </Typography>
-                <Button component={Link} href="/jobs" variant="outlined" size="small">
-                  {t('home.browseJobIntel')}
-                </Button>
               </Paper>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

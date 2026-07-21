@@ -26,6 +26,8 @@ const RagentChatUserMenu = dynamic(
 
 interface MobileLayoutProps extends PropsWithChildren {
   mainClassName?: string;
+  /** 例如聊天页锁定视口高度，避免整页滚动卡住 */
+  rootClassName?: string;
 }
 
 type NavKey = 'home' | 'jobs' | 'docs' | 'chat' | 'deals';
@@ -38,7 +40,7 @@ const NAV_ITEMS: { key: NavKey; href: string; icon: React.ReactNode; match: (pat
   { key: 'docs', href: '/docs', icon: <MenuBookRounded fontSize="small" />, match: (p) => p.startsWith('/docs') },
 ];
 
-export default function MobileLayout({ children, mainClassName }: MobileLayoutProps) {
+export default function MobileLayout({ children, mainClassName, rootClassName }: MobileLayoutProps) {
   const { mode, toggleMode } = useAppTheme();
   const { language, setLanguage, t } = useI18n();
   const router = useRouter();
@@ -70,12 +72,14 @@ export default function MobileLayout({ children, mainClassName }: MobileLayoutPr
 
   return (
     <div
-      className={`flex min-h-screen flex-col ${
-        isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-white text-neutral-900'
-      }`}
+      className={cn(
+        'flex min-h-screen flex-col',
+        isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-white text-neutral-900',
+        rootClassName,
+      )}
     >
       <header
-        className={`sticky top-0 z-50 flex items-center justify-between border-b px-4 py-3 backdrop-blur-md ${
+        className={`sticky top-0 z-50 flex shrink-0 items-center justify-between border-b px-4 py-3 backdrop-blur-md ${
           isDark
             ? 'border-neutral-800/60 bg-neutral-950/85 supports-[backdrop-filter]:bg-neutral-950/70'
             : 'border-neutral-200 bg-white/85 supports-[backdrop-filter]:bg-white/70'
@@ -126,7 +130,7 @@ export default function MobileLayout({ children, mainClassName }: MobileLayoutPr
         {children}
       </main>
       <nav
-        className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t pb-[env(safe-area-inset-bottom,0px)] ${
+        className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 shrink-0 border-t pb-[env(safe-area-inset-bottom,0px)] ${
           isDark ? 'border-neutral-800/60 bg-neutral-950' : 'border-neutral-200 bg-white'
         }`}
       >

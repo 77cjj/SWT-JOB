@@ -161,12 +161,22 @@ export default function SavedJobCard({
             justifyContent: 'space-between',
             gap: 1,
             mt: 1,
+            minHeight: 32,
           }}
         >
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
-            {formatShortDate(job.projectStartDate)} ~ {formatShortDate(job.projectEndDate)}
-            {projectWeeks > 0 ? ` · ${projectWeeks}${t('jobForm.perWeek')}` : ''}
-          </Typography>
+          <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}
+            >
+              {t('jobForm.projectDates')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+              {formatShortDate(job.projectStartDate)} – {formatShortDate(job.projectEndDate)}
+              {projectWeeks > 0 ? ` · ${projectWeeks} ${t('jobForm.perWeek')}` : ''}
+            </Typography>
+          </Box>
           <Button
             size="small"
             variant={isCompared ? 'contained' : 'outlined'}

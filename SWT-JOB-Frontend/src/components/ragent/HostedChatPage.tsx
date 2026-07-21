@@ -31,7 +31,7 @@ export function HostedChatPage() {
     </div>
   );
 
-  /** 主内容区占满顶栏下剩余高度，禁止整页滚动；仅 MessageList 内部滚动 */
+  /** 主内容区占满顶栏下剩余高度；滚动交给内部 MessageList / WelcomeScreen */
   const hostedMainClass =
     "flex min-h-0 flex-1 flex-col overflow-hidden px-8 pb-0 pt-3";
   const hostedRootClass = "h-[100dvh] max-h-[100dvh] overflow-hidden";
@@ -39,7 +39,10 @@ export function HostedChatPage() {
   return (
     <ChatShellProvider value={{ userMenuInTopNav: true, embeddedInSwt: true }}>
       {isMobile ? (
-        <MobileLayout mainClassName="flex min-h-0 flex-1 flex-col overflow-hidden !py-2 pb-20">
+        <MobileLayout
+          rootClassName="h-[100dvh] max-h-[100dvh] overflow-hidden"
+          mainClassName="flex min-h-0 flex-1 flex-col overflow-hidden !px-0 !py-0 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))]"
+        >
           {content}
         </MobileLayout>
       ) : (

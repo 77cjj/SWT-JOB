@@ -409,6 +409,16 @@ export const zh = {
     readFullGuide: '阅读完整攻略',
     footerHint: '完整攻略见文档；有邀请码可到',
     marketLink: '社区 Refer 市集',
+    viewGuide: '领取攻略',
+    detailNotFound: '未找到该项目，可能已下架或 ID 不正确。',
+    backToList: '返回薅羊毛列表',
+    siteRebateTitle: '本站额外返现（由管理员配置）',
+    siteRebateTbd: '返现金额待公布',
+    siteRebateAmountHint: '实际发放以管理员确认与站内规则为准，完成官方条件后联系站点领取。',
+    siteRebateChip: '本站返 ${amount}',
+    howToClaimTitle: '如何领取官方奖励',
+    practicalStepsTitle: '实操步骤与注意事项',
+    officialRequirements: '官方参与条件',
   },
 
   // 交易市集

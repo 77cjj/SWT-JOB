@@ -110,6 +110,21 @@ CREATE TABLE t_sample_question (
 CREATE INDEX idx_sample_question_deleted ON t_sample_question (deleted);
 COMMENT ON TABLE t_sample_question IS '示例问题表';
 
+CREATE TABLE t_referral_deal (
+    id                  VARCHAR(64) PRIMARY KEY,
+    site_rebate_usd     DECIMAL(10, 2),
+    site_rebate_label_zh VARCHAR(255),
+    site_rebate_label_en VARCHAR(255),
+    program_json        TEXT NOT NULL,
+    sort_order          INT DEFAULT 0,
+    published           SMALLINT DEFAULT 1,
+    create_time         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted             SMALLINT DEFAULT 0
+);
+CREATE INDEX idx_referral_deal_published ON t_referral_deal (published, deleted);
+COMMENT ON TABLE t_referral_deal IS '薅羊毛官方项目（含本站返现与实操说明 JSON）';
+
 -- ============================================
 -- Knowledge Base Tables
 -- ============================================

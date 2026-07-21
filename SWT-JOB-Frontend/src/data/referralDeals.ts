@@ -41,6 +41,16 @@ export interface ReferralProgram {
   brandName: BilingualText;
   /** 所有活动版本，建议按 validFrom 降序（最新在前） */
   editions: DealEdition[];
+  /** 如何领取官方奖励（分步说明，详情页展示） */
+  howToClaim?: BilingualList;
+  /** 实操步骤（细节、避坑） */
+  practicalSteps?: BilingualList;
+  /** 官方项目补充说明 */
+  officialDetail?: BilingualText;
+  /** 本站向用户返现金额（USD，管理员配置） */
+  siteRebateUsd?: number | null;
+  /** 本站返现展示文案 */
+  siteRebateLabel?: BilingualText;
 }
 
 export const dealCategoryOrder: DealCategory[] = ['bank', 'cashback', 'mobile', 'other'];
@@ -113,6 +123,28 @@ export const referralPrograms: ReferralProgram[] = [
         },
       },
     ],
+    howToClaim: {
+      zh: [
+        '通过本站或邀请链接打开 Chime 官网并完成注册',
+        '在 45 天内设置 Direct Deposit，单笔到账 ≥ $200',
+        '收到实体借记卡后 14 天内激活',
+        '等待官方 refer 奖励入账（通常数周内，以 App 通知为准）',
+        '达标后联系本站客服登记，领取本站额外返现',
+      ],
+      en: [
+        'Open Chime via our referral link and complete signup',
+        'Set up direct deposit of $200+ within 45 days',
+        'Activate your physical debit card within 14 days',
+        'Wait for the official referral bonus to post',
+        'Contact us after qualifying to claim our site rebate',
+      ],
+    },
+    practicalSteps: {
+      zh: ['提前准备 SSN 与美国手机号', 'DD 可用雇主工资或部分转账服务（需自行确认是否算合规 DD）', '奖励条款以 Chime 官网为准'],
+      en: ['Have SSN and US phone ready', 'Confirm what counts as qualifying direct deposit', 'Official terms always prevail'],
+    },
+    siteRebateUsd: null,
+    siteRebateLabel: { zh: '本站返现待公布', en: 'Site rebate TBD' },
   },
   {
     id: 'sofi',

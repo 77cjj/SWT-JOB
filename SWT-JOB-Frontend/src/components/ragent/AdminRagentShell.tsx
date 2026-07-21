@@ -13,6 +13,7 @@ import { KnowledgeDocumentsPage } from "@/pages/admin/knowledge/KnowledgeDocumen
 import { KnowledgeListPage } from "@/pages/admin/knowledge/KnowledgeListPage";
 import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTermMappingPage";
 import { SampleQuestionPage } from "@/pages/admin/sample-questions/SampleQuestionPage";
+import { ReferralDealsAdminPage } from "@/pages/admin/referral-deals/ReferralDealsAdminPage";
 import { SystemSettingsPage } from "@/pages/admin/settings/SystemSettingsPage";
 import { RagTraceDetailPage } from "@/pages/admin/traces/RagTraceDetailPage";
 import { RagTracePage } from "@/pages/admin/traces/RagTracePage";
@@ -63,6 +64,8 @@ function resolveAdminPage(segments: string[]): ReactNode {
       return segments.length === 1 ? <SystemSettingsPage /> : <NotFoundPage />;
     case "sample-questions":
       return segments.length === 1 ? <SampleQuestionPage /> : <NotFoundPage />;
+    case "referral-deals":
+      return segments.length === 1 ? <ReferralDealsAdminPage /> : <NotFoundPage />;
     case "mappings":
       return segments.length === 1 ? <QueryTermMappingPage /> : <NotFoundPage />;
     case "users":

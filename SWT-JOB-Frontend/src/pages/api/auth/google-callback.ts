@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const text = await upstream.text();
     let payload: { code?: string; message?: string; data?: unknown } | null = null;
     try {
-      payload = JSON.parse(text) as typeof payload;
+      payload = JSON.parse(text) as { code?: string; message?: string; data?: unknown };
     } catch {
       payload = null;
     }

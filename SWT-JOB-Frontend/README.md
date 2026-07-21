@@ -100,6 +100,8 @@ npm run build
 npm start
 ```
 
+**Vercel 构建加速（默认已启用）：** 文档页 `/docs/*` 仅在构建时预渲染少量热门路径，其余在首次访问时按需生成（ISR，`fallback: blocking`），可明显缩短部署时间。若需要发布前全量预渲染所有文档，在 Vercel 环境变量中设置 `DOCS_FULL_PREBUILD=1`。
+
 ## 📁 项目结构
 
 ```

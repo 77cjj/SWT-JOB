@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { useI18n } from "../../../src/context/I18nContext";
+import { isDemoSessionId } from "@/lib/demoConversations";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -67,11 +68,9 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
   const renameInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
-    if (!isAuthenticated) return;
-    if (sessions.length === 0) {
-      fetchSessions().catch(() => null);
-    }
-  }, [fetchSessions, sessions.length, isAuthenticated]);
+    if (sessionsLoaded || sessions.length > 0) return;
+    fetchSessions().catch(() => null);
+  }, [fetchSessions, sessions.length, sessionsLoaded]);
 
   const filteredSessions = React.useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -269,8 +268,14 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
                         ) : (
                           <span className="min-w-0 flex-1 truncate font-normal">
                             {session.title || t("chat.defaultSessionTitle")}
+                            {isDemoSessionId(session.id) ? (
+                              <span className="ml-1.5 text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
+                                {t("chat.demoSessionBadge")}
+                              </span>
+                            ) : null}
                           </span>
                         )}
+                        {!isDemoSessionId(session.id) ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
@@ -322,6 +327,7 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        ) : null}
                       </div>
                     ))}
                   </div>

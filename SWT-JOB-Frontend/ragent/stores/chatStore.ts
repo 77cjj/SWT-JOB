@@ -22,6 +22,12 @@ import { buildQuery } from "@/utils/helpers";
 import { createStreamResponse } from "@/hooks/useStreamResponse";
 import { storage } from "@/utils/storage";
 import { useAuthStore } from "@/stores/authStore";
+import {
+  demoConversationToMessages,
+  getDemoConversationBySessionId,
+  isDemoSessionId,
+  loadGuestDemoSessions,
+} from "@/lib/demoConversations";
 
 interface ChatState {
   sessions: Session[];
@@ -125,7 +131,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
   newChatStaleSessionId: null,
   fetchSessions: async () => {
     if (!storage.getToken() && !RAGENT_BYPASS_AUTH) {
-      set({ sessions: [], sessionsLoaded: true, isLoading: false });
+      set({ isLoading: true });
+      try {
+        const demoSessions = await loadGuestDemoSessions();
+        set({ sessions: demoSessions });
+      } catch {
+        set({ sessions: [] });
+      } finally {
+        set({ isLoading: false, sessionsLoaded: true });
+      }
       return;
     }
     set({ isLoading: true });
@@ -183,6 +197,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     return "";
   },
   deleteSession: async (sessionId) => {
+    if (isDemoSessionId(sessionId)) {
+      useAuthStore.getState().openLoginDialog("登录后可管理自己的对话记录");
+      return;
+    }
     try {
       await deleteSessionRequest(sessionId);
       set((state) => ({
@@ -196,6 +214,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
   renameSession: async (sessionId, title) => {
+    if (isDemoSessionId(sessionId)) {
+      useAuthStore.getState().openLoginDialog("登录后可重命名自己的对话");
+      return;
+    }
     const nextTitle = title.trim();
     if (!nextTitle) return;
     try {
@@ -212,6 +234,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
   selectSession: async (sessionId) => {
     if (!sessionId) return;
+
+    if (isDemoSessionId(sessionId)) {
+      const demo = getDemoConversationBySessionId(sessionId);
+      if (!demo) {
+        toast.error("示例对话不存在");
+        return;
+      }
+      if (get().isStreaming) {
+        get().cancelGeneration();
+      }
+      set({
+        isLoading: false,
+        currentSessionId: sessionId,
+        isCreatingNew: false,
+        newChatStaleSessionId: null,
+        thinkingStartAt: null,
+        messages: demoConversationToMessages(demo),
+        isStreaming: false,
+        streamTaskId: null,
+        streamAbort: null,
+        streamingMessageId: null,
+        cancelRequested: false,
+      });
+      return;
+    }
+
     const prevId = get().currentSessionId;
     const sameSession = prevId === sessionId;
     // 同一会话且已有完整列表且未在加载：避免重复请求

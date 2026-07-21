@@ -4,7 +4,7 @@
 
 1. 浏览器 `POST /api/site-inquiry`（Vercel）
 2. Vercel 转发 `POST {SITE_INQUIRY_WEBHOOK_URL}`（JSON + 可选 `X-Site-Inquiry-Secret`）
-3. ECS 后端 `POST /api/ragent/public/site-inquiry` → 企业微信 Webhook
+3. ECS 后端 `POST /api/ragent/auth/site-inquiry-webhook`（或兼容 `/public/site-inquiry`）→ 企业微信 Webhook
 
 ## 服务器 `.env`（勿提交 Git）
 

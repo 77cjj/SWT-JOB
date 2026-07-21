@@ -338,6 +338,9 @@ export const zh = {
     aiSubtitle: '后续将结合你的注册画像（签证、城市偏好、体力、二工意愿等）个性化推荐。当前为演示占位。',
     aiAnalyzing: 'AI 正在分析中…',
     aiAnalyzingHint: '正在对照净收入、住宿、二工与稳定性等维度…',
+    aiLoginRequired: '登录后可使用 AI 选岗分析（会读取对比岗位与评论上下文）。',
+    aiError: 'AI 分析暂时不可用，请稍后再试。',
+    intelLibraryHint: '情报库 · 点击查看',
     aiPlaceholder:
       '（演示）已对比 {count} 个岗位：{jobs}。\n\n综合每周净收入、住宿成本与二工潜力，当前更看好「{best}」（约 ${weekly}/周税后）。\n\n正式版会读取你的个人偏好（例如：是否接受偏远地区、是否依赖小费、英语沟通信心等），给出更贴合的排序与风险提醒。',
   },
@@ -618,7 +621,8 @@ export const zh = {
   // 文档社区投票
   docPolls: {
     badge: '过来人投票',
-    loginToVote: '登录并核实信息后可参与投票，结果所有人可见。',
+    loginToVote: '请登录并投票后可查看各选项占比与细则。',
+    voteToSeeResults: '投票后即可查看大家的选择分布。',
     goLogin: '去登录',
     verifyToVote: '核实信息并投票',
     verifyDesc: '请选择你工作的州和项目年份，仅用于统计分布，不会公开展示个人身份。',

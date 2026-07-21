@@ -63,5 +63,11 @@ export const DEMO_JOB_COMMENTS: JobComment[] = [
 ];
 
 export function getCommentsForJob(jobId: string): JobComment[] {
-  return DEMO_JOB_COMMENTS.filter((c) => c.jobId === jobId);
+  const aliases: Record<string, string[]> = {
+    '2024-NJ-SERV-032': ['DEMO-j-maya-ac'],
+    '2024-WI-HOUS-044': ['DEMO-j-alex-wi'],
+    '2024-AK-LIFE-001': ['DEMO-j-sam-ak'],
+  };
+  const ids = new Set<string>([jobId, ...(aliases[jobId] ?? [])]);
+  return DEMO_JOB_COMMENTS.filter((c) => ids.has(c.jobId));
 }

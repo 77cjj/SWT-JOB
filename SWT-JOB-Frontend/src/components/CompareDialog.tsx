@@ -18,15 +18,26 @@ import {
   Button,
   CircularProgress,
   LinearProgress,
+  Alert,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import type { JobRecord } from '../types/job';
 import { computeIncome, getProjectDurationWeeks } from '../utils/jobMetrics';
 import { useI18n } from '../context/I18nContext';
+import { JobIntelCompareDrawer } from './jobs/JobIntelCompareDrawer';
+import { resolveIntelLibraryJob, readIntelUnlocked, isJobFromIntelLibrary } from '../lib/jobs/resolveIntelJob';
+import { buildCompareAiPrompt } from '../lib/jobs/buildCompareAiContext';
+import { createStreamResponse } from '@/hooks/useStreamResponse';
+import { RAGENT_API_BASE_URL, RAGENT_BYPASS_AUTH } from '@/config/runtimeEnv';
+import { buildQuery } from '@/utils/helpers';
+import { storage } from '@/utils/storage';
+import { useAuthStore } from '@/stores/authStore';
+import type { MessageDeltaPayload } from '@/types';
 
 function formatShortDate(date: string) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date.slice(5);
@@ -62,17 +73,69 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
   const colWidth = fullScreen ? 200 : 240;
   const fieldColWidth = fullScreen ? 100 : 120;
 
-  const [aiPhase, setAiPhase] = React.useState<'idle' | 'loading' | 'done'>('idle');
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
+  const canUseAi = RAGENT_BYPASS_AUTH || isAuthenticated;
+
+  const [intelDrawerJob, setIntelDrawerJob] = React.useState<JobRecord | null>(null);
+  const [aiPhase, setAiPhase] = React.useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [aiText, setAiText] = React.useState('');
+  const abortAiRef = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
     if (!open || jobs.length === 0) {
       setAiPhase('idle');
+      setAiText('');
+      abortAiRef.current?.();
       return;
     }
+    if (!canUseAi) {
+      setAiPhase('idle');
+      setAiText('');
+      return;
+    }
+
     setAiPhase('loading');
-    const timer = window.setTimeout(() => setAiPhase('done'), AI_ANALYZE_MS);
-    return () => window.clearTimeout(timer);
-  }, [open, jobs.map((j) => j.jobId).join('|')]);
+    setAiText('');
+    const question = buildCompareAiPrompt(jobs);
+    const headers: Record<string, string> = {};
+    const token = storage.getToken();
+    if (token) headers.Authorization = token;
+
+    const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${buildQuery({
+      question,
+      deepThinking: false,
+    })}`;
+
+    let assistant = '';
+    const stream = createStreamResponse(
+      { url, headers },
+      {
+        onMessage: (payload: MessageDeltaPayload) => {
+          if (payload?.type !== 'response' || typeof payload.delta !== 'string') return;
+          assistant += payload.delta;
+          setAiText(assistant);
+        },
+        onReject: (payload: MessageDeltaPayload) => {
+          if (typeof payload.delta === 'string') assistant += payload.delta;
+          setAiText(assistant);
+        },
+        onError: () => {
+          setAiPhase('error');
+          if (!assistant) setAiText(t('compare.aiError'));
+        },
+        onDone: () => setAiPhase(assistant.trim() ? 'done' : 'error'),
+        onFinish: () => setAiPhase(assistant.trim() ? 'done' : 'error'),
+      },
+    );
+
+    abortAiRef.current = () => stream.cancel();
+    void stream.start();
+
+    return () => {
+      abortAiRef.current?.();
+    };
+  }, [open, jobs.map((j) => j.jobId).join('|'), canUseAi, t]);
 
   const items = React.useMemo(() => {
     return jobs.map((job) => {
@@ -223,6 +286,14 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
     });
   }, [bestNetIdx, items, tWithParams]);
 
+  const aiDisplay = React.useMemo(() => {
+    if (!canUseAi) return '';
+    if (aiText.trim()) return aiText;
+    if (aiPhase === 'loading') return '';
+    if (aiPhase === 'error') return t('compare.aiError');
+    return aiPlaceholder;
+  }, [aiPhase, aiPlaceholder, aiText, canUseAi, t]);
+
   return (
     <Dialog
       open={open}
@@ -320,13 +391,42 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
                           }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
-                            <Box sx={{ minWidth: 0 }}>
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Box
+                              component="button"
+                              type="button"
+                              onClick={() => {
+                                const intel = resolveIntelLibraryJob(job);
+                                if (intel) setIntelDrawerJob(intel);
+                              }}
+                              sx={{
+                                display: 'block',
+                                width: '100%',
+                                textAlign: 'left',
+                                border: 0,
+                                bgcolor: 'transparent',
+                                cursor: isJobFromIntelLibrary(job) ? 'pointer' : 'default',
+                                p: 0,
+                                '&:hover': isJobFromIntelLibrary(job)
+                                  ? { opacity: 0.85 }
+                                  : undefined,
+                              }}
+                            >
                               <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap title={job.jobTitle}>
                                 {job.jobTitle}
                               </Typography>
                               <Typography variant="caption" color="text.secondary" noWrap title={job.company}>
                                 {job.company}
                               </Typography>
+                              {isJobFromIntelLibrary(job) ? (
+                                <Chip
+                                  size="small"
+                                  icon={<MenuBookOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+                                  label={t('compare.intelLibraryHint')}
+                                  sx={{ mt: 0.5, height: 20, fontSize: '0.65rem' }}
+                                  variant="outlined"
+                                />
+                              ) : null}
                               {idx === bestNetIdx ? (
                                 <Chip
                                   size="small"
@@ -334,6 +434,7 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
                                   sx={{ mt: 0.5, height: 20, fontSize: '0.65rem' }}
                                 />
                               ) : null}
+                            </Box>
                             </Box>
                             <Tooltip title={t('home.removeFromCompare')}>
                               <IconButton
@@ -421,7 +522,16 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
                 {t('compare.aiSubtitle')}
               </Typography>
 
-              {aiPhase === 'loading' ? (
+              {!canUseAi ? (
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  {t('compare.aiLoginRequired')}{' '}
+                  <Button size="small" onClick={() => openLoginDialog(t('compare.aiLoginRequired'))}>
+                    {t('docPolls.goLogin')}
+                  </Button>
+                </Alert>
+              ) : null}
+
+              {canUseAi && aiPhase === 'loading' ? (
                 <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1.5, flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CircularProgress size={18} />
@@ -434,15 +544,15 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
                     {t('compare.aiAnalyzingHint')}
                   </Typography>
                 </Box>
-              ) : (
+              ) : canUseAi ? (
                 <Typography
                   variant="body2"
                   color="text.secondary"
                   sx={{ mt: 0.5, lineHeight: 1.65, whiteSpace: 'pre-wrap', flex: 1 }}
                 >
-                  {aiPlaceholder}
+                  {aiDisplay || t('compare.aiAnalyzing')}
                 </Typography>
-              )}
+              ) : null}
             </Box>
           </>
         )}
@@ -453,6 +563,13 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
           {t('common.close')}
         </Button>
       </Box>
+
+      <JobIntelCompareDrawer
+        open={Boolean(intelDrawerJob)}
+        intelJob={intelDrawerJob}
+        unlocked={readIntelUnlocked()}
+        onClose={() => setIntelDrawerJob(null)}
+      />
     </Dialog>
   );
 }

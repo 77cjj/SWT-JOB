@@ -50,6 +50,7 @@ export function DocPollWidget({ pollId }: { pollId: string }) {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -188,7 +189,7 @@ export function DocPollWidget({ pollId }: { pollId: string }) {
       {loading ? <LinearProgress sx={{ my: 1 }} /> : null}
       {error ? <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert> : null}
 
-      {results ? (
+      {results && myVote ? (
         <Stack spacing={1.2} className="doc-poll-results">
           {results.options.map((option) => (
             <Box key={option.id}>
@@ -215,8 +216,16 @@ export function DocPollWidget({ pollId }: { pollId: string }) {
       {!canVote ? (
         <Alert severity="info" sx={{ mt: 1.5 }}>
           {t('docPolls.loginToVote')}{' '}
-          <Link href="/login">{t('docPolls.goLogin')}</Link>
+          <Button size="small" variant="text" onClick={() => openLoginDialog(t('docPolls.loginToVote'))}>
+            {t('docPolls.goLogin')}
+          </Button>
         </Alert>
+      ) : null}
+
+      {canVote && !myVote && !loading ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+          {t('docPolls.voteToSeeResults')}
+        </Typography>
       ) : null}
 
       {canVote && !verified && !showVerifyForm ? (

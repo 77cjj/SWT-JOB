@@ -96,10 +96,32 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
     expiring: 1,
     expired_stale: 2,
   };
+
+  const groupOrder: Record<string, number> = {
+    'bank-neobank': 0,
+    'bank-national': 1,
+    predictions: 2,
+    cashback: 3,
+    'ny-study': 4,
+    'promo-other': 5,
+  };
+
+  const resolveGroup = (program: ReferralProgram): string => {
+    if (program.displayGroup) return program.displayGroup;
+    if (program.category === 'bank') return 'bank-national';
+    if (program.id === 'kalshi') return 'predictions';
+    if (program.id === 'rakuten') return 'cashback';
+    if (program.id === 'total-wireless') return 'promo-other';
+    return 'promo-other';
+  };
+
   return [...items].sort((a, b) => {
     const pinA = a.program.pinned ? 0 : 1;
     const pinB = b.program.pinned ? 0 : 1;
     if (pinA !== pinB) return pinA - pinB;
+    const ga = groupOrder[resolveGroup(a.program)] ?? 99;
+    const gb = groupOrder[resolveGroup(b.program)] ?? 99;
+    if (ga !== gb) return ga - gb;
     const dr = rank[a.status] - rank[b.status];
     if (dr !== 0) return dr;
     return a.program.brandName.zh.localeCompare(b.program.brandName.zh, 'zh');

@@ -300,6 +300,9 @@ export const en = {
       'Later this will use your profile (visa, city preference, stamina, 2nd-job willingness). Demo placeholder for now.',
     aiAnalyzing: 'AI is analyzing…',
     aiAnalyzingHint: 'Comparing net pay, housing, 2nd jobs, and stability…',
+    aiLoginRequired: 'Sign in to run AI job analysis (uses compared jobs and comments).',
+    aiError: 'AI analysis is unavailable. Try again later.',
+    intelLibraryHint: 'Intel library · tap to view',
     aiPlaceholder:
       '(Demo) Compared {count} roles: {jobs}.\n\nBased on weekly net, housing cost, and 2nd-job upside, “{best}” looks strongest (~${weekly}/wk after tax).\n\nThe full version will use your preferences for a personalized ranking and risk notes.',
   },
@@ -621,7 +624,8 @@ export const en = {
   // Doc community polls
   docPolls: {
     badge: 'Community poll',
-    loginToVote: 'Sign in and verify your profile to vote. Results are public.',
+    loginToVote: 'Sign in and vote to see option breakdowns.',
+    voteToSeeResults: 'Results appear after you vote.',
     goLogin: 'Sign in',
     verifyToVote: 'Verify & vote',
     verifyDesc: 'Pick your work state and program year for aggregated stats only—your identity stays private.',

@@ -17,9 +17,7 @@ import {
 import {
   ContentCopy,
   OpenInNew,
-  Storefront,
   AccountBalance,
-  PhoneIphone,
   MoreHoriz,
   ExpandMore,
   ExpandLess,
@@ -47,10 +45,8 @@ import MarketplacePage from './MarketplacePage';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
 import { openExternalUrl } from '../lib/openExternalUrl';
 
-const categoryIcons: Record<DealCategory, React.ReactNode> = {
+const categoryIcons: Record<'bank' | 'other', React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
-  cashback: <Storefront fontSize="small" />,
-  mobile: <PhoneIphone fontSize="small" />,
   other: <MoreHoriz fontSize="small" />,
 };
 
@@ -307,11 +303,13 @@ export default function DealsPage() {
   const allResolved = useMemo(() => resolveAllPrograms(programs), [programs]);
 
   const filtered = useMemo(() => {
-    const list =
+    const base =
       category === 'all'
         ? allResolved
-        : allResolved.filter((r) => r.program.category === category);
-    return sortProgramsForDisplay(list);
+        : category === 'other'
+          ? allResolved.filter((r) => r.program.category !== 'bank')
+          : allResolved.filter((r) => r.program.category === category);
+    return sortProgramsForDisplay(base);
   }, [allResolved, category]);
 
   const handleCopy = async (url: string, title: string) => {
@@ -382,7 +380,7 @@ export default function DealsPage() {
           <Tab
             key={cat}
             value={cat}
-            icon={categoryIcons[cat] as React.ReactElement}
+            icon={(categoryIcons[cat === 'bank' ? 'bank' : 'other']) as React.ReactElement}
             iconPosition="start"
             label={t(`deals.categories.${cat}`)}
             sx={{ minHeight: 40, py: 1 }}

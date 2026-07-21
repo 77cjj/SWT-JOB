@@ -66,11 +66,12 @@ export function LoginDialog() {
 
         <div className="space-y-4 px-6 pb-6 pt-2">
           {GOOGLE_CLIENT_ID ? (
-            <>
+            <div className="flex flex-col items-center">
               <GoogleSignInButton
-                width={280}
+                width={300}
                 preferRedirect={false}
                 showSetupHints={false}
+                className="flex min-h-[44px] w-full max-w-[300px] justify-center [&>div]:!w-full"
                 onCredential={async (token) => {
                   try {
                     await useAuthStore.getState().googleLogin(token);
@@ -80,21 +81,12 @@ export function LoginDialog() {
                   }
                 }}
               />
-              <p className="text-center text-xs text-muted-foreground">
-                使用 Google 弹窗登录，无需离开当前页面。
-              </p>
-            </>
+            </div>
           ) : (
             <p className="rounded-lg border border-dashed border-amber-300/70 bg-amber-50/80 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
               未配置 Google 登录（NEXT_PUBLIC_GOOGLE_CLIENT_ID）。请先在 Vercel 与后端 .env 配置 Client ID。
             </p>
           )}
-
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            或使用账号密码
-            <span className="h-px flex-1 bg-border" />
-          </div>
 
           <form className="space-y-3" onSubmit={handlePasswordLogin}>
             <div className="relative">
@@ -130,6 +122,11 @@ export function LoginDialog() {
               {isLoading ? "正在登录…" : "登录"}
             </Button>
           </form>
+
+          <p className="text-center text-xs text-muted-foreground">
+            体验账号：<span className="font-mono">demo</span> / <span className="font-mono">demo2026</span>
+            （普通用户，非管理员）
+          </p>
 
           <Button type="button" variant="ghost" className="w-full" onClick={handleClose}>
             暂不登录，继续浏览

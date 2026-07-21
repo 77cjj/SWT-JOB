@@ -1,5 +1,14 @@
 export type DealCategory = 'bank' | 'cashback' | 'mobile' | 'other';
 
+/** 官方精选排序分组（相似项目靠近展示） */
+export type DealDisplayGroup =
+  | 'bank-neobank'
+  | 'bank-national'
+  | 'predictions'
+  | 'cashback'
+  | 'ny-study'
+  | 'promo-other';
+
 /** refer = 邀请返现；signup_bonus = 官网开户奖励（无邀请链接）；promo = 运营商/促销 */
 export type OfferKind = 'refer' | 'signup_bonus' | 'promo';
 
@@ -49,18 +58,21 @@ export interface ReferralProgram {
   officialDetail?: BilingualText;
   /** 置顶展示（如 Kalshi refer） */
   pinned?: boolean;
+  /** 相似分组，用于官方精选排序 */
+  displayGroup?: DealDisplayGroup;
   /** 本站向用户返现金额（USD，管理员配置） */
   siteRebateUsd?: number | null;
   /** 本站返现展示文案 */
   siteRebateLabel?: BilingualText;
 }
 
-export const dealCategoryOrder: DealCategory[] = ['bank', 'cashback', 'mobile', 'other'];
+export const dealCategoryOrder: DealCategory[] = ['bank', 'other'];
 
 export const referralPrograms: ReferralProgram[] = [
   {
     id: 'kalshi',
     category: 'other',
+    displayGroup: 'predictions',
     offerKind: 'refer',
     pinned: true,
     brandName: { zh: 'Kalshi 预测市场', en: 'Kalshi' },
@@ -121,6 +133,7 @@ export const referralPrograms: ReferralProgram[] = [
   {
     id: 'chime',
     category: 'bank',
+    displayGroup: 'bank-neobank',
     offerKind: 'refer',
     brandName: { zh: 'Chime', en: 'Chime' },
     editions: [
@@ -211,6 +224,7 @@ export const referralPrograms: ReferralProgram[] = [
   {
     id: 'sofi',
     category: 'bank',
+    displayGroup: 'bank-neobank',
     offerKind: 'refer',
     brandName: { zh: 'SoFi', en: 'SoFi' },
     editions: [
@@ -260,6 +274,7 @@ export const referralPrograms: ReferralProgram[] = [
   {
     id: 'capital-one-360',
     category: 'bank',
+    displayGroup: 'bank-national',
     offerKind: 'refer',
     brandName: { zh: 'Capital One 360', en: 'Capital One 360' },
     editions: [
@@ -505,7 +520,8 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'rakuten',
-    category: 'cashback',
+    category: 'other',
+    displayGroup: 'cashback',
     offerKind: 'refer',
     brandName: { zh: 'Rakuten', en: 'Rakuten' },
     editions: [
@@ -598,7 +614,8 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'total-wireless',
-    category: 'mobile',
+    category: 'other',
+    displayGroup: 'promo-other',
     offerKind: 'promo',
     brandName: { zh: 'Total Wireless', en: 'Total Wireless' },
     editions: [
@@ -646,6 +663,7 @@ export const referralPrograms: ReferralProgram[] = [
   {
     id: 'utest-wearable-150',
     category: 'other',
+    displayGroup: 'ny-study',
     offerKind: 'refer',
     brandName: { zh: 'Utest 智能手环测试 ①', en: 'Utest Wearable Band Study 1' },
     editions: [
@@ -687,6 +705,7 @@ export const referralPrograms: ReferralProgram[] = [
   {
     id: 'wearable-study-225',
     category: 'other',
+    displayGroup: 'ny-study',
     offerKind: 'promo',
     brandName: { zh: '手环测试 ②', en: 'Wearable Band Study 2' },
     editions: [
@@ -722,6 +741,40 @@ export const referralPrograms: ReferralProgram[] = [
           zh: '新增 $225 手环测试，报名后重点关注电话确认环节。',
           en: 'Added the $225 wearable band study; phone confirmation is the key follow-up step.',
         },
+      },
+    ],
+  },
+  {
+    id: 'ny-test',
+    category: 'other',
+    displayGroup: 'ny-study',
+    offerKind: 'promo',
+    brandName: { zh: '纽约测试（站内演示）', en: 'NYC Test (demo)' },
+    siteRebateUsd: 5,
+    siteRebateLabel: { zh: '约 $5 演示返现', en: 'About $5 demo rebate' },
+    howToClaim: {
+      zh: ['仅用于站内卡片与分类排序演示', '无需真实开户'],
+      en: ['Demo card for layout testing only', 'No real signup required'],
+    },
+    practicalSteps: {
+      zh: ['在管理后台可替换为真实纽约线下测试项目'],
+      en: ['Replace with a real NYC study in admin when ready'],
+    },
+    editions: [
+      {
+        id: 'ny-test-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '$50（演示）', en: '$50 (demo)' },
+        summary: {
+          zh: '纽约地区线下测试占位项目，与 Utest / 手环测试等同组展示。',
+          en: 'Placeholder NYC in-person study; grouped with Utest / wearable studies.',
+        },
+        requirements: {
+          zh: ['演示数据', '联系站长获取真实测试档期'],
+          en: ['Demo data', 'Contact site owner for real study slots'],
+        },
+        tags: { zh: ['纽约', '演示'], en: ['New York', 'Demo'] },
       },
     ],
   },

@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
-import { DemoConversationsPanel } from "./DemoConversationsPanel";
 
 type PromptPreset = {
   id?: string;
@@ -236,8 +235,6 @@ export function WelcomeScreen() {
               );
             })}
           </div>
-
-          <DemoConversationsPanel />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-neutral-500">

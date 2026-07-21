@@ -7,6 +7,9 @@ import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
 
 const GSI_SCRIPT = "https://accounts.google.com/gsi/client";
 
+const SHOW_AUTH_HINTS =
+  process.env.NEXT_PUBLIC_AUTH_DEBUG === "1" || process.env.NODE_ENV === "development";
+
 type GsiCredentialResponse = {
   credential?: string;
 };
@@ -52,12 +55,14 @@ function loadGsiScript(): Promise<void> {
 }
 
 export type GoogleSignInButtonProps = {
-  /** popup 模式成功时回调（redirect 模式走 /api/auth/google-callback） */
+  /** redirect 模式走 /api/auth/google-callback；popup 模式用 onCredential */
   onCredential?: (idToken: string) => void | Promise<void>;
   width?: number;
   className?: string;
   /** 默认 true：整页 redirect，避免弹窗被拦 */
   preferRedirect?: boolean;
+  /** 生产环境默认不展示 Console 配置长文案 */
+  showSetupHints?: boolean;
 };
 
 export function GoogleSignInButton({
@@ -65,6 +70,7 @@ export function GoogleSignInButton({
   width = 320,
   className,
   preferRedirect = true,
+  showSetupHints = SHOW_AUTH_HINTS,
 }: GoogleSignInButtonProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const onCredentialRef = React.useRef(onCredential);
@@ -127,7 +133,13 @@ export function GoogleSignInButton({
     return null;
   }
 
-  const isPreview = typeof window !== "undefined" && /vercel\.app$/i.test(window.location.hostname);
+  const isPreview =
+    typeof window !== "undefined" && /vercel\.app$/i.test(window.location.hostname);
+
+  const redirectUriHint =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/auth/google-callback`
+      : "/api/auth/google-callback";
 
   return (
     <div className="space-y-2">
@@ -137,15 +149,20 @@ export function GoogleSignInButton({
         className={className ?? "flex min-h-[44px] w-full justify-center [&>div]:!w-full"}
         style={{ position: "relative", zIndex: 10_000 }}
       />
-      {preferRedirect ? (
+      {!showSetupHints && !preferRedirect ? (
         <p className="text-center text-xs text-muted-foreground">
-          使用跳转登录（不依赖弹窗）。若失败，请在 Google Cloud 的「Authorized redirect URIs」添加：
-          <code className="block break-all text-[10px]">{typeof window !== "undefined" ? `${window.location.origin}/api/auth/google-callback` : "/api/auth/google-callback"}</code>
+          使用 Google 账号登录，完成后自动回到当前页面。
         </p>
       ) : null}
-      {isPreview ? (
+      {showSetupHints && preferRedirect ? (
+        <p className="text-center text-xs text-muted-foreground">
+          开发提示：redirect URI 需包含
+          <code className="block break-all text-[10px]">{redirectUriHint}</code>
+        </p>
+      ) : null}
+      {showSetupHints && isPreview ? (
         <p className="text-center text-xs text-amber-700">
-          当前为 Vercel 预览域名，需在 Google Console 添加此来源，或使用正式域名登录。
+          预览域名需在 Google Console 添加 JavaScript 来源与 redirect URI，或使用正式域名。
         </p>
       ) : null}
     </div>

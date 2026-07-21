@@ -21,6 +21,11 @@ const OnboardingTour = dynamic(
   { ssr: false },
 );
 
+const GlobalAuthShell = dynamic(
+  () => import('../components/ragent/GlobalAuthShell').then((m) => m.GlobalAuthShell),
+  { ssr: false },
+);
+
 const NAV_PREFETCH_ROUTES = ['/compare', '/jobs', '/market', '/deals', '/docs'];
 
 function SWTApp({ Component, pageProps }: AppProps) {
@@ -84,6 +89,7 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* @ts-expect-error - router is provided by Next.js internally */}
           <SWTApp Component={Component} pageProps={pageProps} />
           <OnboardingTour />
+          <GlobalAuthShell />
           {docsRouteLoading ? (
             <div className="docs-route-progress" aria-hidden />
           ) : null}

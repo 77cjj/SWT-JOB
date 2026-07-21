@@ -32,7 +32,6 @@ import {
   Storefront,
 } from '@mui/icons-material';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { useAuthStore } from '@/stores/authStore';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 import { useI18n } from '../context/I18nContext';
@@ -104,7 +103,6 @@ function fmtUsd(n: number) {
 
 export default function MarketplacePage({ embedded = false }: { embedded?: boolean }) {
   const { t, tWithParams } = useI18n();
-  const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const {
     fetchListings,
@@ -200,7 +198,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
   const requireLogin = () => {
     if (!isAuthenticated) {
-      void router.push('/login?redirect=/deals?section=market');
+      useAuthStore.getState().openLoginDialog(t('marketplace.loginRequired'));
       return false;
     }
     return true;

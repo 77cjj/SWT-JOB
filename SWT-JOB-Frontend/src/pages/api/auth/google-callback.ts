@@ -26,7 +26,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken: credential }),
     });
-    const payload = await upstream.json();
+    const text = await upstream.text();
+    let payload: { code?: string; message?: string; data?: unknown } | null = null;
+    try {
+      payload = JSON.parse(text) as typeof payload;
+    } catch {
+      payload = null;
+    }
+
+    if (!upstream.ok) {
+      const msg =
+        payload?.message ||
+        (upstream.status === 404
+          ? "后端未部署 Google 登录接口，请在阿里云执行 ./server.sh restart backend --build"
+          : `Google 登录失败 (HTTP ${upstream.status})`);
+      return res.status(401).send(msg);
+    }
+
     if (!payload || payload.code !== "0" || !payload.data) {
       return res.status(401).send(payload?.message || "Google login failed");
     }

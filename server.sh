@@ -874,21 +874,29 @@ maybe_prepare_backend() {
     return 0
   fi
 
+  if [[ "$AUTO_PULL_BUILD" == "true" ]]; then
+    if ! find_backend_jar >/dev/null 2>&1; then
+      build_backend
+      return 0
+    fi
+    if backend_changed_since_last_build; then
+      build_backend
+      return 0
+    fi
+    local behind
+    behind="$(count_remote_commits_behind)"
+    if [[ "$behind" -gt 0 ]]; then
+      git_pull_and_build
+    fi
+    return 0
+  fi
+
   if [[ "$SKIP_UPDATE_CHECK" == "true" ]]; then
     return 0
   fi
 
   if ! git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
     warn "当前目录不是 Git 仓库，跳过更新检测"
-    return 0
-  fi
-
-  if [[ "$AUTO_PULL_BUILD" == "true" ]]; then
-    local behind
-    behind="$(count_remote_commits_behind)"
-    if [[ "$behind" -gt 0 ]] || ! find_backend_jar >/dev/null 2>&1; then
-      git_pull_and_build
-    fi
     return 0
   fi
 

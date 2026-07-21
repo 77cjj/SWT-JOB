@@ -45,6 +45,7 @@ import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
 import MarketplacePage from './MarketplacePage';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
+import { openExternalUrl } from '../lib/openExternalUrl';
 
 const categoryIcons: Record<DealCategory, React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
@@ -327,8 +328,8 @@ export default function DealsPage() {
   };
 
   const handleConfirmExternal = () => {
-    if (externalLink) {
-      window.open(externalLink.url, '_blank', 'noopener,noreferrer');
+    if (externalLink?.url) {
+      openExternalUrl(externalLink.url);
     }
     setExternalLink(null);
   };

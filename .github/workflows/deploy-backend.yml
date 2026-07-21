@@ -85,6 +85,24 @@ jobs:
             git pull --ff-only origin "${BRANCH}"
 
             echo "==> Build and restart backend"
-            ./server.sh restart backend --pull --skip-update-check --force
+            ./server.sh restart backend --pull --build --skip-update-check --force
+
+            echo "==> Smoke test API routes"
+            demo_code="$(curl -s -o /dev/null -w '%{http_code}' \
+              "http://127.0.0.1:9090/api/ragent/rag/demo-conversations")"
+            echo "demo-conversations HTTP ${demo_code}"
+            if [[ "$demo_code" == "404" ]]; then
+              echo "::error::GET /rag/demo-conversations returned 404 — backend jar outdated"
+              exit 1
+            fi
+            google_code="$(curl -s -o /dev/null -w '%{http_code}' \
+              -X POST "http://127.0.0.1:9090/api/ragent/auth/google" \
+              -H 'Content-Type: application/json' \
+              -d '{}')"
+            echo "auth/google HTTP ${google_code}"
+            if [[ "$google_code" == "404" ]]; then
+              echo "::error::POST /auth/google returned 404 — backend jar outdated"
+              exit 1
+            fi
 
             echo "==> Done"

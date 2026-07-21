@@ -56,4 +56,9 @@ public interface SampleQuestionService {
      * 随机获取示例问题列表
      */
     List<SampleQuestionVO> listRandomQuestions();
+
+    /**
+     * 访客可浏览的示例对话（含草拟回答）
+     */
+    List<SampleQuestionVO> listDemoConversations();
 }

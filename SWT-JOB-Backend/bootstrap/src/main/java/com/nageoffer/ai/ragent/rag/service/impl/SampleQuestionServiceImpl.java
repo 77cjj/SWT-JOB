@@ -53,6 +53,9 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
                 .title(StrUtil.trimToNull(requestParam.getTitle()))
                 .description(StrUtil.trimToNull(requestParam.getDescription()))
                 .question(question)
+                .answer(StrUtil.trimToNull(requestParam.getAnswer()))
+                .sortOrder(requestParam.getSortOrder() != null ? requestParam.getSortOrder() : 0)
+                .pinned(requestParam.getPinned() != null ? requestParam.getPinned() : 0)
                 .build();
         sampleQuestionMapper.insert(record);
         return String.valueOf(record.getId());
@@ -73,6 +76,15 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
         }
         if (requestParam.getDescription() != null) {
             record.setDescription(StrUtil.trimToNull(requestParam.getDescription()));
+        }
+        if (requestParam.getAnswer() != null) {
+            record.setAnswer(StrUtil.trimToNull(requestParam.getAnswer()));
+        }
+        if (requestParam.getSortOrder() != null) {
+            record.setSortOrder(requestParam.getSortOrder());
+        }
+        if (requestParam.getPinned() != null) {
+            record.setPinned(requestParam.getPinned());
         }
 
         sampleQuestionMapper.updateById(record);
@@ -124,6 +136,24 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
                 .toList();
     }
 
+    @Override
+    public List<SampleQuestionVO> listDemoConversations() {
+        List<SampleQuestionDO> records = sampleQuestionMapper.selectList(
+                Wrappers.lambdaQuery(SampleQuestionDO.class)
+                        .eq(SampleQuestionDO::getDeleted, 0)
+                        .isNotNull(SampleQuestionDO::getAnswer)
+                        .ne(SampleQuestionDO::getAnswer, "")
+                        .orderByDesc(SampleQuestionDO::getPinned)
+                        .orderByAsc(SampleQuestionDO::getSortOrder)
+                        .orderByDesc(SampleQuestionDO::getUpdateTime)
+                        .last("LIMIT 20")
+        );
+        if (records == null || records.isEmpty()) {
+            return List.of();
+        }
+        return records.stream().map(this::toVO).toList();
+    }
+
     private SampleQuestionDO loadById(String id) {
         SampleQuestionDO record = sampleQuestionMapper.selectOne(
                 Wrappers.lambdaQuery(SampleQuestionDO.class)
@@ -140,6 +170,9 @@ public class SampleQuestionServiceImpl implements SampleQuestionService {
                 .title(record.getTitle())
                 .description(record.getDescription())
                 .question(record.getQuestion())
+                .answer(record.getAnswer())
+                .sortOrder(record.getSortOrder())
+                .pinned(record.getPinned())
                 .createTime(record.getCreateTime())
                 .updateTime(record.getUpdateTime())
                 .build();

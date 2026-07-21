@@ -97,6 +97,9 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
     expired_stale: 2,
   };
   return [...items].sort((a, b) => {
+    const pinA = a.program.pinned ? 0 : 1;
+    const pinB = b.program.pinned ? 0 : 1;
+    if (pinA !== pinB) return pinA - pinB;
     const dr = rank[a.status] - rank[b.status];
     if (dr !== 0) return dr;
     return a.program.brandName.zh.localeCompare(b.program.brandName.zh, 'zh');

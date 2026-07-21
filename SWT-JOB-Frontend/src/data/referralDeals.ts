@@ -47,6 +47,8 @@ export interface ReferralProgram {
   practicalSteps?: BilingualList;
   /** 官方项目补充说明 */
   officialDetail?: BilingualText;
+  /** 置顶展示（如 Kalshi refer） */
+  pinned?: boolean;
   /** 本站向用户返现金额（USD，管理员配置） */
   siteRebateUsd?: number | null;
   /** 本站返现展示文案 */
@@ -56,6 +58,66 @@ export interface ReferralProgram {
 export const dealCategoryOrder: DealCategory[] = ['bank', 'cashback', 'mobile', 'other'];
 
 export const referralPrograms: ReferralProgram[] = [
+  {
+    id: 'kalshi',
+    category: 'other',
+    offerKind: 'refer',
+    pinned: true,
+    brandName: { zh: 'Kalshi 预测市场', en: 'Kalshi' },
+    siteRebateLabel: {
+      zh: '保底返现 $7.5（预测）+ 最高 $12.5（加密）',
+      en: 'From $7.5 (predictions) + up to $12.5 (crypto)',
+    },
+    editions: [
+      {
+        id: 'kalshi-2026',
+        validFrom: '2026-01-01',
+        validUntil: null,
+        reward: { zh: '最高约 $20 奖励', en: 'Up to ~$20 bonus' },
+        summary: {
+          zh: '用邀请链接注册 → 下载 App → 护照 KYC → 预测市场成交 $25 + 加密市场成交 $50 领取奖励（条款以 Kalshi 为准）。',
+          en: 'Sign up via referral, verify with passport, trade $25 on predictions and $50 on crypto markets (verify official terms).',
+        },
+        requirements: {
+          zh: ['美国境外可用护照注册', '需完成 KYC', '预测市场累计成交 $25', '加密货币市场累计成交 $50'],
+          en: ['Passport signup', 'KYC', '$25 prediction volume', '$50 crypto volume'],
+        },
+        referralUrl:
+          'https://kalshi.com/sign-up/?referral=bc97e675-c6f7-4911-9de8-5dde19652db1&m=true&utm_source=mobile_app&utm_medium=copy&utm_campaign=referral&utm_content=referral_qr_sheet',
+        officialUrl: 'https://kalshi.com/',
+        tags: { zh: ['置顶', '预测市场'], en: ['Pinned', 'Predictions'] },
+      },
+    ],
+    howToClaim: {
+      zh: [
+        '点击本站「打开邀请链接」进入 Kalshi 注册页（务必用本链接，否则不计 refer）。',
+        '下载 Kalshi 手机 App 并用同一账号登录。',
+        '使用护照完成身份验证（非美国居民可用护照，具体以 Kalshi 审核为准）。',
+        '在「预测市场」累计成交至少 $25（按平台规则计入的有效成交）。',
+        '在「加密货币相关市场」累计成交至少 $50。',
+        '奖励发放时间与形式以 Kalshi 官方通知为准；本站另承诺预测方向保底返现 $7.5、加密方向最高 $12.5（由管理员人工确认发放）。',
+      ],
+      en: [
+        'Open the referral link and create an account.',
+        'Install the app and sign in.',
+        'Complete KYC with passport if eligible.',
+        'Reach $25 traded volume on prediction markets.',
+        'Reach $50 on crypto markets per program rules.',
+      ],
+    },
+    practicalSteps: {
+      zh: [
+        '先用小金额熟悉下单与结算规则，再加仓满足 $25 / $50 门槛。',
+        '预测与加密可能是不同账户模块，确认成交量分别统计。',
+        '奖励、税务与合规风险自负；勿用超出承受能力的资金投机。',
+      ],
+      en: ['Start small', 'Confirm volume buckets', 'Only risk what you can afford'],
+    },
+    officialDetail: {
+      zh: '本站置顶推荐；官方奖励 + 本站额外返现文案可在管理后台调整。',
+      en: 'Pinned on SWT; site rebate configurable in admin.',
+    },
+  },
   {
     id: 'chime',
     category: 'bank',

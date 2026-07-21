@@ -39,4 +39,10 @@ public class SampleQuestionCreateRequest {
      * 示例问题内容
      */
     private String question;
+
+    private String answer;
+
+    private Integer sortOrder;
+
+    private Integer pinned;
 }

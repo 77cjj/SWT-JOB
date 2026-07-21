@@ -58,6 +58,15 @@ public class SampleQuestionDO {
      */
     private String question;
 
+    /**
+     * 草拟 AI 回答（访客示例对话）
+     */
+    private String answer;
+
+    private Integer sortOrder;
+
+    private Integer pinned;
+
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 

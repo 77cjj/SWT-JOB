@@ -253,6 +253,9 @@ detect_migration_applied() {
     upgrade_v1.3_to_v1.4)
       [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_referral_deal'")" == "1" ]]
       ;;
+    upgrade_v1.4_to_v1.5)
+      [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='t_sample_question' AND column_name='answer'")" == "1" ]]
+      ;;
     *)
       return 1
       ;;

@@ -54,6 +54,14 @@ public class SampleQuestionController {
     }
 
     /**
+     * 访客示例对话（用户问 + 草拟 AI 答）
+     */
+    @GetMapping("/rag/demo-conversations")
+    public Result<List<SampleQuestionVO>> listDemoConversations() {
+        return Results.success(sampleQuestionService.listDemoConversations());
+    }
+
+    /**
      * 分页查询示例问题列表
      */
     @GetMapping("/sample-questions")

@@ -33,6 +33,8 @@ import {
 } from '../data/referralDeals';
 import DealHistoryDialog from '../components/deals/DealHistoryDialog';
 import ExternalLinkDialog from '../components/deals/ExternalLinkDialog';
+import DealGuideDrawer from '../components/deals/DealGuideDrawer';
+import type { ReferralProgram } from '../data/referralDeals';
 import {
   formatEditionPeriod,
   resolveAllPrograms,
@@ -70,12 +72,14 @@ function DealCard({
   onCopy,
   onOpenExternal,
   onViewHistory,
+  onOpenGuide,
 }: {
   item: ResolvedProgram;
   lang: Language;
   onCopy: (url: string, title: string) => void;
   onOpenExternal: (url: string, title: string) => void;
   onViewHistory: () => void;
+  onOpenGuide: () => void;
 }) {
   const { t, tWithParams } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -121,18 +125,27 @@ function DealCard({
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
             <Typography
-              component={Link}
-              href={`/deals/${program.id}`}
+              component="button"
+              type="button"
               variant="subtitle1"
               fontWeight={700}
+              onClick={onOpenGuide}
               sx={{
                 color: isStale ? 'text.disabled' : 'text.primary',
                 textDecoration: 'none',
+                border: 0,
+                background: 'none',
+                cursor: 'pointer',
+                p: 0,
+                textAlign: 'left',
                 '&:hover': { textDecoration: isStale ? 'none' : 'underline' },
               }}
             >
               {title}
             </Typography>
+            {program.pinned ? (
+              <Chip size="small" label={lang === 'zh' ? '置顶' : 'Pinned'} color="warning" sx={{ ml: 0.5 }} />
+            ) : null}
             {officialUrl ? (
               <Tooltip title={t('deals.officialInfo')}>
                 <IconButton
@@ -229,7 +242,7 @@ function DealCard({
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }}>
         {!isStale ? (
-          <Button component={Link} href={`/deals/${program.id}`} variant="outlined" size="small">
+          <Button variant="outlined" size="small" onClick={onOpenGuide}>
             {t('deals.viewGuide')}
           </Button>
         ) : null}
@@ -287,6 +300,7 @@ export default function DealsPage() {
     severity: 'success',
   });
   const [historyTarget, setHistoryTarget] = useState<ResolvedProgram | null>(null);
+  const [guideProgram, setGuideProgram] = useState<ReferralProgram | null>(null);
   const [externalLink, setExternalLink] = useState<{ url: string; label: string } | null>(null);
 
   const allResolved = useMemo(() => resolveAllPrograms(programs), [programs]);
@@ -390,9 +404,16 @@ export default function DealsPage() {
             onCopy={handleCopy}
             onOpenExternal={(url, label) => setExternalLink({ url, label })}
             onViewHistory={() => setHistoryTarget(item)}
+            onOpenGuide={() => setGuideProgram(item.program)}
           />
         ))}
       </Box>
+
+      <DealGuideDrawer
+        open={Boolean(guideProgram)}
+        onClose={() => setGuideProgram(null)}
+        program={guideProgram}
+      />
 
       {filtered.length === 0 ? (
         <Typography color="text.secondary" sx={{ py: 6, textAlign: 'center' }}>

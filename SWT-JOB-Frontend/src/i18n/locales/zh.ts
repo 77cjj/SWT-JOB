@@ -63,7 +63,7 @@ export const zh = {
     deepThinkingOn: '深度思考模式已开启，AI将进行更深入的分析推理',
     thinking: '思考中',
     generationInterrupted: '生成已中断。',
-    startFrom: '从这些 SWT 话题开始 · 登录后一键开问',
+    startFrom: '快捷提问（填入输入框）',
     recommendedPrompt: '推荐问法：{prompt}',
     searchConversations: '搜索对话...',
     newChat: '新建对话',

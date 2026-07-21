@@ -1,12 +1,12 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Bot, Brain, Briefcase, Calculator, Gift, Lightbulb, MapPin, Plane, Receipt, Scale, Send, Shield, Sparkles, Square, TrendingUp } from "lucide-react";
+import { ArrowUpRight, BookOpen, Bot, Brain, Calculator, Gift, Lightbulb, MapPin, Send, Square } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { listSampleQuestions } from "@/services/sampleQuestionService";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
+import { DemoConversationsPanel } from "./DemoConversationsPanel";
 
 type PromptPreset = {
   id?: string;
@@ -16,35 +16,9 @@ type PromptPreset = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-const PRESET_ICONS = [
-  BookOpen,
-  Plane,
-  Briefcase,
-  MapPin,
-  Sparkles,
-  Calculator,
-  Gift,
-  Receipt,
-  Scale,
-  TrendingUp,
-  Shield,
-  Lightbulb,
-] as const;
+const PRESET_ICONS = [BookOpen, MapPin, Calculator, Gift] as const;
 
-const PRESET_I18N_KEYS = [
-  "culture",
-  "preTrip",
-  "jobRating",
-  "destination",
-  "inCountry",
-  "wage",
-  "deals",
-  "taxRefund",
-  "postTrip",
-  "compliance",
-  "safety",
-  "compareTool",
-] as const;
+const PRESET_I18N_KEYS = ["culture", "destination", "wage", "deals"] as const;
 
 export function WelcomeScreen() {
   const { language, t, tWithParams } = useI18n();
@@ -60,7 +34,6 @@ export function WelcomeScreen() {
   );
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
-  const [promptPresets, setPromptPresets] = React.useState<PromptPreset[]>(defaultPresets);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const { sendMessage, isStreaming, cancelGeneration, deepThinkingEnabled, setDeepThinkingEnabled } =
@@ -85,50 +58,6 @@ export function WelcomeScreen() {
   React.useEffect(() => {
     adjustHeight();
   }, [value, adjustHeight]);
-
-  React.useEffect(() => {
-    let active = true;
-    setPromptPresets(defaultPresets);
-
-    if (language !== "zh") {
-      return () => {
-        active = false;
-      };
-    }
-
-    const loadPresets = async () => {
-      const data = await listSampleQuestions().catch(() => null);
-      if (!active || !data || data.length === 0) {
-        return;
-      }
-      const mapped = data
-        .filter((item) => item.question && item.question.trim())
-        .slice(0, 12)
-        .map((item, index) => {
-          const question = item.question.trim();
-          const title =
-            item.title?.trim() ||
-            (question.length > 12 ? `${question.slice(0, 12)}...` : question) ||
-            tWithParams("chat.presets.fallbackTitle", { index: index + 1 });
-          const description = item.description?.trim() || t("chat.presets.fallbackDescription");
-          return {
-            id: item.id,
-            title,
-            description,
-            prompt: question,
-            icon: PRESET_ICONS[index % PRESET_ICONS.length]
-          };
-        });
-      if (mapped.length >= 6) {
-        setPromptPresets(mapped);
-      }
-    };
-
-    loadPresets();
-    return () => {
-      active = false;
-    };
-  }, [defaultPresets, language, t, tWithParams]);
 
   const applyPreset = React.useCallback(
     (prompt: string) => {
@@ -273,8 +202,8 @@ export function WelcomeScreen() {
             {t("chat.startFrom")}
             <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
           </div>
-          <div className="mt-5 mx-auto grid w-full max-w-full grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {promptPresets.map((preset) => {
+          <div className="mt-5 mx-auto grid w-full max-w-full grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+            {defaultPresets.map((preset) => {
               const Icon = preset.icon;
               return (
                 <button
@@ -307,6 +236,8 @@ export function WelcomeScreen() {
               );
             })}
           </div>
+
+          <DemoConversationsPanel />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 dark:text-neutral-500">

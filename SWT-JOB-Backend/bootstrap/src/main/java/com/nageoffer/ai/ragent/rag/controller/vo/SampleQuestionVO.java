@@ -37,6 +37,9 @@ public class SampleQuestionVO {
     private String title;
     private String description;
     private String question;
+    private String answer;
+    private Integer sortOrder;
+    private Integer pinned;
     private Date createTime;
     private Date updateTime;
 }

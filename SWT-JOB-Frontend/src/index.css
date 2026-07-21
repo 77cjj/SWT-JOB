@@ -9,6 +9,7 @@
  * 此前未注入这些变量时，bg-background、border-border、shadow-soft、font-display 等在 Tailwind v4 下无法正确解析，登录页与后台 Dialog 会「缺样式」。
  */
 :root {
+  scrollbar-gutter: stable;
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
   --card: 210 40% 98%;

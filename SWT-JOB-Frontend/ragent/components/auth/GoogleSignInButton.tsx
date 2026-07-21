@@ -16,22 +16,10 @@ declare global {
     google?: {
       accounts: {
         id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: GsiCredentialResponse) => void;
-            use_fedcm_for_prompt?: boolean;
-            auto_select?: boolean;
-          }) => void;
+          initialize: (config: Record<string, unknown>) => void;
           renderButton: (
             parent: HTMLElement,
-            options: {
-              type?: string;
-              theme?: string;
-              size?: string;
-              text?: string;
-              width?: number;
-              logo_alignment?: string;
-            }
+            options: Record<string, unknown>
           ) => void;
         };
       };
@@ -64,15 +52,20 @@ function loadGsiScript(): Promise<void> {
 }
 
 export type GoogleSignInButtonProps = {
-  onCredential: (idToken: string) => void | Promise<void>;
+  /** popup 模式成功时回调（redirect 模式走 /api/auth/google-callback） */
+  onCredential?: (idToken: string) => void | Promise<void>;
   width?: number;
   className?: string;
+  /** 默认 true：整页 redirect，避免弹窗被拦 */
+  preferRedirect?: boolean;
 };
 
-/**
- * 使用 Google GSI 原生 renderButton，避免 @react-oauth/google 的 iframe 在 Radix Dialog 内无法点击/弹窗。
- */
-export function GoogleSignInButton({ onCredential, width = 320, className }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({
+  onCredential,
+  width = 320,
+  className,
+  preferRedirect = true,
+}: GoogleSignInButtonProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const onCredentialRef = React.useRef(onCredential);
   onCredentialRef.current = onCredential;
@@ -83,22 +76,33 @@ export function GoogleSignInButton({ onCredential, width = 320, className }: Goo
     }
     let cancelled = false;
     const mount = containerRef.current;
+    const origin = window.location.origin;
+    const loginUri = `${origin}/api/auth/google-callback`;
 
     loadGsiScript()
       .then(() => {
         if (cancelled || !mount) return;
-        window.google!.accounts.id.initialize({
+
+        const init: Record<string, unknown> = {
           client_id: GOOGLE_CLIENT_ID,
           use_fedcm_for_prompt: false,
           auto_select: false,
-          callback: (response) => {
+        };
+
+        if (preferRedirect) {
+          init.ux_mode = "redirect";
+          init.login_uri = loginUri;
+        } else if (onCredentialRef.current) {
+          init.callback = (response: GsiCredentialResponse) => {
             if (response.credential) {
-              void onCredentialRef.current(response.credential);
+              void onCredentialRef.current?.(response.credential);
             } else {
-              toast.error("Google 未返回登录凭证，请检查浏览器是否拦截弹窗");
+              toast.error("Google 未返回登录凭证");
             }
-          },
-        });
+          };
+        }
+
+        window.google!.accounts.id.initialize(init);
         mount.innerHTML = "";
         window.google!.accounts.id.renderButton(mount, {
           type: "standard",
@@ -117,18 +121,33 @@ export function GoogleSignInButton({ onCredential, width = 320, className }: Goo
       cancelled = true;
       if (mount) mount.innerHTML = "";
     };
-  }, [width]);
+  }, [width, preferRedirect]);
 
   if (!GOOGLE_CLIENT_ID) {
     return null;
   }
 
+  const isPreview = typeof window !== "undefined" && /vercel\.app$/i.test(window.location.hostname);
+
   return (
-    <div
-      ref={containerRef}
-      data-google-signin="true"
-      className={className ?? "flex min-h-[44px] w-full justify-center [&>div]:!w-full"}
-      style={{ position: "relative", zIndex: 10_000 }}
-    />
+    <div className="space-y-2">
+      <div
+        ref={containerRef}
+        data-google-signin="true"
+        className={className ?? "flex min-h-[44px] w-full justify-center [&>div]:!w-full"}
+        style={{ position: "relative", zIndex: 10_000 }}
+      />
+      {preferRedirect ? (
+        <p className="text-center text-xs text-muted-foreground">
+          使用跳转登录（不依赖弹窗）。若失败，请在 Google Cloud 的「Authorized redirect URIs」添加：
+          <code className="block break-all text-[10px]">{typeof window !== "undefined" ? `${window.location.origin}/api/auth/google-callback` : "/api/auth/google-callback"}</code>
+        </p>
+      ) : null}
+      {isPreview ? (
+        <p className="text-center text-xs text-amber-700">
+          当前为 Vercel 预览域名，需在 Google Console 添加此来源，或使用正式域名登录。
+        </p>
+      ) : null}
+    </div>
   );
 }

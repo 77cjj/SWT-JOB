@@ -1,5 +1,6 @@
 import type { NextApiRequest } from 'next';
 
+import { parseJsonResponse, unwrapRagentResult } from '../api/parseJsonResponse';
 import type { MarketUser } from './types';
 
 function resolveRagentApiBase() {
@@ -29,7 +30,10 @@ export async function getMarketUserFromRequest(req: NextApiRequest): Promise<Mar
       headers: { Authorization: auth },
     });
     if (!res.ok) return null;
-    return (await res.json()) as MarketUser;
+    const body = await parseJsonResponse<unknown>(res);
+    const data = unwrapRagentResult<MarketUser>(body);
+    if (data?.userId) return data;
+    return null;
   } catch {
     return null;
   }

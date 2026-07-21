@@ -18,8 +18,8 @@ export async function parseJsonResponse<T>(res: Response): Promise<T> {
 /** Ragent API 统一 Result 包装 */
 export function unwrapRagentResult<T>(body: unknown): T | null {
   if (!body || typeof body !== 'object') return null;
-  const record = body as { code?: number; data?: T; message?: string };
-  if (record.code === 0 || record.code === 200) {
+  const record = body as { code?: number | string; data?: T; message?: string };
+  if (record.code === 0 || record.code === 200 || record.code === '0') {
     return record.data ?? null;
   }
   if ('userId' in (body as object)) {

@@ -33,6 +33,7 @@ import {
   Storefront,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useAuthStore } from '@/stores/authStore';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 import { useI18n } from '../context/I18nContext';
@@ -104,6 +105,7 @@ function fmtUsd(n: number) {
 
 export default function MarketplacePage({ embedded = false }: { embedded?: boolean }) {
   const { t, tWithParams, language } = useI18n();
+  const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const {
     fetchListings,
@@ -114,9 +116,12 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     claimOrder,
     orderAction,
     deposit,
+    startStripeCheckout,
+    fetchPaymentsConfig,
   } = useMarketplaceApi();
 
   const [tab, setTab] = useState<MainTab>('refer');
+  const [stripeEnabled, setStripeEnabled] = useState(false);
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [orders, setOrders] = useState<(MarketOrder & { intelDetail?: string })[]>([]);
   const [wallet, setWallet] = useState<WalletAccount | null>(null);
@@ -136,6 +141,10 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
   const [form, setForm] = useState<ListingFormState>(emptyListingForm);
 
+  useEffect(() => {
+    void fetchPaymentsConfig().then(setStripeEnabled).catch(() => setStripeEnabled(false));
+  }, [fetchPaymentsConfig]);
+
   const refreshListings = useCallback(async () => {
     const type = tab === 'refer' || tab === 'job_intel' ? tab : undefined;
     const mine = tab === 'my_listings';
@@ -154,6 +163,21 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     setWallet(data.wallet);
     setStats(data.stats);
   }, [fetchWallet, isAuthenticated]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const qTab = router.query.tab;
+    if (qTab === 'wallet' || qTab === 'orders' || qTab === 'refer' || qTab === 'job_intel' || qTab === 'my_listings') {
+      setTab(qTab as MainTab);
+    }
+    const depositStatus = router.query.deposit;
+    if (depositStatus === 'success') {
+      setSnack({ open: true, message: t('marketplace.depositStripeSuccess'), severity: 'success' });
+      void refreshWallet();
+    } else if (depositStatus === 'cancel') {
+      setSnack({ open: true, message: t('marketplace.depositStripeCancel'), severity: 'info' });
+    }
+  }, [router.isReady, router.query.tab, router.query.deposit, t, refreshWallet]);
 
   useEffect(() => {
     let cancelled = false;
@@ -282,8 +306,17 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
   const handleDeposit = async () => {
     if (!requireLogin()) return;
+    const amount = Number(depositAmount);
+    if (!Number.isFinite(amount) || amount < 5) {
+      setSnack({ open: true, message: t('marketplace.depositMinHint'), severity: 'error' });
+      return;
+    }
     try {
-      const w = await deposit(Number(depositAmount));
+      if (stripeEnabled) {
+        await startStripeCheckout(amount);
+        return;
+      }
+      const w = await deposit(amount);
       setWallet(w);
       setSnack({ open: true, message: t('marketplace.depositSuccess'), severity: 'success' });
     } catch (e) {
@@ -385,6 +418,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           onDepositAmount={setDepositAmount}
           onDeposit={handleDeposit}
           isAuthenticated={isAuthenticated}
+          stripeEnabled={stripeEnabled}
           t={t}
         />
       ) : null}
@@ -468,6 +502,7 @@ function WalletSection({
   onDepositAmount,
   onDeposit,
   isAuthenticated,
+  stripeEnabled,
   t,
 }: {
   wallet: WalletAccount | null;
@@ -476,6 +511,7 @@ function WalletSection({
   onDepositAmount: (v: string) => void;
   onDeposit: () => void;
   isAuthenticated: boolean;
+  stripeEnabled: boolean;
   t: (k: string) => string;
 }) {
   if (!isAuthenticated) {
@@ -504,8 +540,8 @@ function WalletSection({
           ) : null}
         </CardContent>
       </Card>
-      <Alert severity="warning" sx={{ mb: 2 }}>
-        {t('marketplace.depositDemoNote')}
+      <Alert severity={stripeEnabled ? 'info' : 'warning'} sx={{ mb: 2 }}>
+        {stripeEnabled ? t('marketplace.depositStripeNote') : t('marketplace.depositDemoNote')}
       </Alert>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
         <TextField
@@ -517,7 +553,7 @@ function WalletSection({
           sx={{ width: 160 }}
         />
         <Button variant="contained" onClick={onDeposit}>
-          {t('marketplace.deposit')}
+          {stripeEnabled ? t('marketplace.depositStripe') : t('marketplace.deposit')}
         </Button>
       </Box>
     </Box>

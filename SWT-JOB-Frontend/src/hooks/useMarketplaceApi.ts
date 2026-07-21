@@ -119,6 +119,23 @@ export function useMarketplaceApi() {
     return data.wallet;
   }, []);
 
+  const startStripeCheckout = useCallback(async (amount: number) => {
+    const res = await fetch('/api/marketplace/wallet/checkout', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ amount }),
+    });
+    const data = await parseJson<{ url: string }>(res);
+    if (!data.url) throw new Error('未返回 Checkout 链接');
+    window.location.href = data.url;
+  }, []);
+
+  const fetchPaymentsConfig = useCallback(async () => {
+    const res = await fetch('/api/marketplace/payments-config');
+    const data = await parseJson<{ stripeEnabled: boolean }>(res);
+    return data.stripeEnabled;
+  }, []);
+
   return {
     fetchListings,
     createListing,
@@ -128,5 +145,7 @@ export function useMarketplaceApi() {
     orderAction,
     fetchWallet,
     deposit,
+    startStripeCheckout,
+    fetchPaymentsConfig,
   };
 }

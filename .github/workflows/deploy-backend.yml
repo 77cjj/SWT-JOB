@@ -82,7 +82,9 @@ jobs:
             echo "==> Sync code (${BRANCH})"
             git fetch origin "${BRANCH}"
             git checkout "${BRANCH}"
-            git pull --ff-only origin "${BRANCH}"
+            # server.sh 会改写 bootstrap/config/*.yaml，需与远程对齐后再部署
+            git reset --hard "origin/${BRANCH}"
+            git clean -fd -e '.env' -e '.server' || true
 
             echo "==> Build and restart backend"
             ./server.sh restart backend --pull --build --skip-update-check --force

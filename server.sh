@@ -100,6 +100,7 @@ SWT-JOB 服务器一键启停脚本
   JAVA_MEM_OPTS        JVM 内存（2G 机器自动降为 -Xms128m -Xmx384m）
   LOW_MEM_MODE         auto|true|false  小内存优化（默认 auto：<3GB 自动开启）
   SKIP_ROCKETMQ        auto|true|false  是否跳过 RocketMQ（默认 auto：小内存时停掉）
+  GIT_PULL_FORCE       1 或 true  拉取时用 reset --hard 对齐远程（丢弃本地未推送修改）
   USE_SUDO=yes|no|auto 操作 Nginx 时是否 sudo（默认 auto）
   CONTAINER_RT=podman|docker  强制指定容器运行时（默认自动检测）
 

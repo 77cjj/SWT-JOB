@@ -56,9 +56,9 @@ if [[ -n "$backend_changes" ]]; then
   exit 0
 fi
 
-log "INFO: 检测到 ${behind} 个新提交（仅非后端文件），执行 git pull"
-if ! git -C "$ROOT" pull --ff-only >>"$LOG_FILE" 2>&1; then
-  log "ERROR: git pull 失败"
+log "INFO: 检测到 ${behind} 个新提交（仅非后端文件），执行 git reset 同步"
+if ! git -C "$ROOT" reset --hard "${upstream}" >>"$LOG_FILE" 2>&1; then
+  log "ERROR: git reset --hard 失败"
   exit 1
 fi
 log "OK: 代码已同步，跳过后端重启"

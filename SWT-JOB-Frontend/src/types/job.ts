@@ -1,3 +1,5 @@
+import type { JobIntelSource } from './intelSource';
+
 export type SecondJobDifficulty = '高' | '中' | '低';
 export type JobAccessTier = 'public' | 'community' | 'premium';
 export type CultureType = '友好' | '一般' | '严格' | '国际化' | '本地化';
@@ -52,5 +54,7 @@ export interface JobRecord {
   companyMasked?: string;
   /** 往届生验证人数 */
   verifiedCount?: number;
+  /** 情报来源与贡献者（社区验证 / 官方录入） */
+  intelSource?: JobIntelSource;
 }
 

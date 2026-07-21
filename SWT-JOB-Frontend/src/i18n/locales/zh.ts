@@ -407,6 +407,16 @@ export const zh = {
     compensation: '薪酬概况',
     tipPerHour: '小费/h',
     housingShort: '住宿',
+    intelSource: '信息来源',
+    sourceOfficial: '官方录入',
+    sourceCommunity: '社区贡献',
+    viewProfileContact: '查看主页并联系',
+    allContributors: '全部贡献者',
+    contributorCount: '{count} 人贡献',
+    contributorRolePrimary: '主要贡献',
+    contributorRoleVerifier: '验证补充',
+    contributorRoleEditor: '编辑整理',
+    contributorRoleDefault: '贡献',
   },
 
   // Refer 奖励

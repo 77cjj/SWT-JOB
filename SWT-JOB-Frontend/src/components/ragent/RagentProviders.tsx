@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
-import { Toast } from "@/components/common/Toast";
-import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
 import { useAuthStore } from "@/stores/authStore";
-import { LoginDialog } from "../../components/ragent/LoginDialog";
 
 type RagentProvidersProps = {
   children: ReactNode;
@@ -32,19 +28,5 @@ export function RagentProviders({ children, embedded = false }: RagentProvidersP
     };
   }, [embedded]);
 
-  return GOOGLE_CLIENT_ID ? (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <ErrorBoundary>
-        {children}
-        <Toast />
-        <LoginDialog />
-      </ErrorBoundary>
-    </GoogleOAuthProvider>
-  ) : (
-    <ErrorBoundary>
-      {children}
-      <Toast />
-      <LoginDialog />
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }

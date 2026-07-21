@@ -17,6 +17,8 @@ import {
   DialogActions,
   Alert,
   Snackbar,
+  Autocomplete,
+  FormHelperText,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -29,6 +31,7 @@ import { useI18n } from '../context/I18nContext';
 import type { JobRecord } from '../types/job';
 import { submitJobIntelContribution } from '../lib/jobs/jobIntelApi';
 import { useAuthStore } from '@/stores/authStore';
+import { US_STATE_OPTIONS } from '../lib/member/profile';
 
 const UNLOCK_STORAGE_KEY = 'swt-job-intel-unlocked-until';
 
@@ -198,22 +201,42 @@ export default function HistoricalJobsPage() {
         />
       )}
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>{t('historicalJobs.contributeDialogTitle')}</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        scroll="paper"
+      >
+        <DialogTitle sx={{ pb: 1 }}>{t('historicalJobs.contributeDialogTitle')}</DialogTitle>
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2.5, pb: 2, maxHeight: 'min(70vh, 520px)' }}>
           {submitError ? <Alert severity="error">{submitError}</Alert> : null}
-          <TextField
-            label={t('historicalJobs.state')}
-            value={form.state}
-            onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-            placeholder="NJ"
-            required
+          <Autocomplete
+            freeSolo
+            options={[...US_STATE_OPTIONS]}
+            value={form.state || null}
+            inputValue={form.state}
+            onInputChange={(_, value) => setForm((f) => ({ ...f, state: value.toUpperCase() }))}
+            onChange={(_, value) => {
+              const next = typeof value === 'string' ? value : value ?? '';
+              setForm((f) => ({ ...f, state: next.toUpperCase() }));
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={t('historicalJobs.state')}
+                placeholder="NJ"
+                required
+                helperText="可输入或选择美国州缩写（2 字母）"
+              />
+            )}
           />
           <TextField
             label={t('historicalJobs.jobTitle')}
             value={form.jobTitle}
             onChange={(e) => setForm((f) => ({ ...f, jobTitle: e.target.value }))}
             required
+            helperText={form.jobTitle.trim().length > 0 && form.jobTitle.trim().length < 2 ? '至少 2 个字符' : ' '}
           />
           <TextField
             label={t('historicalJobs.hourlyWage')}
@@ -229,11 +252,22 @@ export default function HistoricalJobsPage() {
             minRows={3}
             placeholder="时薪、住宿、二工、雇主态度（请勿填写可识别个人隐私）"
             required
+            helperText={`${form.notes.trim().length}/10 字以上可提交`}
           />
+          {!canSubmit ? (
+            <FormHelperText sx={{ mt: -1 }}>
+              请填写州（≥2 字）、岗位名（≥2 字）与情报说明（≥10 字）后提交
+            </FormHelperText>
+          ) : null}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
-          <Button variant="contained" disabled={!canSubmit || submitting} onClick={() => void handleContribute()}>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button type="button" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
+          <Button
+            type="button"
+            variant="contained"
+            disabled={!canSubmit || submitting}
+            onClick={() => void handleContribute()}
+          >
             {submitting ? t('historicalJobs.contributeSubmitting') : t('historicalJobs.contributeButton')}
           </Button>
         </DialogActions>

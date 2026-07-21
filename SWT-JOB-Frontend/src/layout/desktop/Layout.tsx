@@ -95,14 +95,47 @@ export default function DesktopLayout({
               >
                 {t("nav.jobs")}
               </Link>
+              <div className="relative group/deals">
               <Link
                 href="/deals"
                 className={`transition-colors ${linkHoverClass} ${
-                  pathname === "/deals" ? linkActiveClass : ""
+                  pathname === '/deals' || pathname.startsWith('/deals/') ? linkActiveClass : ''
                 }`}
               >
-                {t("nav.deals")}
+                {t('nav.deals')}
               </Link>
+              <div
+                className="absolute left-0 top-full z-50 hidden min-w-[9.5rem] pt-1 group-hover/deals:block"
+                role="menu"
+              >
+                <div
+                  className={`rounded-lg border py-1 shadow-md ${
+                    isDark
+                      ? 'border-neutral-800 bg-neutral-900'
+                      : 'border-neutral-200 bg-white'
+                  }`}
+                >
+                  <Link
+                    href="/deals"
+                    className={`block px-3 py-2 text-sm transition-colors ${linkHoverClass} ${
+                      pathname === '/deals' ? linkActiveClass : ''
+                    }`}
+                    role="menuitem"
+                  >
+                    {t('deals.sectionOfficial')}
+                  </Link>
+                  <Link
+                    href="/deals/market"
+                    className={`block px-3 py-2 text-sm transition-colors ${linkHoverClass} ${
+                      pathname === '/deals/market' ? linkActiveClass : ''
+                    }`}
+                    role="menuitem"
+                  >
+                    {t('deals.sectionMarket')}
+                  </Link>
+                </div>
+              </div>
+            </div>
               <Link
                 href="/docs"
                 className={`transition-colors ${linkHoverClass} ${

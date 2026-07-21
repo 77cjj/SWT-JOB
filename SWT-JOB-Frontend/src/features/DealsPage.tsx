@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import {
   Box,
   Typography,
@@ -41,7 +40,6 @@ import {
 } from '../lib/deals/deal-utils';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
-import MarketplacePage from './MarketplacePage';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
 import { openExternalUrl } from '../lib/openExternalUrl';
 
@@ -287,9 +285,7 @@ function DealCard({
 
 export default function DealsPage() {
   const { t, tWithParams, language } = useI18n();
-  const router = useRouter();
   const { programs } = useReferralPrograms();
-  const section = router.query.section === 'market' ? 'market' : 'deals';
   const [category, setCategory] = useState<DealCategory | 'all'>('all');
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity?: 'success' | 'info' }>({
     open: false,
@@ -332,42 +328,8 @@ export default function DealsPage() {
     setExternalLink(null);
   };
 
-  const setSection = (next: 'deals' | 'market') => {
-    void router.replace(
-      next === 'market' ? { pathname: '/deals', query: { section: 'market' } } : '/deals',
-      undefined,
-      { shallow: true },
-    );
-  };
-
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          {t('deals.subtitle')}
-        </Typography>
-        <Tooltip title={t('deals.disclaimer')} placement="left">
-          <IconButton size="small" aria-label={t('deals.disclaimer')} sx={{ mt: -0.25, flexShrink: 0 }}>
-            <InfoOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      <Tabs
-        data-tour="deals-section"
-        value={section}
-        onChange={(_, v) => setSection(v)}
-        variant="fullWidth"
-        sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
-      >
-        <Tab value="deals" label={t('deals.sectionOfficial')} sx={{ minHeight: 40, py: 1 }} />
-        <Tab value="market" label={t('deals.sectionMarket')} sx={{ minHeight: 40, py: 1 }} />
-      </Tabs>
-
-      {section === 'market' ? (
-        <MarketplacePage embedded />
-      ) : (
-        <>
       <Tabs
         value={category}
         onChange={(_, v) => setCategory(v)}
@@ -426,7 +388,7 @@ export default function DealsPage() {
           {t('deals.readFullGuide')}
         </Link>
         {' · '}
-        <Link href="/deals?section=market" style={{ color: 'inherit' }}>
+        <Link href="/deals/market" style={{ color: 'inherit' }}>
           {t('deals.marketLink')}
         </Link>
       </Typography>
@@ -445,8 +407,6 @@ export default function DealsPage() {
         onClose={() => setExternalLink(null)}
         onConfirm={handleConfirmExternal}
       />
-        </>
-      )}
 
       <Snackbar
         open={snack.open}

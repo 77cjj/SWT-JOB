@@ -149,11 +149,6 @@ export function GoogleSignInButton({
         className={className ?? "flex min-h-[44px] w-full justify-center [&>div]:!w-full"}
         style={{ position: "relative", zIndex: 10_000 }}
       />
-      {!showSetupHints && !preferRedirect ? (
-        <p className="text-center text-xs text-muted-foreground">
-          使用 Google 账号登录，完成后自动回到当前页面。
-        </p>
-      ) : null}
       {showSetupHints && preferRedirect ? (
         <p className="text-center text-xs text-muted-foreground">
           开发提示：redirect URI 需包含

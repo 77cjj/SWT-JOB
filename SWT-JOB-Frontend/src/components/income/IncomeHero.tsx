@@ -154,10 +154,8 @@ export default function IncomeHero({
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
-        position: { xs: 'sticky', md: 'static' },
-        top: { xs: 56, md: 'auto' },
-        zIndex: { xs: 20, md: 'auto' },
-        mb: { xs: 2, md: 3 },
+        position: 'static',
+        mb: { xs: 1.5, md: 3 },
       }}
     >
       <Typography

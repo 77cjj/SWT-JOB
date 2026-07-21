@@ -6,7 +6,7 @@ export default function MarketPage() {
   const router = useRouter();
 
   useEffect(() => {
-    void router.replace('/deals?section=market');
+    void router.replace('/deals/market');
   }, [router]);
 
   return null;

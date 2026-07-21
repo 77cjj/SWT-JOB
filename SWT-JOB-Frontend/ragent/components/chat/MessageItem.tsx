@@ -13,18 +13,19 @@ interface MessageItemProps {
   isLast?: boolean;
 }
 
-export const MessageItem = React.memo(function MessageItem({ message, isLast }: MessageItemProps) {
+export const MessageItem = React.memo(function MessageItem({ message }: MessageItemProps) {
   const { t, tWithParams } = useI18n();
   const isUser = message.role === "user";
-  const showFeedback =
-    message.role === "assistant" &&
-    message.status !== "streaming" &&
-    message.id &&
-    !message.id.startsWith("assistant-");
   const isThinking = Boolean(message.isThinking);
   const [thinkingExpanded, setThinkingExpanded] = React.useState(false);
   const hasThinking = Boolean(message.thinking && message.thinking.trim().length > 0);
   const hasContent = message.content.trim().length > 0;
+  const showFeedback =
+    message.role === "assistant" &&
+    message.status !== "streaming" &&
+    message.status !== "error" &&
+    Boolean(message.id) &&
+    hasContent;
   const resources = (message.resources || []).filter((item) => Boolean(item?.url));
   const hasResources = resources.length > 0;
   const isWaiting = message.status === "streaming" && !isThinking && !hasContent;
@@ -123,7 +124,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
               messageId={message.id}
               feedback={message.feedback ?? null}
               content={message.content}
-              alwaysVisible={Boolean(isLast)}
+              alwaysVisible
             />
           ) : null}
         </div>

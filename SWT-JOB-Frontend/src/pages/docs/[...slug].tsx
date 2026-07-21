@@ -11,13 +11,30 @@ import { prepareDocPage } from "../../lib/docs/headings";
 import { DOC_SLUG_REDIRECTS } from "../../lib/docs/redirects";
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const paths = await getAllDocPaths();
-  const docPaths = paths
-    .filter((slug) => slug.length > 0)
+  /** Vercel 默认不全量预渲染文档页，缩短构建；首访按需 ISR（fallback: blocking） */
+  const fullPrebuild = process.env.DOCS_FULL_PREBUILD === "1";
+  const allSlugs = await getAllDocPaths();
+  const docPaths = allSlugs.filter((slug) => slug.length > 0);
+
+  if (fullPrebuild) {
+    return {
+      paths: docPaths.map((slug) => ({ params: { slug } })),
+      fallback: "blocking",
+    };
+  }
+
+  const prebuildKeys = new Set([
+    "journey",
+    "apply/timeline",
+    "apply/interview",
+    "living/work-rules",
+  ]);
+  const hotPaths = docPaths
+    .filter((slug) => prebuildKeys.has(slug.join("/")))
     .map((slug) => ({ params: { slug } }));
 
   return {
-    paths: docPaths,
+    paths: hotPaths,
     fallback: "blocking",
   };
 };

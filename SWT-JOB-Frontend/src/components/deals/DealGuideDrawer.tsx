@@ -21,6 +21,7 @@ import {
   type ResolvedProgram,
 } from '../../lib/deals/deal-utils';
 import type { ReferralProgram } from '../../data/referralDeals';
+import { openExternalUrl } from '../../lib/openExternalUrl';
 
 function pickLang(obj: { zh: string; en: string }, lang: Language) {
   return lang === 'zh' ? obj.zh : obj.en;
@@ -71,8 +72,8 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
   }, [open]);
 
   const handleConfirmExternal = () => {
-    if (externalLink) {
-      window.open(externalLink.url, '_blank', 'noopener,noreferrer');
+    if (externalLink?.url) {
+      openExternalUrl(externalLink.url);
     }
     setExternalLink(null);
   };

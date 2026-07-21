@@ -4,19 +4,9 @@ import * as React from "react";
 import { MessageSquare, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { listDemoConversations, type DemoConversation } from "@/services/demoConversationService";
+import type { DemoConversation } from "@/services/demoConversationService";
+import { resolveDemoConversations } from "@/lib/demoConversations";
 import { useAuthStore } from "@/stores/authStore";
-
-const STATIC_DEMOS: DemoConversation[] = [
-  {
-    id: "static-1",
-    title: "岗位是夯还是拉？",
-    description: "网感粗评 offer",
-    question: "帮我评一下我的 SWT 岗位是夯还是拉……",
-    answer: "（示例）登录并从数据库加载完整对话；部署后请在服务器执行 seed_demo_conversations_zh.sql。",
-    pinned: 1,
-  },
-];
 
 function renderAnswer(text: string) {
   return text.split("\n").map((line, i) => (
@@ -34,13 +24,12 @@ export function DemoConversationsPanel() {
 
   React.useEffect(() => {
     let ok = true;
-    listDemoConversations()
+    resolveDemoConversations()
       .then((data) => {
-        if (ok && data?.length) setItems(data);
-        else if (ok) setItems(STATIC_DEMOS);
+        if (ok && data.length) setItems(data);
       })
       .catch(() => {
-        if (ok) setItems(STATIC_DEMOS);
+        if (ok) setItems([]);
       });
     return () => {
       ok = false;
@@ -98,7 +87,7 @@ export function DemoConversationsPanel() {
         示例对话
         <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
       </div>
-      <p className="mt-2 text-center text-xs text-neutral-500">点击可预览问答；登录后可问你的真实情况</p>
+      <p className="mt-2 text-center text-xs text-neutral-500">也可在左侧列表点开完整问答；登录后可问你的真实情况</p>
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {items.map((item) => (
           <button

@@ -48,10 +48,19 @@ GOOGLE_CLIENT_SECRET=客户端密钥
 
 `GOOGLE_CLIENT_SECRET` 仅后端验证扩展接口时使用；当前实现用 `tokeninfo` 校验 `idToken`，**必须配置 `GOOGLE_CLIENT_ID`**。
 
-重启后端：
+重启后端（**代码更新后必须重新编译 jar**）：
 
 ```bash
-./server.sh restart backend --force
+./server.sh restart backend --build --force
+```
+
+若日志出现 `No static resource auth/google` 或前端提示「系统执行出错」，说明仍在运行**旧 jar**（未包含 Google 登录与 demo-conversations 接口），请执行上述命令。
+
+Google **redirect 模式**还需在 Console 增加重定向 URI：
+
+```
+https://swtjob.vercel.app/api/auth/google-callback
+http://localhost:3000/api/auth/google-callback
 ```
 
 ## 3. 验证

@@ -6,9 +6,6 @@ import { useAuthStore } from "@/stores/authStore";
 
 type RagentProvidersProps = {
   children: ReactNode;
-  /**
-   * 嵌入主站时：不写 body[data-app=ragent]，主题与配色由主站 AppThemeProvider 统一提供。
-   */
   embedded?: boolean;
 };
 

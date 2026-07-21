@@ -28,6 +28,10 @@ export interface Session {
   id: string;
   title: string;
   lastTime?: string;
+  /** 侧栏副标题（示例对话摘要） */
+  preview?: string;
+  /** 访客示例会话，非用户真实历史 */
+  isDemo?: boolean;
 }
 
 export interface Message {

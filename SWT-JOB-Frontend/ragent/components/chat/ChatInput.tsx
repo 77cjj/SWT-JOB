@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
+import { useDeepThinkingAvailable } from "@/hooks/useDeepThinkingAvailable";
 
 export function ChatInput() {
   const { t } = useI18n();
+  const deepThinkingAvailable = useDeepThinkingAvailable();
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
   const isComposingRef = React.useRef(false);
@@ -107,6 +109,7 @@ export function ChatInput() {
           />
         </div>
         <div className="relative mt-2 flex items-center">
+          {deepThinkingAvailable ? (
           <button
             type="button"
             onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
@@ -128,6 +131,7 @@ export function ChatInput() {
               ) : null}
             </span>
           </button>
+          ) : null}
           <button
             type="button"
             onClick={handleSubmit}
@@ -146,7 +150,7 @@ export function ChatInput() {
           </button>
         </div>
       </div>
-      {deepThinkingEnabled ? (
+      {deepThinkingAvailable && deepThinkingEnabled ? (
         <p className="text-xs text-indigo-700 dark:text-indigo-400">
           <span className="inline-flex items-center gap-1.5">
             <Lightbulb className="h-3.5 w-3.5" />

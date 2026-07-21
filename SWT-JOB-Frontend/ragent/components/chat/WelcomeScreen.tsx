@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
+import { useDeepThinkingAvailable } from "@/hooks/useDeepThinkingAvailable";
 
 type PromptPreset = {
   id?: string;
@@ -35,6 +36,7 @@ export function WelcomeScreen() {
   const [isFocused, setIsFocused] = React.useState(false);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const deepThinkingAvailable = useDeepThinkingAvailable();
   const { sendMessage, isStreaming, cancelGeneration, deepThinkingEnabled, setDeepThinkingEnabled } =
     useChatStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -146,6 +148,7 @@ export function WelcomeScreen() {
               />
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
+              {deepThinkingAvailable ? (
               <button
                 type="button"
                 onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
@@ -167,6 +170,7 @@ export function WelcomeScreen() {
                   ) : null}
                 </span>
               </button>
+              ) : null}
               <button
                 type="button"
                 onClick={handleSubmit}
@@ -185,7 +189,7 @@ export function WelcomeScreen() {
               </button>
             </div>
           </div>
-          {deepThinkingEnabled ? (
+          {deepThinkingAvailable && deepThinkingEnabled ? (
             <p className="mt-3 text-xs text-indigo-700 dark:text-indigo-400">
               <span className="inline-flex items-center gap-1.5">
                 <Lightbulb className="h-3.5 w-3.5" />

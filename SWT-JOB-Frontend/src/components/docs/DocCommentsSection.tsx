@@ -21,7 +21,9 @@ import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import SendIcon from '@mui/icons-material/Send';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import { formatCommentProgramLabel, getCommentsForDoc } from '../../lib/docs/comments/demoComments';
+import type { CommentContextKind } from '../../lib/comments/commentContext';
+import { getCommentsForContext } from '../../lib/comments/getCommentsForContext';
+import { formatCommentProgramLabel } from '../../lib/docs/comments/demoComments';
 import { getDemoMember } from '../../lib/member/demoUsers';
 import {
   canSubmitCommentNow,
@@ -48,7 +50,6 @@ const MAX_DEPTH = 6;
 function CommentRow({
   node,
   depth,
-  docSlug,
   votes,
   onVoteChange,
   replyToId,
@@ -57,7 +58,6 @@ function CommentRow({
 }: {
   node: CommentNode;
   depth: number;
-  docSlug: string;
   votes: { likes: Set<string>; dislikes: Set<string> };
   onVoteChange: () => void;
   replyToId: string | null;
@@ -253,7 +253,6 @@ function CommentRow({
             key={child.id}
             node={child}
             depth={depth + 1}
-            docSlug={docSlug}
             votes={votes}
             onVoteChange={onVoteChange}
             replyToId={replyToId}
@@ -266,7 +265,12 @@ function CommentRow({
   );
 }
 
-export function DocCommentsSection({ docSlug }: { docSlug: string }) {
+export type CommentsSectionProps = {
+  contextKind: CommentContextKind;
+  contextId: string;
+};
+
+export function CommentsSection({ contextKind, contextId }: CommentsSectionProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
 
@@ -281,16 +285,16 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
   }, [localVersion]);
 
   const forest = useMemo(() => {
-    const base = getCommentsForDoc(docSlug);
-    const merged = mergeComments(base, docSlug);
+    const base = getCommentsForContext(contextKind, contextId);
+    const merged = mergeComments(base, contextKind, contextId);
     void localVersion;
     return buildCommentForest(merged, sort, votes.likes, votes.dislikes);
-  }, [docSlug, sort, votes.likes, votes.dislikes, localVersion]);
+  }, [contextKind, contextId, sort, votes.likes, votes.dislikes, localVersion]);
 
   const totalCount = useMemo(() => {
-    const base = getCommentsForDoc(docSlug);
-    return mergeComments(base, docSlug).length;
-  }, [docSlug, localVersion]);
+    const base = getCommentsForContext(contextKind, contextId);
+    return mergeComments(base, contextKind, contextId).length;
+  }, [contextKind, contextId, localVersion]);
 
   const inputPlaceholder = totalCount === 0 ? '暂无评论' : '写下你的评论…';
 
@@ -309,7 +313,7 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
     void createIdempotencyKey('comment');
     appendLocalComment({
       id: `local-${Date.now()}`,
-      docSlug,
+      ...(contextKind === 'doc' ? { docSlug: contextId } : { dealId: contextId }),
       userId,
       body,
       programYear: '2025',
@@ -335,7 +339,7 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
     void createIdempotencyKey('reply');
     appendLocalReply(parentId, {
       id: `local-r-${Date.now()}`,
-      docSlug,
+      ...(contextKind === 'doc' ? { docSlug: contextId } : { dealId: contextId }),
       userId,
       body,
       programYear: '2025',
@@ -349,7 +353,7 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
     bump();
   };
 
-  if (!docSlug) return null;
+  if (!contextId) return null;
 
   return (
     <Box sx={{ mt: 6, width: '100%' }}>
@@ -435,7 +439,6 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
               key={node.id}
               node={node}
               depth={0}
-              docSlug={docSlug}
               votes={votes}
               onVoteChange={bump}
               replyToId={replyToId}
@@ -447,4 +450,12 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
       )}
     </Box>
   );
+}
+
+export function DocCommentsSection({ docSlug }: { docSlug: string }) {
+  return <CommentsSection contextKind="doc" contextId={docSlug} />;
+}
+
+export function DealCommentsSection({ dealId }: { dealId: string }) {
+  return <CommentsSection contextKind="deal" contextId={dealId} />;
 }

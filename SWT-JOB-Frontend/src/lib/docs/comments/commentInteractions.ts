@@ -1,5 +1,11 @@
+import type { CommentContextKind } from '../../comments/commentContext';
 import type { DocComment } from './demoComments';
 import { createIdempotencyKey, flushCommentVoteQueue, type PostCommentVoteBody } from './commentApiContract';
+
+function commentMatchesContext(c: DocComment, kind: CommentContextKind, contextId: string): boolean {
+  if (kind === 'doc') return c.docSlug === contextId;
+  return c.dealId === contextId;
+}
 
 const LIKES_KEY = 'swt-doc-comment-likes';
 const DISLIKES_KEY = 'swt-doc-comment-dislikes';
@@ -99,9 +105,18 @@ export function appendLocalReply(parentId: string, comment: LocalDocComment) {
   appendLocalComment({ ...comment, parentId });
 }
 
-export function mergeComments(base: DocComment[], docSlug: string): DocComment[] {
-  const local = readLocalComments().filter((c) => c.docSlug === docSlug);
-  return [...local, ...base.filter((c) => c.docSlug === docSlug)];
+export function mergeComments(
+  base: DocComment[],
+  kind: CommentContextKind,
+  contextId: string,
+): DocComment[] {
+  const local = readLocalComments().filter((c) => commentMatchesContext(c, kind, contextId));
+  return [...local, ...base.filter((c) => commentMatchesContext(c, kind, contextId))];
+}
+
+/** @deprecated use mergeComments(base, 'doc', slug) */
+export function mergeCommentsForDoc(base: DocComment[], docSlug: string): DocComment[] {
+  return mergeComments(base, 'doc', docSlug);
 }
 
 export function displayLikeCount(comment: DocComment, likes: Set<string>): number {

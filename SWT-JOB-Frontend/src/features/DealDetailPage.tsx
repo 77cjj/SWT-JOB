@@ -14,6 +14,7 @@ import { ArrowBack, OpenInNew } from '@mui/icons-material';
 
 import ExternalLinkDialog from '../components/deals/ExternalLinkDialog';
 import DealHistoryDialog from '../components/deals/DealHistoryDialog';
+import { DealCommentsSection } from '../components/docs/DocCommentsSection';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
 import {
@@ -204,6 +205,8 @@ export default function DealDetailPage() {
           {t('deals.disclaimer')}
         </Typography>
       </Stack>
+
+      <DealCommentsSection dealId={program.id} />
 
       <DealHistoryDialog
         open={historyOpen}

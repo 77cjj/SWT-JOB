@@ -1,6 +1,9 @@
 export type DocComment = {
   id: string;
-  docSlug: string;
+  /** 文档 slug（文档评论） */
+  docSlug?: string;
+  /** 薅羊毛 program id（项目评论） */
+  dealId?: string;
   userId: string;
   body: string;
   programYear: string;
@@ -218,6 +221,8 @@ export const DEMO_DOC_COMMENTS: DocComment[] = [
 export function getCommentsForDoc(slug: string): DocComment[] {
   return DEMO_DOC_COMMENTS.filter((c) => c.docSlug === slug);
 }
+
+/** @deprecated use getCommentsForContext from lib/comments */
 
 export function formatCommentProgramLabel(comment: DocComment): string {
   const week = comment.workWeek?.trim();

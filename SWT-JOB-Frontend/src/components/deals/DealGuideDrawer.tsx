@@ -13,6 +13,7 @@ import { Close, OpenInNew } from '@mui/icons-material';
 
 import ExternalLinkDialog from './ExternalLinkDialog';
 import DealHistoryDialog from './DealHistoryDialog';
+import { DealCommentsSection } from '../docs/DocCommentsSection';
 import { useI18n } from '../../context/I18nContext';
 import type { Language } from '../../i18n/types';
 import {
@@ -208,6 +209,8 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
               <Typography variant="caption" color="text.secondary">
                 {t('deals.disclaimer')}
               </Typography>
+
+              <DealCommentsSection dealId={program.id} />
             </Stack>
           </Box>
         </Stack>

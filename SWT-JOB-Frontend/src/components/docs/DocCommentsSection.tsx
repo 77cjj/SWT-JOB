@@ -9,6 +9,8 @@ import {
   ButtonGroup,
   Chip,
   Divider,
+  IconButton,
+  InputAdornment,
   Paper,
   Stack,
   TextField,
@@ -16,14 +18,25 @@ import {
 } from '@mui/material';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import { getCommentsForDoc } from '../../lib/docs/comments/demoComments';
+import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import SendIcon from '@mui/icons-material/Send';
+import { formatCommentProgramLabel, getCommentsForDoc } from '../../lib/docs/comments/demoComments';
 import { getDemoMember } from '../../lib/member/demoUsers';
+import {
+  canSubmitCommentNow,
+  createIdempotencyKey,
+  markCommentSubmitted,
+} from '../../lib/docs/comments/commentApiContract';
 import {
   appendLocalComment,
   mergeComments,
-  readLikedCommentIds,
+  readUserVotes,
   sortComments,
+  toggleCommentDislike,
   toggleCommentLike,
+  displayDislikeCount,
+  displayLikeCount,
   type CommentSort,
 } from '../../lib/docs/comments/commentInteractions';
 import { useAuthStore } from '@/stores/authStore';
@@ -33,29 +46,42 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
   const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
 
   const [sort, setSort] = useState<CommentSort>('latest');
-  const [liked, setLiked] = useState<Set<string>>(() => new Set());
+  const [votes, setVotes] = useState(() => readUserVotes());
   const [localVersion, setLocalVersion] = useState(0);
   const [draft, setDraft] = useState('');
-  const [composeOpen, setComposeOpen] = useState(false);
 
   useEffect(() => {
-    setLiked(readLikedCommentIds());
+    setVotes(readUserVotes());
   }, [localVersion]);
 
   const comments = useMemo(() => {
     const base = getCommentsForDoc(docSlug);
     const merged = mergeComments(base, docSlug);
     void localVersion;
-    return sortComments(merged, sort, liked);
-  }, [docSlug, sort, liked, localVersion]);
+    return sortComments(merged, sort, votes.likes, votes.dislikes);
+  }, [docSlug, sort, votes.likes, votes.dislikes, localVersion]);
+
+  const inputPlaceholder = comments.length === 0 ? '暂无评论' : '写下你的评论…';
 
   const handleLike = useCallback(
     (commentId: string) => {
       if (!isAuthenticated) {
-        openLoginDialog('登录后即可为经验补充点赞');
+        openLoginDialog('登录后即可点赞');
         return;
       }
-      setLiked(toggleCommentLike(commentId));
+      setVotes(toggleCommentLike(commentId));
+      setLocalVersion((v) => v + 1);
+    },
+    [isAuthenticated, openLoginDialog],
+  );
+
+  const handleDislike = useCallback(
+    (commentId: string) => {
+      if (!isAuthenticated) {
+        openLoginDialog('登录后即可点踩');
+        return;
+      }
+      setVotes(toggleCommentDislike(commentId));
       setLocalVersion((v) => v + 1);
     },
     [isAuthenticated, openLoginDialog],
@@ -65,11 +91,13 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
     const body = draft.trim();
     if (!body) return;
     if (!isAuthenticated) {
-      openLoginDialog('登录后即可发表经验补充');
+      openLoginDialog('登录后即可发表评论');
       return;
     }
+    if (!canSubmitCommentNow()) return;
     const user = useAuthStore.getState().user;
     const userId = user?.userId?.startsWith('u-') ? user.userId : 'u-maya-2025';
+    void createIdempotencyKey('comment');
     appendLocalComment({
       id: `local-${Date.now()}`,
       docSlug,
@@ -78,11 +106,12 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
       programYear: '2025',
       workState: '—',
       helpfulCount: 0,
+      dislikeCount: 0,
       createdAt: new Date().toISOString().slice(0, 10),
       local: true,
     });
+    markCommentSubmitted();
     setDraft('');
-    setComposeOpen(false);
     setLocalVersion((v) => v + 1);
   };
 
@@ -101,14 +130,9 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
           mb: 2,
         }}
       >
-        <Box>
-          <Typography variant="h6" fontWeight={700}>
-            经验补充
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            来自 SWT 同学的脱敏反馈；点头像进入个人主页联系或查看更多贡献。
-          </Typography>
-        </Box>
+        <Typography variant="h6" fontWeight={700}>
+          评论区
+        </Typography>
         <ButtonGroup size="small" variant="outlined">
           <Button variant={sort === 'latest' ? 'contained' : 'outlined'} onClick={() => setSort('latest')}>
             最新
@@ -119,30 +143,65 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
         </ButtonGroup>
       </Box>
 
+      <Paper variant="outlined" sx={{ p: 1.5, mb: 3 }}>
+        <TextField
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={6}
+          placeholder={inputPlaceholder}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              submitComment();
+            }
+          }}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end" sx={{ alignSelf: 'flex-end', pb: 0.5 }}>
+                  <IconButton
+                    color="primary"
+                    aria-label="发送评论"
+                    onClick={submitComment}
+                    disabled={!draft.trim()}
+                  >
+                    <SendIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{ '& .MuiInputBase-root': { alignItems: 'flex-end' } }}
+        />
+      </Paper>
+
       {comments.length === 0 ? (
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            暂无评论，欢迎成为第一个补充经验的人。
-          </Typography>
-        </Paper>
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          暂无评论
+        </Typography>
       ) : (
         <Stack spacing={2}>
           {comments.map((comment) => {
             const member = getDemoMember(comment.userId);
             const displayName = member?.displayName ?? comment.userId;
             const avatarColor = member?.avatarColor ?? '#64748b';
-            const likedByMe = liked.has(comment.id);
-            const helpfulDisplay = comment.helpfulCount + (likedByMe ? 1 : 0);
+            const likedByMe = votes.likes.has(comment.id);
+            const dislikedByMe = votes.dislikes.has(comment.id);
+            const likeCount = displayLikeCount(comment, votes.likes);
+            const dislikeCount = displayDislikeCount(comment, votes.dislikes);
 
             return (
               <Paper key={comment.id} variant="outlined" sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                   <Avatar
-                    component={Link}
-                    href={member ? `/u/${member.id}` : '#'}
+                    component={member ? Link : 'span'}
+                    href={member ? `/u/${member.id}` : undefined}
                     sx={{
-                      width: 40,
-                      height: 40,
+                      width: 44,
+                      height: 44,
                       bgcolor: avatarColor,
                       cursor: member ? 'pointer' : 'default',
                       fontSize: '1rem',
@@ -152,15 +211,7 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
                     {displayName.slice(0, 1)}
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 0.5,
-                      }}
-                    >
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 0.75 }}>
                       <Typography
                         component={member ? Link : 'span'}
                         href={member ? `/u/${member.id}` : undefined}
@@ -174,53 +225,45 @@ export function DocCommentsSection({ docSlug }: { docSlug: string }) {
                       >
                         {displayName}
                       </Typography>
-                      <Chip size="small" label={`${comment.programYear} · ${comment.workState}`} variant="outlined" />
+                      <Chip
+                        size="small"
+                        label={formatCommentProgramLabel(comment)}
+                        variant="outlined"
+                        sx={{ height: 22, fontSize: '0.7rem' }}
+                      />
                       <Typography variant="caption" color="text.secondary">
                         {comment.createdAt}
                       </Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.7, mb: 1 }}>
                       {comment.body}
                     </Typography>
-                    <Button
-                      size="small"
-                      startIcon={likedByMe ? <ThumbUpIcon /> : <ThumbUpOutlinedIcon />}
-                      onClick={() => handleLike(comment.id)}
-                      sx={{ mt: 0.75, minWidth: 0, color: likedByMe ? 'primary.main' : 'text.secondary' }}
-                    >
-                      {helpfulDisplay} 人觉得有帮助
-                    </Button>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Button
+                        size="small"
+                        startIcon={likedByMe ? <ThumbUpIcon fontSize="small" /> : <ThumbUpOutlinedIcon fontSize="small" />}
+                        onClick={() => handleLike(comment.id)}
+                        sx={{ minWidth: 0, color: likedByMe ? 'primary.main' : 'text.secondary' }}
+                      >
+                        {likeCount}
+                      </Button>
+                      <Button
+                        size="small"
+                        startIcon={
+                          dislikedByMe ? <ThumbDownIcon fontSize="small" /> : <ThumbDownOutlinedIcon fontSize="small" />
+                        }
+                        onClick={() => handleDislike(comment.id)}
+                        sx={{ minWidth: 0, color: dislikedByMe ? 'error.main' : 'text.secondary' }}
+                      >
+                        {dislikeCount}
+                      </Button>
+                    </Stack>
                   </Box>
                 </Box>
               </Paper>
             );
           })}
         </Stack>
-      )}
-
-      {composeOpen ? (
-        <Box sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            multiline
-            minRows={3}
-            placeholder="分享你的真实经历（请勿泄露雇主全名与个人隐私）"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-            <Button variant="contained" size="small" onClick={submitComment}>
-              发布
-            </Button>
-            <Button size="small" onClick={() => setComposeOpen(false)}>
-              取消
-            </Button>
-          </Stack>
-        </Box>
-      ) : (
-        <Button size="small" sx={{ mt: 2 }} variant="outlined" onClick={() => setComposeOpen(true)}>
-          写一条经验补充
-        </Button>
       )}
     </Box>
   );

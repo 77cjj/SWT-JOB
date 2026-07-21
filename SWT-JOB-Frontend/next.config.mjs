@@ -31,6 +31,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  /** Vercel 构建不跑 ESLint（CI/本地仍用 npm run lint） */
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       {

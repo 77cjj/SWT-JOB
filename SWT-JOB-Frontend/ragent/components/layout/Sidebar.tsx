@@ -82,6 +82,18 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
   }, [query, sessions, t]);
 
   const groupedSessions = React.useMemo(() => {
+    const guestDemoList =
+      !isAuthenticated && filteredSessions.length > 0 && filteredSessions.every((s) => isDemoSessionId(s.id));
+
+    if (guestDemoList) {
+      return [
+        {
+          label: t("chat.demoSessionsGroup"),
+          items: filteredSessions,
+        },
+      ];
+    }
+
     const now = new Date();
     const groups = new Map<string, typeof filteredSessions>();
     const order: string[] = [];
@@ -109,7 +121,7 @@ export function Sidebar({ isOpen, onClose, hideUserMenu = false }: SidebarProps)
       label,
       items: groups.get(label) || []
     }));
-  }, [filteredSessions, t]);
+  }, [filteredSessions, t, isAuthenticated]);
 
   React.useEffect(() => {
     if (renamingId) {

@@ -21,11 +21,14 @@ import { MemberTrustCardBody } from '../../components/member/MemberTrustCard';
 import { DEMO_DOC_COMMENTS } from '../../lib/docs/comments/demoComments';
 import { historicalJobsData } from '../../data/historicalJobs';
 import { useAuthStore } from '@/stores/authStore';
+import { useSupportWidgetStore } from '../../stores/supportWidgetStore';
 
 export default function UserProfilePage() {
   const router = useRouter();
   const isMobile = useDevice();
   const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const requestSupportOpen = useSupportWidgetStore((s) => s.requestOpen);
   const userId = typeof router.query.userId === 'string' ? router.query.userId : '';
   const member = userId ? getDemoMember(userId) : null;
 
@@ -39,6 +42,16 @@ export default function UserProfilePage() {
       )
     : [];
 
+  const openContactMember = () => {
+    if (!member) return;
+    const prefill = `想联系用户 ${member.displayName}（${member.id}）：\n`;
+    if (!isAuthenticated) {
+      openLoginDialog('登录后可留言，站长会协助转发联系该用户');
+      return;
+    }
+    requestSupportOpen('human', prefill);
+  };
+
   const content = (
     <Container maxWidth="sm" sx={{ py: 4 }}>
       {!member ? (
@@ -51,16 +64,16 @@ export default function UserProfilePage() {
               <Button
                 variant="contained"
                 startIcon={<ChatBubbleOutlineIcon />}
-                component={Link}
-                href={`/chat?contact=${encodeURIComponent(member.id)}`}
+                onClick={openContactMember}
               >
-                站内联系（AI / 私信占位）
+                {isAuthenticated ? '发消息（经站长转发）' : '登录后发消息'}
               </Button>
               <Button
                 variant="outlined"
-                onClick={() => openLoginDialog('登录后可向该用户发送站内消息（正式版）')}
+                component={Link}
+                href={`/chat?contact=${encodeURIComponent(member.id)}`}
               >
-                登录后发消息
+                在 AI 问答页留言
               </Button>
             </Stack>
           </Paper>

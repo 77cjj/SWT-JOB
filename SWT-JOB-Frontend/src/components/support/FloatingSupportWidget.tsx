@@ -28,6 +28,8 @@ import { RAGENT_API_BASE_URL, RAGENT_BYPASS_AUTH } from '@/config/runtimeEnv';
 import { buildQuery } from '@/utils/helpers';
 import { storage } from '@/utils/storage';
 import { useAuthStore } from '@/stores/authStore';
+import { useSupportWidgetStore } from '../../stores/supportWidgetStore';
+import { getDemoMember } from '../../lib/member/demoUsers';
 import { useI18n } from '../../context/I18nContext';
 import useDevice from '../../hooks/useDevice';
 import { MOBILE_BOTTOM_NAV_OFFSET } from '../../lib/mobileLayout';
@@ -42,10 +44,19 @@ type ChatLine = {
 
 function shouldHideWidget(pathname: string) {
   if (pathname === '/') return true;
-  if (pathname.startsWith('/chat')) return true;
   if (pathname.startsWith('/login')) return true;
   if (pathname.startsWith('/admin')) return true;
   return false;
+}
+
+function fabBottomOffset(pathname: string, isMobile: boolean): number | string {
+  if (pathname.startsWith('/chat')) {
+    if (isMobile) {
+      return 'calc(5rem + env(safe-area-inset-bottom, 0px) + 5.5rem)';
+    }
+    return 96;
+  }
+  return isMobile ? MOBILE_BOTTOM_NAV_OFFSET : 20;
 }
 
 export default function FloatingSupportWidget() {
@@ -65,9 +76,42 @@ export default function FloatingSupportWidget() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
+  const openSignal = useSupportWidgetStore((s) => s.openSignal);
+  const widgetTab = useSupportWidgetStore((s) => s.tab);
+  const humanMessagePrefill = useSupportWidgetStore((s) => s.humanMessagePrefill);
   const isMobile = useDevice();
   const hidden = shouldHideWidget(router.pathname);
   const wechatHint = process.env.NEXT_PUBLIC_SITE_WECHAT_HINT?.trim();
+  const isChatRoute = router.pathname.startsWith('/chat');
+
+  useEffect(() => {
+    if (openSignal === 0) return;
+    setOpen(true);
+    setTab(widgetTab);
+    if (humanMessagePrefill) {
+      setHumanMessage(humanMessagePrefill);
+    }
+  }, [openSignal, widgetTab, humanMessagePrefill]);
+
+  useEffect(() => {
+    const raw = router.query.contact;
+    const contactId = typeof raw === 'string' ? raw.trim() : '';
+    if (!contactId || !router.isReady) return;
+    const member = getDemoMember(contactId);
+    if (!member) return;
+
+    const prefill = `想联系用户 ${member.displayName}（${member.id}）：\n`;
+    if (!isAuthenticated) {
+      openLoginDialog('登录后可留言，站长会协助转发联系');
+      return;
+    }
+    setOpen(true);
+    setTab('human');
+    setHumanMessage(prefill);
+    const { contact: _c, ...rest } = router.query;
+    void router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true });
+  }, [router.isReady, router.query.contact, router.pathname, isAuthenticated, openLoginDialog, router]);
 
   useEffect(() => {
     return () => abortRef.current?.();
@@ -178,7 +222,7 @@ export default function FloatingSupportWidget() {
       sx={{
         position: 'fixed',
         right: { xs: 16, sm: 20 },
-        bottom: isMobile ? MOBILE_BOTTOM_NAV_OFFSET : 20,
+        bottom: fabBottomOffset(router.pathname, isMobile),
         zIndex: 1400,
         display: 'flex',
         flexDirection: 'column',
@@ -330,7 +374,12 @@ export default function FloatingSupportWidget() {
       <Fab
         color="primary"
         aria-label={open ? t('support.close') : t('support.open')}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (isChatRoute && !open) {
+            setTab('human');
+          }
+          setOpen((v) => !v);
+        }}
         sx={{ flexShrink: 0 }}
       >
         {open ? <Close /> : <ChatBubbleOutline />}

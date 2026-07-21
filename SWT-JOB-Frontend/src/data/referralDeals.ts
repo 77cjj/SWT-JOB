@@ -131,6 +131,58 @@ export const referralPrograms: ReferralProgram[] = [
     },
   },
   {
+    id: 'moomoo',
+    category: 'other',
+    displayGroup: 'promo-other',
+    offerKind: 'refer',
+    brandName: { zh: 'Moomoo 富途', en: 'Moomoo' },
+    siteRebateLabel: {
+      zh: '平台奖励发放后返现一半（约 $5–75）',
+      en: '50% cashback after platform payout (~$5–75)',
+    },
+    editions: [
+      {
+        id: 'moomoo-2026-07',
+        validFrom: '2026-07-01',
+        validUntil: '2026-07-31',
+        reward: { zh: '开户/邀请奖励 + 本站返现', en: 'Signup/refer bonus + site cashback' },
+        summary: {
+          zh: '7 月 31 日前通过邀请链接或 Refer Code M69D3EMM 开户；平台奖励发放后本站承诺返现一半（约 $5–75 浮动，以实际发放为准）。',
+          en: 'Sign up via link or code M69D3EMM by Jul 31; site rebates 50% after platform pays (~$5–75, varies).',
+        },
+        requirements: {
+          zh: [
+            '邀请链接：https://j.moomoo.com/0ER7nH',
+            'Refer Code：M69D3EMM（7/31 前有效）',
+            '完成 Moomoo 官方开户/邀请任务并领取平台奖励',
+            '本站于平台奖励到账后返现一半（约 $5–75，浮动）',
+          ],
+          en: [
+            'Referral: https://j.moomoo.com/0ER7nH',
+            'Code M69D3EMM (valid through Jul 31)',
+            'Complete official Moomoo offer and receive platform reward',
+            'Site pays 50% cashback after platform payout (~$5–75)',
+          ],
+        },
+        referralUrl: 'https://j.moomoo.com/0ER7nH',
+        officialUrl: 'https://www.moomoo.com/',
+        tags: { zh: ['Refer M69D3EMM', '7/31 截止'], en: ['Code M69D3EMM', 'Until Jul 31'] },
+      },
+    ],
+    howToClaim: {
+      zh: [
+        '点击本站「打开邀请链接」或手动输入 Refer Code M69D3EMM 完成注册。',
+        '按 Moomoo 官方规则完成开户/邀请任务并等待平台奖励发放。',
+        '平台奖励到账后联系站长或按市集说明领取本站返现一半（约 $5–75）。',
+      ],
+      en: [
+        'Open the referral link or enter code M69D3EMM at signup.',
+        'Complete Moomoo requirements and receive the platform bonus.',
+        'After platform payout, claim 50% site cashback (~$5–75).',
+      ],
+    },
+  },
+  {
     id: 'chime',
     category: 'bank',
     displayGroup: 'bank-neobank',

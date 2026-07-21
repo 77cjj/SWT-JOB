@@ -81,7 +81,7 @@ export default function HomeExperience() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ pt: 0, pb: 4 }}>
+    <Container maxWidth="xl" sx={{ pt: { xs: 0, md: 0 }, pb: 4, px: { xs: 0, sm: 2 } }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
         <IncomeHero
           income={preview?.income ?? null}

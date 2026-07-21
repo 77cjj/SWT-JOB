@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -22,6 +22,7 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Autocomplete,
 } from '@mui/material';
 import {
   AccountBalanceWallet,
@@ -102,7 +103,7 @@ function fmtUsd(n: number) {
 }
 
 export default function MarketplacePage({ embedded = false }: { embedded?: boolean }) {
-  const { t, tWithParams } = useI18n();
+  const { t, tWithParams, language } = useI18n();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const {
     fetchListings,
@@ -290,7 +291,17 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     }
   };
 
-  const brandOptions = referralPrograms.map((p) => p.id);
+  const brandOptions = useMemo(() => {
+    const fromPrograms = referralPrograms.flatMap((p) => [
+      p.brandName.zh,
+      p.brandName.en,
+      p.id,
+    ]);
+    const fromListings = listings.map((l) => l.brand).filter((b): b is string => Boolean(b));
+    return [...new Set([...fromPrograms, ...fromListings])].sort((a, b) =>
+      a.localeCompare(b, language === 'zh' ? 'zh-CN' : 'en'),
+    );
+  }, [listings, language]);
 
   const showLoadingBar =
     loading &&
@@ -696,14 +707,22 @@ function CreateListingDialog({
 
         {createType === 'refer' ? (
           <>
-            <FormControl size="small" fullWidth>
-              <InputLabel>{t('marketplace.fieldBrand')}</InputLabel>
-              <Select label={t('marketplace.fieldBrand')} value={form.brand} onChange={(e) => set('brand', e.target.value)}>
-                {brandOptions.map((b) => (
-                  <MenuItem key={b} value={b}>{b}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              freeSolo
+              options={brandOptions}
+              value={form.brand}
+              onInputChange={(_, value) => set('brand', value)}
+              onChange={(_, value) => set('brand', typeof value === 'string' ? value : value ?? '')}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t('marketplace.fieldBrand')}
+                  size="small"
+                  placeholder={t('marketplace.fieldBrand')}
+                  helperText="可自填品牌，或选择与官方精选相同的项目"
+                />
+              )}
+            />
             <TextField label={t('marketplace.fieldReferLink')} value={form.referLink} onChange={(e) => set('referLink', e.target.value)} size="small" fullWidth />
             <TextField label={t('marketplace.fieldReferCode')} value={form.referCode} onChange={(e) => set('referCode', e.target.value)} size="small" fullWidth />
             <TextField label={t('marketplace.fieldCashback')} value={form.buyerCashback} onChange={(e) => set('buyerCashback', e.target.value)} size="small" type="number" />

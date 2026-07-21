@@ -39,7 +39,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SampleQuestionServiceImpl implements SampleQuestionService {
 
-    private static final int DEFAULT_LIMIT = 3;
+    private static final int DEFAULT_LIMIT = 12;
 
     private final SampleQuestionMapper sampleQuestionMapper;
 

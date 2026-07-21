@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import Link from "next/link";
 import { Eye, EyeOff, Lock, User, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAuthStore } from "@/stores/authStore";
 
 export function LoginDialog() {
@@ -41,12 +42,7 @@ export function LoginDialog() {
     }
   };
 
-  const handleGoogleSuccess = async (response: CredentialResponse) => {
-    const idToken = response.credential;
-    if (!idToken) {
-      toast.error("Google 登录失败：未返回凭证");
-      return;
-    }
+  const handleGoogleSuccess = async (idToken: string) => {
     try {
       await googleLogin(idToken);
       closeLoginDialog();
@@ -57,7 +53,21 @@ export function LoginDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? handleClose() : undefined)}>
-      <DialogContent className="max-w-md rounded-2xl border-border/70 bg-background/95 p-0 shadow-xl backdrop-blur">
+      <DialogContent
+        className="max-w-md rounded-2xl border-border/70 bg-background/95 p-0 shadow-xl backdrop-blur"
+        onPointerDownOutside={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.closest("[data-google-signin]") || target?.closest('iframe[src*="accounts.google.com"]')) {
+            event.preventDefault();
+          }
+        }}
+        onInteractOutside={(event) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.closest("[data-google-signin]") || target?.closest('iframe[src*="accounts.google.com"]')) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader className="relative space-y-2 px-6 pt-6 text-left">
           <button
             type="button"
@@ -75,18 +85,15 @@ export function LoginDialog() {
 
         <div className="space-y-4 px-6 pb-6 pt-2">
           {GOOGLE_CLIENT_ID ? (
-            <div className="flex justify-center [&>div]:w-full [&>div>div]:!w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Google 登录失败")}
-                useOneTap={false}
-                theme="outline"
-                size="large"
-                width="320"
-                text="signin_with"
-                shape="rectangular"
-              />
-            </div>
+            <>
+              <GoogleSignInButton width={280} onCredential={handleGoogleSuccess} />
+              <p className="text-center text-xs text-muted-foreground">
+                若按钮无反应，可能被浏览器拦截弹窗。
+                <Link href="/login" className="ml-1 text-indigo-600 underline" onClick={() => closeLoginDialog()}>
+                  前往全屏登录页
+                </Link>
+              </p>
+            </>
           ) : (
             <p className="rounded-lg border border-dashed border-amber-300/70 bg-amber-50/80 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
               未配置 Google 登录（NEXT_PUBLIC_GOOGLE_CLIENT_ID）。请先在 Vercel 与后端 .env 配置 Client ID。

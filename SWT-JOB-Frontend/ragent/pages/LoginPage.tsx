@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
 import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
-import { toast } from "sonner";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 export function LoginPage() {
   const router = useRouter();
@@ -95,27 +94,21 @@ export function LoginPage() {
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {GOOGLE_CLIENT_ID ? (
-            <div className="flex justify-center py-1 [&>div]:w-full">
-              <GoogleLogin
-                onSuccess={async (response: CredentialResponse) => {
-                  if (!response.credential) {
-                    toast.error("Google 登录失败");
-                    return;
-                  }
+            <div className="space-y-2 py-1">
+              <GoogleSignInButton
+                width={320}
+                onCredential={async (idToken) => {
                   try {
-                    await googleLogin(response.credential);
+                    await googleLogin(idToken);
                     void router.push("/chat");
                   } catch {
-                    // handled in store
+                    // store toast
                   }
                 }}
-                onError={() => toast.error("Google 登录失败")}
-                useOneTap={false}
-                theme="outline"
-                size="large"
-                width="320"
-                text="signin_with"
               />
+              <p className="text-center text-xs text-muted-foreground">
+                请允许 pop-up；并在 Google Cloud 控制台授权当前站点域名（JavaScript 来源）。
+              </p>
             </div>
           ) : null}
           <Button type="submit" className="w-full" disabled={isLoading}>

@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Bot, Brain, Calculator, Gift, Lightbulb, MapPin, Send, Square } from "lucide-react";
+import { ArrowUpRight, BookOpen, Bot, Brain, Briefcase, Calculator, Gift, Lightbulb, MapPin, Plane, Receipt, Scale, Send, Shield, Sparkles, Square, TrendingUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { listSampleQuestions } from "@/services/sampleQuestionService";
@@ -16,37 +16,46 @@ type PromptPreset = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-const PRESET_ICONS = [BookOpen, MapPin, Calculator, Gift];
+const PRESET_ICONS = [
+  BookOpen,
+  Plane,
+  Briefcase,
+  MapPin,
+  Sparkles,
+  Calculator,
+  Gift,
+  Receipt,
+  Scale,
+  TrendingUp,
+  Shield,
+  Lightbulb,
+] as const;
+
+const PRESET_I18N_KEYS = [
+  "culture",
+  "preTrip",
+  "jobRating",
+  "destination",
+  "inCountry",
+  "wage",
+  "deals",
+  "taxRefund",
+  "postTrip",
+  "compliance",
+  "safety",
+  "compareTool",
+] as const;
 
 export function WelcomeScreen() {
   const { language, t, tWithParams } = useI18n();
   const defaultPresets = React.useMemo<PromptPreset[]>(
-    () => [
-      {
-        title: t("chat.presets.cultureTitle"),
-        description: t("chat.presets.cultureDescription"),
-        prompt: t("chat.presets.culturePrompt"),
-        icon: BookOpen
-      },
-      {
-        title: t("chat.presets.destinationTitle"),
-        description: t("chat.presets.destinationDescription"),
-        prompt: t("chat.presets.destinationPrompt"),
-        icon: MapPin
-      },
-      {
-        title: t("chat.presets.wageTitle"),
-        description: t("chat.presets.wageDescription"),
-        prompt: t("chat.presets.wagePrompt"),
-        icon: Calculator
-      },
-      {
-        title: t("chat.presets.dealsTitle"),
-        description: t("chat.presets.dealsDescription"),
-        prompt: t("chat.presets.dealsPrompt"),
-        icon: Gift
-      }
-    ],
+    () =>
+      PRESET_I18N_KEYS.map((key, index) => ({
+        title: t(`chat.presets.${key}Title`),
+        description: t(`chat.presets.${key}Description`),
+        prompt: t(`chat.presets.${key}Prompt`),
+        icon: PRESET_ICONS[index] ?? BookOpen,
+      })),
     [t]
   );
   const [value, setValue] = React.useState("");
@@ -94,7 +103,7 @@ export function WelcomeScreen() {
       }
       const mapped = data
         .filter((item) => item.question && item.question.trim())
-        .slice(0, 3)
+        .slice(0, 12)
         .map((item, index) => {
           const question = item.question.trim();
           const title =
@@ -110,7 +119,7 @@ export function WelcomeScreen() {
             icon: PRESET_ICONS[index % PRESET_ICONS.length]
           };
         });
-      if (mapped.length > 0) {
+      if (mapped.length >= 6) {
         setPromptPresets(mapped);
       }
     };
@@ -264,7 +273,7 @@ export function WelcomeScreen() {
             {t("chat.startFrom")}
             <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
           </div>
-          <div className="mt-5 mx-auto grid w-full max-w-full grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 mx-auto grid w-full max-w-full grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {promptPresets.map((preset) => {
               const Icon = preset.icon;
               return (

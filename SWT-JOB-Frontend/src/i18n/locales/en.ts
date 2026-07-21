@@ -84,20 +84,56 @@ export const en = {
     last30Days: 'Last 30 days',
     older: 'Older',
     presets: {
-      cultureTitle: 'US Culture & Workplace Basics',
-      cultureDescription: 'Communication, tipping, boundaries, and common mistakes for SWT daily life',
-      culturePrompt: 'I am a student preparing for SWT in the US. Please explain the cultural differences I should know in US workplaces and daily life, including communication, time expectations, tipping, and personal boundaries. Give me 6 practical tips I can use immediately.',
-      destinationTitle: 'Destination State & Culture',
-      destinationDescription: 'Understand climate, costs, transport, and local habits by state or city',
-      destinationPrompt: 'My SWT destination is [state or city, for example California / Orlando, FL]. Please summarize the climate, seasons, cost of living, transportation, safety, and local culture, then list 5 practical tips for adapting after arrival.',
-      wageTitle: 'Pay & Hours Estimate',
-      wageDescription: 'Describe the job, hours, and wage in plain language to estimate weekly pay',
-      wagePrompt: 'Based on common SWT work scenarios, please roughly estimate my weekly pay. My job type is [role], I expect about [X] hours per week, my pre-tax hourly wage is [Y] dollars, and tips are [yes/no]. Please also mention deductions or details I should verify with my employer contract, paystub, or official documents.',
+      cultureTitle: 'US culture & workplace',
+      cultureDescription: 'Communication, tipping, boundaries',
+      culturePrompt:
+        'I am preparing for SWT in the US. Explain workplace and daily-life cultural differences and give 6 practical tips.',
+      preTripTitle: 'Pre-departure checklist',
+      preTripDescription: 'Visa, insurance, packing, first 72 hours',
+      preTripPrompt:
+        'I leave for SWT in about 4 weeks. Give a checklist: documents, money/insurance, packing, and first 72 hours after landing.',
+      jobRatingTitle: 'Is this job offer good?',
+      jobRatingDescription: 'Fun rough take, then use the calculator',
+      jobRatingPrompt:
+        'Roast or hype my SWT offer (employer, state, wage, hours, housing, tips) with clear pros/cons, then nudge me to use the job calculator for net pay.',
+      destinationTitle: 'Destination state',
+      destinationDescription: 'Climate, costs, transport, habits',
+      destinationPrompt:
+        'My destination is [state/city]. Summarize climate, cost of living, transport, safety, and 5 adaptation tips.',
+      inCountryTitle: 'Housing & commute',
+      inCountryDescription: 'Employer housing vs rent vs car',
+      inCountryPrompt:
+        'I am on SWT in [city]. Compare employer housing, shared rent, and buying a car; list 5 budget and scam pitfalls.',
+      wageTitle: 'Pay & hours estimate',
+      wageDescription: 'Plain-language weekly pay rough math',
+      wagePrompt:
+        'Roughly estimate weekly pay for [role], [X] hrs/week, $[Y]/hr, tips [yes/no], and what to verify on paystubs.',
       dealsTitle: 'Bank bonuses & deals',
-      dealsDescription: 'Refer conditions, direct deposit tips, and common pitfalls',
-      dealsPrompt: 'I am preparing for SWT and want to understand US bank sign-up referral bonuses (e.g. Chime, SoFi). Explain typical requirements like direct deposit, SSN, and activating a physical card. Warn that terms change and official sites are the source of truth.',
+      dealsDescription: 'Referrals, direct deposit, pitfalls',
+      dealsPrompt:
+        'Explain typical US bank referral bonus steps (DD, SSN, debit card) for SWT students; terms change—verify officially.',
+      taxRefundTitle: 'Tax refund & W-2',
+      taxRefundDescription: 'Timeline and documents after SWT',
+      taxRefundPrompt:
+        'I finished SWT and have a W-2. Outline a simple timeline for filing/refund, forms at a high level, and when to see a CPA.',
+      postTripTitle: 'Grace period travel',
+      postTripDescription: 'Legal window and flight tips',
+      postTripPrompt:
+        'After SWT I want to travel in the US. Explain grace period basics (confirm with sponsor), flights, and 5 compliance tips.',
+      complianceTitle: 'SEVIS & work rules',
+      complianceDescription: 'Hours cuts, job changes, risks',
+      compliancePrompt:
+        'If my hours are cut or I want to change jobs on SWT, what should I do with sponsor/SEVIS and what records should I keep?',
+      safetyTitle: 'Safety & disputes',
+      safetyDescription: 'Pay issues, documentation',
+      safetyPrompt:
+        'If I suspect unpaid wages or discrimination on SWT, what steps are reasonable while prioritizing safety and sponsor contact?',
+      compareToolTitle: 'Use the job calculator',
+      compareToolDescription: 'Turn offers into comparable numbers',
+      compareToolPrompt:
+        'I am choosing between two SWT offers [A] vs [B]. List comparison dimensions and walk me through using the calculator for up to 3 jobs.',
       fallbackTitle: 'Suggested question {index}',
-      fallbackDescription: 'Click to start a conversation',
+      fallbackDescription: 'Click to fill the box; sign in to send',
     },
     quickLinks: 'Quick links',
     quickDeals: 'Deals',

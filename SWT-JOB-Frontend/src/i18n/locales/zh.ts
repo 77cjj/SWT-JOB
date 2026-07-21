@@ -63,7 +63,7 @@ export const zh = {
     deepThinkingOn: '深度思考模式已开启，AI将进行更深入的分析推理',
     thinking: '思考中',
     generationInterrupted: '生成已中断。',
-    startFrom: '从这些 SWT 话题开始',
+    startFrom: '从这些 SWT 话题开始 · 登录后一键开问',
     recommendedPrompt: '推荐问法：{prompt}',
     searchConversations: '搜索对话...',
     newChat: '新建对话',
@@ -85,19 +85,55 @@ export const zh = {
     older: '更早',
     presets: {
       cultureTitle: '美国文化与职场常识',
-      cultureDescription: '沟通方式、小费、边界感与常见误区，更快融入 SWT 日常',
-      culturePrompt: '我是即将参加 SWT（赴美暑期打工/实习）项目的学生。请用条目说明：美国职场与日常生活中值得注意的文化差异（含沟通、时间观念、小费、个人边界等），并给我 6 条可立刻执行的建议。',
-      destinationTitle: '目的地州与文化',
-      destinationDescription: '按州/城市了解气候、消费、交通与本地习惯，行前更有数',
-      destinationPrompt: '我的 SWT 目的地是【请填写州名或城市，例如 California / Orlando, FL】。请简要介绍该州/地区的气候与季节、大致生活成本与交通方式、安全与本地文化特点，并列出 5 条「落地后更好适应」的实用提示。',
-      wageTitle: '薪资与工时（自然语言估算）',
-      wageDescription: '用口语描述岗位、工时与时薪，粗算周薪与需注意的扣款项（仅供参考）',
-      wagePrompt: '请根据 SWT 常见用工场景，用自然语言帮我做「仅供参考」的粗算：我在【岗位类型，如餐饮前台/游乐园操作员】、每周大约【X】小时、税前时薪【Y】美元、是否含小费【是/否】。请估算大致周薪区间，并提醒需要与雇主合同、工资单或官方说明核对的项目（如预扣税、住宿扣款等）。下面是我的具体情况：',
-      dealsTitle: '银行开户与薅羊毛',
-      dealsDescription: 'Chime、SoFi 等 refer 条件、Direct Deposit 与常见避坑',
-      dealsPrompt: '我即将参加 SWT，想了解在美国通过银行开户 refer 奖励（如 Chime、SoFi）的一般流程与注意事项。请说明 Direct Deposit、SSN、激活实体卡等常见要求，并提醒奖励条款可能变化、需以官网为准。若涉及具体金额请标注可能已过期。',
+      cultureDescription: '沟通、小费、边界感与常见误区',
+      culturePrompt:
+        '我是即将参加 SWT 的学生。请用条目说明美国职场与日常生活中值得注意的文化差异（沟通、时间观念、小费、个人边界等），并给我 6 条落地后可立刻执行的建议。',
+      preTripTitle: '行前准备清单',
+      preTripDescription: '签证、保险、行李、落地 72 小时要做的事',
+      preTripPrompt:
+        '我即将赴美 SWT，离出发还有约 4 周。请按「证件与签证 / 资金与保险 / 行李与禁带 / 落地 72 小时」给我一份可勾选的行前清单，并标注哪些是必须跟 sponsor 或雇主确认的。',
+      jobRatingTitle: '岗位是夯还是拉？',
+      jobRatingDescription: '用网感帮你粗评 offer，再引导用计算器精算',
+      jobRatingPrompt:
+        '帮我用「夯 / NPC / 拉」的口吻粗评下面这个 SWT 岗位（娱乐向但要有依据）：雇主类型【填】、州【填】、时薪【填】、每周工时【填】、是否包住宿【是/否】、小费预期【高/中/低/无】。请从时薪、工时、生活成本、通勤、安全与成长四维度打分，最后提醒我用站内选岗计算器做净收入对比。',
+      destinationTitle: '目的地州怎么选',
+      destinationDescription: '气候、消费、交通与本地习惯',
+      destinationPrompt:
+        '我的 SWT 目的地是【州或城市】。请介绍该地区气候与季节、大致生活成本、交通方式、安全与本地文化特点，并给 5 条落地后更好适应的提示。',
+      inCountryTitle: '行中：住宿与通勤',
+      inCountryDescription: '找房、合租、买车与公交怎么选',
+      inCountryPrompt:
+        '我已经在美国 SWT 上岗了，在【城市】附近。请对比：住雇主安排 / 自己合租 / 买二手车的利弊，通勤与预算要注意什么，并列出 5 条避坑（含合同与押金）。',
+      wageTitle: '薪资工时粗算',
+      wageDescription: '口语描述岗位，估周薪与扣款项',
+      wagePrompt:
+        '请根据 SWT 常见场景做「仅供参考」粗算：岗位【填】、每周【X】小时、税前时薪【Y】美元、小费【有/无】。估周薪区间，并提醒需与工资单核对的项目（预扣税、住宿扣款等）。',
+      dealsTitle: '开户 refer 与薅羊毛',
+      dealsDescription: 'Chime、Direct Deposit 与常见避坑',
+      dealsPrompt:
+        '我参加 SWT，想了解美国银行开户 refer（如 Chime）的一般流程：Direct Deposit、SSN、激活实体卡等常见要求，并提醒奖励条款会变、以官网为准。',
+      taxRefundTitle: '行后：退税与 W-2',
+      taxRefundDescription: '离境前后报税时间线与材料',
+      taxRefundPrompt:
+        '我 SWT 结束准备回国，手上有 W-2。请用时间线说明：何时可以报/退联邦税、1040-NR 或相关表格的大致概念、需要留哪些材料，并提醒我不是税务师、复杂情况要找 CPA。',
+      postTripTitle: 'Grace period 怎么玩',
+      postTripDescription: '合法旅游窗口与改签注意',
+      postTripPrompt:
+        'SWT 项目结束后我想在美国旅游一段时间。请解释 grace period 常见规则（以需跟 sponsor/I-20 为准）、机票改签注意、以及 5 条合规与安全提醒。',
+      complianceTitle: 'SEVIS / 工时合规',
+      complianceDescription: '减工时、换岗、超期风险',
+      compliancePrompt:
+        '如果雇主突然减少排班或想换岗位，SEVIS 与 SWT 合规上通常要注意什么？请分「必须马上联系 sponsor 的情况」和「日常建议保留的证据」（排班表、工资单等）。',
+      safetyTitle: '安全与纠纷',
+      safetyDescription: '报警、劳工权益与文档留存',
+      safetyPrompt:
+        '在美国打工遇到欠薪或歧视怀疑时，作为 SWT 学生有哪些相对稳妥的步骤？请说明文档留存、联系 sponsor、以及何时考虑劳工相关部门，并强调人身安全优先。',
+      compareToolTitle: '引导用选岗计算器',
+      compareToolDescription: '把口头 offer 变成可对比数字',
+      compareToolPrompt:
+        '我有两个 SWT offer 纠结选哪个：A【简述】、B【简述】。请先列出对比维度（净收入、工时、住宿、小费、城市成本），并一步步教我把数据填进选岗计算器做 3 岗位对比。',
       fallbackTitle: '推荐问法 {index}',
-      fallbackDescription: '直接点选即可开始对话',
+      fallbackDescription: '点选填入输入框，登录后即可发送',
     },
     quickLinks: '快捷入口',
     quickDeals: '薅羊毛',

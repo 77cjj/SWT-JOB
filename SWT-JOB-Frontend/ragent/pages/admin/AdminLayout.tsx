@@ -14,6 +14,7 @@ import {
   Lightbulb,
   Menu,
   MessageSquare,
+  Gift,
   KeyRound,
   Moon,
   Search,
@@ -129,6 +130,11 @@ const menuGroups: MenuGroup[] = [
         icon: Users
       },
       {
+        path: "/admin/referral-deals",
+        label: "薅羊毛项目",
+        icon: Gift
+      },
+      {
         path: "/admin/sample-questions",
         label: "示例问题",
         icon: Lightbulb
@@ -150,6 +156,7 @@ const breadcrumbMap: Record<string, string> = {
   ingestion: "数据通道",
   traces: "链路追踪",
   "sample-questions": "示例问题",
+  "referral-deals": "薅羊毛项目",
   mappings: "关键词映射",
   settings: "系统设置",
   users: "用户管理"

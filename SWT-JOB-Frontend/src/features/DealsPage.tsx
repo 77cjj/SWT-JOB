@@ -28,7 +28,6 @@ import {
 } from '@mui/icons-material';
 import {
   dealCategoryOrder,
-  referralPrograms,
   type DealCategory,
   type OfferKind,
 } from '../data/referralDeals';
@@ -43,6 +42,7 @@ import {
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
 import MarketplacePage from './MarketplacePage';
+import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
 
 const categoryIcons: Record<DealCategory, React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
@@ -89,6 +89,10 @@ function DealCard({
   const period = formatEditionPeriod(edition, lang);
   const offerKind = program.offerKind as OfferKind;
   const officialUrl = edition.officialUrl;
+  const siteRebateChip =
+    !isStale &&
+    (program.siteRebateLabel?.[lang]?.trim() ||
+      (program.siteRebateUsd != null ? tWithParams('deals.siteRebateChip', { amount: program.siteRebateUsd }) : ''));
 
   return (
     <Box
@@ -117,9 +121,15 @@ function DealCard({
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
             <Typography
+              component={Link}
+              href={`/deals/${program.id}`}
               variant="subtitle1"
               fontWeight={700}
-              sx={{ color: isStale ? 'text.disabled' : 'text.primary' }}
+              sx={{
+                color: isStale ? 'text.disabled' : 'text.primary',
+                textDecoration: 'none',
+                '&:hover': { textDecoration: isStale ? 'none' : 'underline' },
+              }}
             >
               {title}
             </Typography>
@@ -159,6 +169,9 @@ function DealCard({
           color={offerKind === 'refer' ? 'primary' : 'default'}
           disabled={isStale}
         />
+        {siteRebateChip ? (
+          <Chip size="small" label={siteRebateChip} color="secondary" variant="filled" disabled={isStale} />
+        ) : null}
         {edition.requiresInPerson ? (
           <Chip size="small" label={t('deals.inPersonOnly')} variant="outlined" disabled={isStale} />
         ) : null}
@@ -215,6 +228,11 @@ function DealCard({
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }}>
+        {!isStale ? (
+          <Button component={Link} href={`/deals/${program.id}`} variant="outlined" size="small">
+            {t('deals.viewGuide')}
+          </Button>
+        ) : null}
         {!isStale && showReferral ? (
           <>
             <Button
@@ -260,6 +278,7 @@ function DealCard({
 export default function DealsPage() {
   const { t, tWithParams, language } = useI18n();
   const router = useRouter();
+  const { programs } = useReferralPrograms();
   const section = router.query.section === 'market' ? 'market' : 'deals';
   const [category, setCategory] = useState<DealCategory | 'all'>('all');
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity?: 'success' | 'info' }>({
@@ -270,7 +289,7 @@ export default function DealsPage() {
   const [historyTarget, setHistoryTarget] = useState<ResolvedProgram | null>(null);
   const [externalLink, setExternalLink] = useState<{ url: string; label: string } | null>(null);
 
-  const allResolved = useMemo(() => resolveAllPrograms(referralPrograms), []);
+  const allResolved = useMemo(() => resolveAllPrograms(programs), [programs]);
 
   const filtered = useMemo(() => {
     const list =

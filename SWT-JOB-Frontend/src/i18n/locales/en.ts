@@ -410,6 +410,16 @@ export const en = {
     readFullGuide: 'Read full guide',
     footerHint: 'See docs for the full guide, or share codes on the',
     marketLink: 'Community marketplace',
+    viewGuide: 'Claim guide',
+    detailNotFound: 'This offer was not found—it may be unpublished or the link is wrong.',
+    backToList: 'Back to deals',
+    siteRebateTitle: 'Extra cashback from this site (admin-configured)',
+    siteRebateTbd: 'Cashback amount TBD',
+    siteRebateAmountHint: 'Payout follows admin rules; contact us after you meet the official requirements.',
+    siteRebateChip: 'Site pays ${amount}',
+    howToClaimTitle: 'How to claim the official reward',
+    practicalStepsTitle: 'Practical steps & tips',
+    officialRequirements: 'Official requirements',
   },
 
   marketplace: {

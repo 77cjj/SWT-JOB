@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent;
+package com.nageoffer.ai.ragent.deals.service;
 
-import org.mybatis.spring.annotation.MapperScan;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkUpsertRequest;
+import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealSaveRequest;
+import com.nageoffer.ai.ragent.deals.controller.vo.ReferralDealVO;
 
-/**
- * Ragent 核心应用启动类
- */
-@SpringBootApplication
-@EnableScheduling
-@MapperScan(basePackages = {
-        "com.nageoffer.ai.ragent.rag.dao.mapper",
-        "com.nageoffer.ai.ragent.ingestion.dao.mapper",
-        "com.nageoffer.ai.ragent.knowledge.dao.mapper",
-        "com.nageoffer.ai.ragent.user.dao.mapper",
-        "com.nageoffer.ai.ragent.deals.dao.mapper"
-})
-public class RagentApplication {
+import java.util.List;
 
-    public static void main(String[] args) {
-        SpringApplication.run(RagentApplication.class, args);
-    }
+public interface ReferralDealService {
+
+    List<ReferralDealVO> listPublic();
+
+    ReferralDealVO getPublic(String id);
+
+    List<ReferralDealVO> listAllForAdmin();
+
+    ReferralDealVO getForAdmin(String id);
+
+    String create(ReferralDealSaveRequest request);
+
+    void update(String id, ReferralDealSaveRequest request);
+
+    void delete(String id);
+
+    void bulkUpsert(ReferralDealBulkUpsertRequest request);
 }

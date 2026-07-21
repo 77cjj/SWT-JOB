@@ -22,6 +22,7 @@ import {
   type ResolvedProgram,
 } from '../lib/deals/deal-utils';
 import { findReferralProgram, useReferralPrograms } from '../lib/deals/useReferralPrograms';
+import { openExternalUrl } from '../lib/openExternalUrl';
 
 function pickLang(obj: { zh: string; en: string }, lang: Language) {
   return lang === 'zh' ? obj.zh : obj.en;
@@ -64,8 +65,8 @@ export default function DealDetailPage() {
   const [externalLink, setExternalLink] = React.useState<{ url: string; label: string } | null>(null);
 
   const handleConfirmExternal = () => {
-    if (externalLink) {
-      window.open(externalLink.url, '_blank', 'noopener,noreferrer');
+    if (externalLink?.url) {
+      openExternalUrl(externalLink.url);
     }
     setExternalLink(null);
   };

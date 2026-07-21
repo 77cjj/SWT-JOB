@@ -70,6 +70,8 @@ export const en = {
     loadingSessions: 'Loading conversations',
     noSessions: 'No conversations yet',
     defaultSessionTitle: 'New chat',
+    demoSessionBadge: 'Demo',
+    demoSessionsGroup: 'Sample chats (no login)',
     sessionActions: 'Conversation actions',
     rename: 'Rename',
     delete: 'Delete',

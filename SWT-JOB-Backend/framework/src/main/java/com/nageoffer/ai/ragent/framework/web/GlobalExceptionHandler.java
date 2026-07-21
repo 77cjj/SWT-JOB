@@ -35,6 +35,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Optional;
 
@@ -118,6 +119,18 @@ public class GlobalExceptionHandler {
             message = "上传请求大小超过限制，单次请求最大允许 " + maxRequestSize;
         }
         return Results.failure(BaseErrorCode.CLIENT_ERROR.code(), message);
+    }
+
+    /**
+     * Spring 6 未匹配路由时抛出的异常（常见于运行旧版 jar、缺少新接口）
+     */
+    @ExceptionHandler(value = NoResourceFoundException.class)
+    public Result<Void> noResourceFound(HttpServletRequest request, NoResourceFoundException ex) {
+        log.warn("[{}] {} [404] {}", request.getMethod(), getUrl(request), ex.getResourcePath());
+        return Results.failure(
+                BaseErrorCode.CLIENT_ERROR.code(),
+                "接口不存在或未部署最新后端，请在服务器执行: ./server.sh restart backend --build"
+        );
     }
 
     /**

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Eye, EyeOff, Lock, User, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,7 +16,6 @@ export function LoginDialog() {
   const reason = useAuthStore((s) => s.loginDialogReason);
   const closeLoginDialog = useAuthStore((s) => s.closeLoginDialog);
   const login = useAuthStore((s) => s.login);
-  const googleLogin = useAuthStore((s) => s.googleLogin);
   const isLoading = useAuthStore((s) => s.isLoading);
 
   const [showPassword, setShowPassword] = React.useState(false);
@@ -36,15 +34,6 @@ export function LoginDialog() {
     }
     try {
       await login(form.username.trim(), form.password.trim());
-      closeLoginDialog();
-    } catch {
-      // toast handled in store
-    }
-  };
-
-  const handleGoogleSuccess = async (idToken: string) => {
-    try {
-      await googleLogin(idToken);
       closeLoginDialog();
     } catch {
       // toast handled in store
@@ -86,12 +75,9 @@ export function LoginDialog() {
         <div className="space-y-4 px-6 pb-6 pt-2">
           {GOOGLE_CLIENT_ID ? (
             <>
-              <GoogleSignInButton width={280} onCredential={handleGoogleSuccess} />
+              <GoogleSignInButton width={280} preferRedirect showSetupHints={false} />
               <p className="text-center text-xs text-muted-foreground">
-                若按钮无反应，可能被浏览器拦截弹窗。
-                <Link href="/login" className="ml-1 text-indigo-600 underline" onClick={() => closeLoginDialog()}>
-                  前往全屏登录页
-                </Link>
+                点击后将跳转 Google 验证，完成后自动回到本站。
               </p>
             </>
           ) : (

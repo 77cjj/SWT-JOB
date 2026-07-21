@@ -70,6 +70,8 @@ export const zh = {
     loadingSessions: '加载会话中',
     noSessions: '暂无对话记录',
     defaultSessionTitle: '新对话',
+    demoSessionBadge: '示例',
+    demoSessionsGroup: '示例对话（免登录可阅）',
     sessionActions: '会话操作',
     rename: '重命名',
     delete: '删除',

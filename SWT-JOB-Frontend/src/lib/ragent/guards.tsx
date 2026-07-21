@@ -14,7 +14,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!router.isReady) return;
     if (!isAuthenticated) {
-      void router.replace("/login");
+      useAuthStore.getState().openLoginDialog("请先登录");
+      void router.replace("/chat");
     }
   }, [router, isAuthenticated]);
 
@@ -32,7 +33,8 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!router.isReady) return;
     if (!isAuthenticated) {
-      void router.replace("/login");
+      useAuthStore.getState().openLoginDialog("请先登录");
+      void router.replace("/chat");
       return;
     }
     if (user?.role !== "admin") {

@@ -7,6 +7,7 @@ import { MessageList } from "@/components/chat/MessageList";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
+import { isDemoSessionId } from "@/lib/demoConversations";
 
 export function ChatPage() {
   const router = useRouter();
@@ -29,14 +30,11 @@ export function ChatPage() {
   const [sessionsReady, setSessionsReady] = React.useState(false);
   const sessionExists = React.useMemo(() => {
     if (!sessionId) return false;
+    if (isDemoSessionId(sessionId)) return true;
     return sessions.some((session) => session.id === sessionId);
   }, [sessionId, sessions]);
 
   React.useEffect(() => {
-    if (!isAuthenticated) {
-      setSessionsReady(true);
-      return;
-    }
     let active = true;
     fetchSessions()
       .catch(() => null)
@@ -58,12 +56,24 @@ export function ChatPage() {
 
   React.useEffect(() => {
     if (!isAuthenticated) {
+      if (sessionId && isDemoSessionId(sessionId)) {
+        if (sessionsReady) {
+          selectSession(sessionId).catch(() => null);
+        }
+        return;
+      }
       if (!sessionId) {
         useChatStore.setState({
           currentSessionId: null,
           messages: [],
           isCreatingNew: true,
         });
+        if (sessionsReady && sessions.length > 0 && !isCreatingNew) {
+          const firstDemo = sessions.find((s) => isDemoSessionId(s.id));
+          if (firstDemo) {
+            void router.replace(`/chat/${firstDemo.id}`);
+          }
+        }
       }
       return;
     }
@@ -109,15 +119,21 @@ export function ChatPage() {
     createSession,
     router,
     isAuthenticated,
+    sessions,
   ]);
 
-  // 仅在仍停留在 /chat（无 session 段）但流式首包已写入 conversationId 时，把 URL 补全为 /chat/:id。
-  // 绝不能在「URL 已是 /chat/B、store 里还是 A」的过渡帧里把路由 replace 回 A，否则会与侧栏切换打架。
   React.useEffect(() => {
-    if (!sessionId && currentSessionId) {
+    if (!isAuthenticated && sessionId && currentSessionId && !isDemoSessionId(currentSessionId)) {
+      return;
+    }
+    if (!sessionId && currentSessionId && isDemoSessionId(currentSessionId)) {
+      void router.replace(`/chat/${currentSessionId}`);
+      return;
+    }
+    if (!sessionId && currentSessionId && isAuthenticated) {
       void router.replace(`/chat/${currentSessionId}`);
     }
-  }, [currentSessionId, sessionId, router]);
+  }, [currentSessionId, sessionId, router, isAuthenticated]);
 
   return (
     <MainLayout>

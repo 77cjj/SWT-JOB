@@ -24,7 +24,8 @@ export default function GoogleCompletePage() {
     if (!router.isReady) return;
     const raw = typeof router.query.payload === "string" ? router.query.payload : "";
     if (!raw) {
-      void router.replace("/login");
+      useAuthStore.getState().openLoginDialog("Google 登录未完成，请重试");
+      void router.replace("/chat");
       return;
     }
     try {
@@ -36,7 +37,8 @@ export default function GoogleCompletePage() {
         avatar?: string;
       };
       if (!json.token) {
-        void router.replace("/login");
+        useAuthStore.getState().openLoginDialog("Google 登录未完成，请重试");
+        void router.replace("/chat");
         return;
       }
       const user = {
@@ -58,7 +60,8 @@ export default function GoogleCompletePage() {
       });
       void router.replace("/chat");
     } catch {
-      void router.replace("/login");
+      useAuthStore.getState().openLoginDialog("Google 登录未完成，请重试");
+      void router.replace("/chat");
     }
   }, [router, router.isReady, router.query.payload]);
 

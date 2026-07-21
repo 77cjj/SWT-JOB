@@ -10,6 +10,14 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     externalDir: true,
+    optimizePackageImports: [
+      '@mui/material',
+      '@mui/icons-material',
+      'lucide-react',
+      'recharts',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+    ],
   },
   pageExtensions: ['ts', 'tsx'],
   transpilePackages: ['sanity'],

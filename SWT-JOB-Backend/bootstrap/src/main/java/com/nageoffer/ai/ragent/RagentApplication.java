@@ -32,7 +32,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "com.nageoffer.ai.ragent.ingestion.dao.mapper",
         "com.nageoffer.ai.ragent.knowledge.dao.mapper",
         "com.nageoffer.ai.ragent.user.dao.mapper",
-        "com.nageoffer.ai.ragent.deals.dao.mapper"
+        "com.nageoffer.ai.ragent.deals.dao.mapper",
+        "com.nageoffer.ai.ragent.docpoll.dao.mapper",
+        "com.nageoffer.ai.ragent.jobintel.dao.mapper"
 })
 public class RagentApplication {
 

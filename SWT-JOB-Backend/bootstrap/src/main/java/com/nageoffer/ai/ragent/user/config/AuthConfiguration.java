@@ -15,25 +15,12 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.nageoffer.ai.ragent.user.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CurrentUserVO {
-
-    private String userId;
-
-    private String username;
-
-    private String role;
-
-    private String avatar;
-
-    /** null = 不限次；0~N = 剩余免费 AI 问答 */
-    private Integer freeChatRemaining;
+@Configuration
+@EnableConfigurationProperties(AuthProperties.class)
+public class AuthConfiguration {
 }

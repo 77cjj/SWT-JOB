@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.nageoffer.ai.ragent.user.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CurrentUserVO {
+@ConfigurationProperties(prefix = "app.auth")
+public class AuthProperties {
 
-    private String userId;
+    /**
+     * 开发/运维备用管理员登录（映射 dev-admin，非数据库 admin 用户）。留空则禁用。
+     */
+    private String devBypassUsername = "Admin";
 
-    private String username;
+    private String devBypassPassword = "";
 
-    private String role;
-
-    private String avatar;
-
-    /** null = 不限次；0~N = 剩余免费 AI 问答 */
-    private Integer freeChatRemaining;
+    /** 新注册用户（Google 等）赠送的 AI 问答次数；admin 不受限 */
+    private int newUserFreeChatQuota = 3;
 }

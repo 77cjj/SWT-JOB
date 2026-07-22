@@ -20,6 +20,7 @@ export interface User {
   role: string;
   token: string;
   avatar?: string;
+  freeChatRemaining?: number | null;
 }
 
 export type CurrentUser = Omit<User, "token">;

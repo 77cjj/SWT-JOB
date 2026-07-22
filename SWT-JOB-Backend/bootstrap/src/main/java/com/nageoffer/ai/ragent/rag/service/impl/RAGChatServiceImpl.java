@@ -24,6 +24,7 @@ import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.rag.aop.ChatRateLimit;
 import com.nageoffer.ai.ragent.rag.service.RAGChatService;
+import com.nageoffer.ai.ragent.user.service.UserChatQuotaService;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
 import com.nageoffer.ai.ragent.rag.service.pipeline.StreamChatContext;
@@ -44,10 +45,12 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final StreamChatPipeline chatPipeline;
     private final StreamCallbackFactory callbackFactory;
     private final StreamTaskManager taskManager;
+    private final UserChatQuotaService userChatQuotaService;
 
     @Override
     @ChatRateLimit
     public void streamChat(String question, String conversationId, Boolean deepThinking, SseEmitter emitter) {
+        userChatQuotaService.consumeOneChatOrThrow(UserContext.getUserId());
         String actualConversationId = StrUtil.isBlank(conversationId) ? IdUtil.getSnowflakeNextIdStr() : conversationId;
         String taskId = StrUtil.isBlank(RagTraceContext.getTaskId())
                 ? IdUtil.getSnowflakeNextIdStr()

@@ -66,21 +66,16 @@ export function LoginDialog() {
 
         <div className="space-y-4 px-6 pb-6 pt-2">
           {GOOGLE_CLIENT_ID ? (
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center gap-1">
               <GoogleSignInButton
                 width={300}
-                preferRedirect={false}
+                preferRedirect
                 showSetupHints={false}
                 className="flex min-h-[44px] w-full max-w-[300px] justify-center [&>div]:!w-full"
-                onCredential={async (token) => {
-                  try {
-                    await useAuthStore.getState().googleLogin(token);
-                    closeLoginDialog();
-                  } catch {
-                    // toast in store
-                  }
-                }}
               />
+              <p className="text-center text-xs text-muted-foreground">
+                将跳转至 Google 授权页（避免弹窗被浏览器拦截）
+              </p>
             </div>
           ) : (
             <p className="rounded-lg border border-dashed border-amber-300/70 bg-amber-50/80 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">

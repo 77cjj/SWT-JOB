@@ -25,6 +25,7 @@ import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.config.AuthProperties;
 import com.nageoffer.ai.ragent.user.service.GoogleOAuthService;
 import com.nageoffer.ai.ragent.user.service.GoogleOAuthService.VerifiedGoogleUser;
 import com.nageoffer.ai.ragent.user.service.AuthService;
@@ -38,12 +39,11 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
 
     private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/583231?v=4";
-    private static final String DEV_BYPASS_USERNAME = "Admin";
-    private static final String DEV_BYPASS_PASSWORD = "Admin";
     private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
 
     private final UserMapper userMapper;
     private final GoogleOAuthService googleOAuthService;
+    private final AuthProperties authProperties;
 
     @Override
     public LoginVO login(LoginRequest requestParam) {
@@ -79,6 +79,7 @@ public class AuthServiceImpl implements AuthService {
                     .password("oauth:" + UUID.randomUUID())
                     .role("user")
                     .avatar(StrUtil.blankToDefault(googleUser.picture(), DEFAULT_AVATAR_URL))
+                    .freeChatRemaining(Math.max(0, authProperties.getNewUserFreeChatQuota()))
                     .build();
             userMapper.insert(user);
         } else if (StrUtil.isNotBlank(googleUser.picture()) && StrUtil.isBlank(user.getAvatar())) {
@@ -118,7 +119,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private boolean isDevBypass(String username, String password) {
-        return DEV_BYPASS_USERNAME.equalsIgnoreCase(StrUtil.trim(username))
-                && DEV_BYPASS_PASSWORD.equalsIgnoreCase(StrUtil.trim(password));
+        String configuredUser = StrUtil.trimToEmpty(authProperties.getDevBypassUsername());
+        String configuredPass = authProperties.getDevBypassPassword();
+        if (StrUtil.isBlank(configuredPass) || StrUtil.isBlank(configuredUser)) {
+            return false;
+        }
+        return configuredUser.equalsIgnoreCase(StrUtil.trim(username))
+                && configuredPass.equals(password);
     }
 }

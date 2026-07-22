@@ -33,6 +33,7 @@ import com.nageoffer.ai.ragent.user.controller.vo.UserVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.enums.UserRole;
+import com.nageoffer.ai.ragent.user.config.AuthProperties;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
 
     private final UserMapper userMapper;
+    private final AuthProperties authProperties;
 
     @Override
     public IPage<UserVO> pageQuery(UserPageRequest requestParam) {
@@ -82,6 +84,9 @@ public class UserServiceImpl implements UserService {
                 .password(password)
                 .role(role)
                 .avatar(StrUtil.trimToNull(requestParam.getAvatar()))
+                .freeChatRemaining("user".equals(role)
+                        ? Math.max(0, authProperties.getNewUserFreeChatQuota())
+                        : null)
                 .build();
         userMapper.insert(record);
         return String.valueOf(record.getId());

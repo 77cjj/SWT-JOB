@@ -60,6 +60,9 @@ public class UserDO {
     /** active | restricted | banned */
     private String accountStatus;
 
+    /** 剩余免费 AI 问答次数；null = 不限 */
+    private Integer freeChatRemaining;
+
     private String restrictionNote;
 
     private String displayName;

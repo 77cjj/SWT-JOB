@@ -29,6 +29,7 @@ import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.user.service.UserChatQuotaService;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,6 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final UserChatQuotaService userChatQuotaService;
 
     /**
      * 获取当前登录用户信息
@@ -59,7 +61,8 @@ public class UserController {
                 user.getUserId(),
                 user.getUsername(),
                 user.getRole(),
-                user.getAvatar()
+                user.getAvatar(),
+                userChatQuotaService.getRemaining(user.getUserId())
         ));
     }
 

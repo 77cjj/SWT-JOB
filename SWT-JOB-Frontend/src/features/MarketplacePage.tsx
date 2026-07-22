@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import {
   Box,
   Typography,
@@ -47,9 +47,6 @@ import type {
   MarketListing,
   MarketOrder,
   OrderStatus,
-  UserMarketStats,
-  WalletAccount,
-  WalletTransaction,
 } from '../lib/marketplace/types';
 import { US_STATE_OPTIONS } from '../lib/member/profile';
 import { referralPrograms } from '../data/referralDeals';
@@ -117,10 +114,36 @@ function fmtUsd(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
+function listingToForm(item: MarketListing): ListingFormState {
+  return {
+    title: item.title || '',
+    description: item.description || '',
+    brand: item.brand || '',
+    referLink: item.referLink || '',
+    referCode: item.referCode || '',
+    platformReward: item.platformReward != null ? String(item.platformReward) : '',
+    buyerCashback: item.buyerCashback != null ? String(item.buyerCashback) : '',
+    completionCriteria: item.completionCriteria || '',
+    requiresSsn: Boolean(item.requiresSsn),
+    minDepositUsd: item.minDepositUsd != null ? String(item.minDepositUsd) : '',
+    unlimitedSlots: Boolean(item.unlimitedSlots),
+    sellerContactHint: item.sellerContactHint || '',
+    state: item.state || '',
+    city: item.city || '',
+    jobTitle: item.jobTitle || '',
+    employerHint: item.employerHint || '',
+    intelFee: item.intelFee != null ? String(item.intelFee) : '',
+    intelPreview: item.intelPreview || '',
+    intelDetail: item.intelDetail || '',
+    maxSlots: item.maxSlots > 0 ? String(item.maxSlots) : '5',
+  };
+}
+
 export default function MarketplacePage({ embedded = false }: { embedded?: boolean }) {
   const { t, tWithParams, language } = useI18n();
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authUser = useAuthStore((s) => s.user);
   const {
     fetchListings,
     fetchOrders,
@@ -128,27 +151,21 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     createListing,
     updateListingStatus,
     updateListingSlotsUsed,
+    updateListing,
     claimOrder,
     orderAction,
-    deposit,
-    startStripeCheckout,
-    fetchPaymentsConfig,
   } = useMarketplaceApi();
 
   const [tab, setTab] = useState<MainTab>('refer');
-  const [stripeEnabled, setStripeEnabled] = useState(false);
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [orders, setOrders] = useState<(MarketOrder & { intelDetail?: string })[]>([]);
-  const [wallet, setWallet] = useState<WalletAccount | null>(null);
-  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
-  const [stats, setStats] = useState<UserMarketStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [createType, setCreateType] = useState<ListingType>('refer');
   const [orderDialog, setOrderDialog] = useState<(MarketOrder & { intelDetail?: string }) | null>(null);
   const [proofNote, setProofNote] = useState('');
   const [disputeReason, setDisputeReason] = useState('');
-  const [depositAmount, setDepositAmount] = useState('50');
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -161,10 +178,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   const [filterMinDeposit, setFilterMinDeposit] = useState('');
   const [detailListing, setDetailListing] = useState<MarketListing | null>(null);
   const [hideSoldOut, setHideSoldOut] = useState(true);
-
-  useEffect(() => {
-    void fetchPaymentsConfig().then(setStripeEnabled).catch(() => setStripeEnabled(false));
-  }, [fetchPaymentsConfig]);
 
   const refreshListings = useCallback(async () => {
     const type = tab === 'refer' || tab === 'job_intel' ? tab : undefined;
@@ -180,10 +193,11 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
   const refreshWallet = useCallback(async () => {
     if (!isAuthenticated) return;
-    const data = await fetchWallet();
-    setWallet(data.wallet);
-    setStats(data.stats);
-    setWalletTransactions(data.transactions);
+    try {
+      await fetchWallet();
+    } catch {
+      // ignore — used to sync after claim/create; UI lives on profile
+    }
   }, [fetchWallet, isAuthenticated]);
 
   useEffect(() => {
@@ -195,22 +209,15 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     const depositStatus = router.query.deposit;
     if (depositStatus === 'success') {
       setSnack({ open: true, message: t('marketplace.depositStripeSuccess'), severity: 'success' });
-      void refreshWallet();
+      if (authUser?.userId) {
+        void router.replace(`/u/${authUser.userId}?tab=wallet&deposit=success`);
+      } else {
+        void refreshWallet();
+      }
     } else if (depositStatus === 'cancel') {
       setSnack({ open: true, message: t('marketplace.depositStripeCancel'), severity: 'info' });
     }
-  }, [router.isReady, router.query.tab, router.query.deposit, t, refreshWallet]);
-
-  useEffect(() => {
-    if (!router.isReady || router.query.deposit !== 'success' || !isAuthenticated) return;
-    let attempts = 0;
-    const id = window.setInterval(() => {
-      attempts += 1;
-      void refreshWallet();
-      if (attempts >= 8) window.clearInterval(id);
-    }, 2500);
-    return () => window.clearInterval(id);
-  }, [router.isReady, router.query.deposit, isAuthenticated, refreshWallet]);
+  }, [router.isReady, router.query.tab, router.query.deposit, t, refreshWallet, authUser?.userId, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,14 +229,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           const data = await fetchOrders('all');
           if (!cancelled) setOrders(data);
         } else if (tab === 'wallet') {
-          if (isAuthenticated) {
-            const data = await fetchWallet();
-            if (!cancelled) {
-              setWallet(data.wallet);
-              setStats(data.stats);
-              setWalletTransactions(data.transactions);
-            }
-          }
+          // 钱包已迁至个人主页，此处仅展示引导
         } else {
           const type = tab === 'refer' || tab === 'job_intel' ? tab : undefined;
           const mine = tab === 'my_listings';
@@ -253,7 +253,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     return () => {
       cancelled = true;
     };
-  }, [tab, isAuthenticated, fetchListings, fetchOrders, fetchWallet, t]);
+  }, [tab, isAuthenticated, fetchListings, fetchOrders, t]);
 
   const requireLogin = () => {
     if (!isAuthenticated) {
@@ -263,41 +263,42 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     return true;
   };
 
+  const buildListingBody = () =>
+    createType === 'refer'
+      ? {
+          type: 'refer' as const,
+          title: form.title,
+          description: form.description,
+          brand: form.brand,
+          referLink: form.referLink,
+          referCode: form.referCode,
+          platformReward: form.platformReward ? Number(form.platformReward) : undefined,
+          buyerCashback: Number(form.buyerCashback),
+          completionCriteria: form.completionCriteria,
+          requiresSsn: form.requiresSsn,
+          minDepositUsd: form.minDepositUsd ? Number(form.minDepositUsd) : undefined,
+          unlimitedSlots: form.unlimitedSlots,
+          sellerContactHint: form.sellerContactHint || undefined,
+          maxSlots: form.unlimitedSlots ? undefined : Number(form.maxSlots),
+        }
+      : {
+          type: 'job_intel' as const,
+          title: form.title,
+          description: form.description,
+          state: form.state,
+          city: form.city,
+          jobTitle: form.jobTitle,
+          employerHint: form.employerHint,
+          intelFee: Number(form.intelFee),
+          intelPreview: form.intelPreview,
+          intelDetail: form.intelDetail,
+          unlimitedSlots: form.unlimitedSlots,
+          maxSlots: form.unlimitedSlots ? undefined : Number(form.maxSlots),
+        };
+
   const handleCreate = async () => {
     if (!requireLogin()) return;
     try {
-      const body =
-        createType === 'refer'
-          ? {
-              type: 'refer',
-              title: form.title,
-              description: form.description,
-              brand: form.brand,
-              referLink: form.referLink,
-              referCode: form.referCode,
-              platformReward: form.platformReward ? Number(form.platformReward) : undefined,
-              buyerCashback: Number(form.buyerCashback),
-              completionCriteria: form.completionCriteria,
-              requiresSsn: form.requiresSsn,
-              minDepositUsd: form.minDepositUsd ? Number(form.minDepositUsd) : undefined,
-              unlimitedSlots: form.unlimitedSlots,
-              sellerContactHint: form.sellerContactHint || undefined,
-              maxSlots: form.unlimitedSlots ? undefined : Number(form.maxSlots),
-            }
-          : {
-              type: 'job_intel',
-              title: form.title,
-              description: form.description,
-              state: form.state,
-              city: form.city,
-              jobTitle: form.jobTitle,
-              employerHint: form.employerHint,
-              intelFee: Number(form.intelFee),
-              intelPreview: form.intelPreview,
-              intelDetail: form.intelDetail,
-              unlimitedSlots: form.unlimitedSlots,
-              maxSlots: form.unlimitedSlots ? undefined : Number(form.maxSlots),
-            };
       if (!form.unlimitedSlots) {
         const slots = Number(form.maxSlots);
         if (!Number.isFinite(slots) || slots < 1 || slots > 10000) {
@@ -305,13 +306,32 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           return;
         }
       }
+      const body = buildListingBody();
+      if (editingId) {
+        await updateListing(editingId, body);
+        setCreateOpen(false);
+        setEditingId(null);
+        setForm(emptyListingForm());
+        setSnack({ open: true, message: t('marketplace.editSuccess'), severity: 'success' });
+        await refreshListings();
+        return;
+      }
       await createListing(body);
       setCreateOpen(false);
+      setForm(emptyListingForm());
       setSnack({ open: true, message: t('marketplace.createSuccess'), severity: 'success' });
       setTab('my_listings');
     } catch (e) {
       setSnack({ open: true, message: formatFetchError(e, t('common.networkError')), severity: 'error' });
     }
+  };
+
+  const openEditListing = (item: MarketListing) => {
+    if (!requireLogin()) return;
+    setEditingId(item.id);
+    setCreateType(item.type);
+    setForm(listingToForm(item));
+    setCreateOpen(true);
   };
 
   const handleClaim = async (listingId: string) => {
@@ -345,26 +365,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
       await refreshOrders();
       await refreshWallet();
       setSnack({ open: true, message: t('marketplace.actionSuccess'), severity: 'success' });
-    } catch (e) {
-      setSnack({ open: true, message: formatFetchError(e, t('common.networkError')), severity: 'error' });
-    }
-  };
-
-  const handleDeposit = async () => {
-    if (!requireLogin()) return;
-    const amount = Number(depositAmount);
-    if (!Number.isFinite(amount) || amount < 5) {
-      setSnack({ open: true, message: t('marketplace.depositMinHint'), severity: 'error' });
-      return;
-    }
-    try {
-      if (stripeEnabled) {
-        await startStripeCheckout(amount);
-        return;
-      }
-      const w = await deposit(amount);
-      setWallet(w);
-      setSnack({ open: true, message: t('marketplace.depositSuccess'), severity: 'success' });
     } catch (e) {
       setSnack({ open: true, message: formatFetchError(e, t('common.networkError')), severity: 'error' });
     }
@@ -411,11 +411,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
   const showLoadingBar =
     loading &&
-    (tab === 'orders'
-      ? orders.length === 0
-      : tab === 'wallet'
-        ? isAuthenticated && wallet === null
-        : listings.length === 0);
+    (tab === 'orders' ? orders.length === 0 : tab === 'wallet' ? false : listings.length === 0);
 
   return (
     <Box>
@@ -444,6 +440,8 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
             sx={{ flexShrink: 0, mt: 0.5 }}
             onClick={() => {
               if (!requireLogin()) return;
+              setEditingId(null);
+              setForm(emptyListingForm());
               setCreateOpen(true);
             }}
           >
@@ -458,6 +456,8 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
             startIcon={<Add />}
             onClick={() => {
               if (!requireLogin()) return;
+              setEditingId(null);
+              setForm(emptyListingForm());
               setCreateOpen(true);
             }}
           >
@@ -465,6 +465,13 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           </Button>
         </Box>
       )}
+
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <Typography fontWeight={700} sx={{ mb: 0.5 }}>
+          {t('marketplace.escrowPitchTitle')}
+        </Typography>
+        <Typography variant="body2">{t('marketplace.escrowPitchBody')}</Typography>
+      </Alert>
 
       <Tabs
         data-tour="market-tabs"
@@ -484,17 +491,29 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
       {showLoadingBar ? <LinearProgress sx={{ mb: 2 }} /> : null}
 
       {tab === 'wallet' ? (
-        <WalletSection
-          wallet={wallet}
-          stats={stats}
-          transactions={walletTransactions}
-          depositAmount={depositAmount}
-          onDepositAmount={setDepositAmount}
-          onDeposit={handleDeposit}
-          isAuthenticated={isAuthenticated}
-          stripeEnabled={stripeEnabled}
-          t={t}
-        />
+        <Alert severity="info" sx={{ maxWidth: 560 }}>
+          <Typography fontWeight={600} sx={{ mb: 1 }}>
+            {t('marketplace.walletMovedHint')}
+          </Typography>
+          {authUser?.userId ? (
+            <Button
+              component={Link}
+              href={`/u/${authUser.userId}?tab=wallet`}
+              variant="contained"
+              size="small"
+            >
+              {t('marketplace.goProfileWallet')}
+            </Button>
+          ) : (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => useAuthStore.getState().openLoginDialog(t('marketplace.loginRequired'))}
+            >
+              {t('marketplace.loginRequired')}
+            </Button>
+          )}
+        </Alert>
       ) : null}
 
       {tab === 'orders' ? (
@@ -551,12 +570,20 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
             tab={tab}
             onClaim={handleClaim}
             onOpenDetail={setDetailListing}
+            onEdit={openEditListing}
             onPause={async (id) => {
               await updateListingStatus(id, 'paused');
+              setSnack({ open: true, message: t('marketplace.pauseSuccess'), severity: 'success' });
+              await refreshListings();
+            }}
+            onResume={async (id) => {
+              await updateListingStatus(id, 'active');
+              setSnack({ open: true, message: t('marketplace.resumeSuccess'), severity: 'success' });
               await refreshListings();
             }}
             onClose={async (id) => {
               await updateListingStatus(id, 'closed');
+              setSnack({ open: true, message: t('marketplace.closeSuccess'), severity: 'success' });
               await refreshListings();
             }}
             onUpdateSlots={async (id, slotsUsed) => {
@@ -582,13 +609,17 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
       <CreateListingDialog
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setEditingId(null);
+        }}
         createType={createType}
         onTypeChange={setCreateType}
         form={form}
         onFormChange={setForm}
         brandOptions={brandOptions}
         onSubmit={handleCreate}
+        editing={Boolean(editingId)}
         t={t}
       />
 
@@ -686,89 +717,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   );
 }
 
-function WalletSection({
-  wallet,
-  stats,
-  transactions,
-  depositAmount,
-  onDepositAmount,
-  onDeposit,
-  isAuthenticated,
-  stripeEnabled,
-  t,
-}: {
-  wallet: WalletAccount | null;
-  stats: UserMarketStats | null;
-  transactions: WalletTransaction[];
-  depositAmount: string;
-  onDepositAmount: (v: string) => void;
-  onDeposit: () => void;
-  isAuthenticated: boolean;
-  stripeEnabled: boolean;
-  t: (k: string) => string;
-}) {
-  if (!isAuthenticated) {
-    return <Alert severity="warning">{t('marketplace.loginRequired')}</Alert>;
-  }
-
-  return (
-    <Box sx={{ maxWidth: 520 }}>
-      <Card variant="outlined" sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            {t('marketplace.walletBalance')}
-          </Typography>
-          <Typography variant="h3" fontWeight={700} color="primary">
-            {fmtUsd(wallet?.balance ?? 0)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {t('marketplace.walletLocked')}: {fmtUsd(wallet?.locked ?? 0)}
-          </Typography>
-          {stats ? (
-            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip size="small" label={`${t('marketplace.statsSeller')}: ${stats.completedAsSeller}`} />
-              <Chip size="small" label={`${t('marketplace.statsBuyer')}: ${stats.completedAsBuyer}`} />
-              <Chip size="small" label={`${t('marketplace.statsRating')}: ${stats.rating.toFixed(1)}`} />
-            </Box>
-          ) : null}
-        </CardContent>
-      </Card>
-      <Alert severity={stripeEnabled ? 'info' : 'warning'} sx={{ mb: 2 }}>
-        {stripeEnabled ? t('marketplace.depositStripeNote') : t('marketplace.depositDemoNote')}
-      </Alert>
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-        <TextField
-          size="small"
-          label={t('marketplace.depositAmount')}
-          type="number"
-          value={depositAmount}
-          onChange={(e) => onDepositAmount(e.target.value)}
-          sx={{ width: 160 }}
-        />
-        <Button variant="contained" onClick={onDeposit}>
-          {stripeEnabled ? t('marketplace.depositStripe') : t('marketplace.deposit')}
-        </Button>
-      </Box>
-      {transactions.length > 0 ? (
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            {t('marketplace.walletRecentTx')}
-          </Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-            {transactions.slice(0, 12).map((tx) => (
-              <Typography component="li" variant="body2" key={tx.id} sx={{ mb: 0.75 }}>
-                {new Date(tx.createdAt).toLocaleString()} · {t(`marketplace.walletTx_${tx.type}`)} ·{' '}
-                {fmtUsd(tx.amount)}
-                {tx.note ? ` — ${tx.note}` : ''}
-              </Typography>
-            ))}
-          </Box>
-        </Box>
-      ) : null}
-    </Box>
-  );
-}
-
 function slotsRemaining(item: MarketListing) {
   if (item.unlimitedSlots || item.maxSlots <= 0) return null;
   return Math.max(0, item.maxSlots - item.slotsUsed);
@@ -790,7 +738,9 @@ function ListingsGrid({
   tab,
   onClaim,
   onOpenDetail,
+  onEdit,
   onPause,
+  onResume,
   onClose,
   onUpdateSlots,
   t,
@@ -800,7 +750,9 @@ function ListingsGrid({
   tab: MainTab;
   onClaim: (id: string) => void;
   onOpenDetail: (item: MarketListing) => void;
+  onEdit: (item: MarketListing) => void;
   onPause: (id: string) => Promise<void>;
+  onResume: (id: string) => Promise<void>;
   onClose: (id: string) => Promise<void>;
   onUpdateSlots: (id: string, slotsUsed: number) => Promise<void>;
   t: (k: string) => string;
@@ -928,12 +880,25 @@ function ListingsGrid({
             <CardActions sx={{ px: 2, pb: 2, flexWrap: 'wrap', gap: 0.5 }}>
               {tab === 'my_listings' ? (
                 <>
-                  <Button size="small" onClick={() => void onPause(item.id)}>
-                    {t('marketplace.pause')}
+                  <Button size="small" onClick={() => onEdit(item)}>
+                    {t('marketplace.editListing')}
                   </Button>
-                  <Button size="small" color="error" onClick={() => void onClose(item.id)}>
-                    {t('marketplace.close')}
-                  </Button>
+                  {item.status === 'active' ? (
+                    <Button size="small" onClick={() => void onPause(item.id)}>
+                      {t('marketplace.pause')}
+                    </Button>
+                  ) : null}
+                  {item.status === 'paused' || item.status === 'closed' ? (
+                    <Button size="small" color="success" onClick={() => void onResume(item.id)}>
+                      {t('marketplace.resume')}
+                    </Button>
+                  ) : null}
+                  {item.status !== 'closed' ? (
+                    <Button size="small" color="error" onClick={() => void onClose(item.id)}>
+                      {t('marketplace.close')}
+                    </Button>
+                  ) : null}
+                  <Chip size="small" label={item.status} sx={{ mr: 0.5 }} />
                   <TextField
                     size="small"
                     type="number"
@@ -1013,6 +978,7 @@ function CreateListingDialog({
   onFormChange,
   brandOptions,
   onSubmit,
+  editing,
   t,
 }: {
   open: boolean;
@@ -1020,9 +986,10 @@ function CreateListingDialog({
   createType: ListingType;
   onTypeChange: (t: ListingType) => void;
   form: ListingFormState;
-  onFormChange: React.Dispatch<React.SetStateAction<ListingFormState>>;
+  onFormChange: Dispatch<SetStateAction<ListingFormState>>;
   brandOptions: string[];
   onSubmit: () => void;
+  editing?: boolean;
   t: (k: string) => string;
 }) {
   const set = (key: keyof ListingFormState, val: string | boolean) =>
@@ -1030,12 +997,15 @@ function CreateListingDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t('marketplace.createListing')}</DialogTitle>
+      <DialogTitle>{editing ? t('marketplace.editListing') : t('marketplace.createListing')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-        <Tabs value={createType} onChange={(_, v) => onTypeChange(v)}>
-          <Tab value="refer" label={t('marketplace.typeRefer')} />
-          <Tab value="job_intel" label={t('marketplace.typeJobIntel')} />
+        <Tabs value={createType} onChange={(_, v) => !editing && onTypeChange(v)}>
+          <Tab value="refer" label={t('marketplace.typeRefer')} disabled={Boolean(editing)} />
+          <Tab value="job_intel" label={t('marketplace.typeJobIntel')} disabled={Boolean(editing)} />
         </Tabs>
+        {editing ? (
+          <Alert severity="info">已有成交后不可改金额与名额（避免破坏保证金）；文案与条件可随时改。</Alert>
+        ) : null}
         <TextField label={t('marketplace.fieldTitle')} value={form.title} onChange={(e) => set('title', e.target.value)} size="small" fullWidth />
         <TextField label={t('marketplace.fieldDesc')} value={form.description} onChange={(e) => set('description', e.target.value)} size="small" fullWidth multiline minRows={2} />
         <FormControlLabel

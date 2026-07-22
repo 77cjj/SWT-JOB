@@ -74,6 +74,16 @@ export function useMarketplaceApi() {
     return data.listing;
   }, []);
 
+  const updateListing = useCallback(async (id: string, body: Record<string, unknown>) => {
+    const res = await fetch(`/api/marketplace/listings/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ ...body, edit: true }),
+    });
+    const data = await parseJson<{ listing: MarketListing }>(res);
+    return data.listing;
+  }, []);
+
   const fetchOrders = useCallback(async (role: 'buyer' | 'seller' | 'all' = 'all') => {
     const res = await fetch(`/api/marketplace/orders?role=${role}`, {
       headers: authHeaders(),
@@ -151,6 +161,7 @@ export function useMarketplaceApi() {
     createListing,
     updateListingStatus,
     updateListingSlotsUsed,
+    updateListing,
     fetchOrders,
     claimOrder,
     orderAction,

@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.user.controller;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.user.controller.request.ChangePasswordRequest;
+import com.nageoffer.ai.ragent.user.controller.request.ChatCreditRedeemRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserCreateRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserPageRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserUpdateRequest;
@@ -116,6 +117,22 @@ public class UserController {
     @PutMapping("/user/password")
     public Result<Void> changePassword(@RequestBody ChangePasswordRequest requestParam) {
         userService.changePassword(requestParam);
+        return Results.success();
+    }
+
+    /** 市集钱包购买 AI 问答后到账 */
+    @PostMapping("/user/chat-credits/redeem")
+    public Result<Void> redeemChatCredits(@RequestBody ChatCreditRedeemRequest requestParam) {
+        LoginUser loginUser = UserContext.requireUser();
+        String targetId = requestParam.getUserId();
+        if (targetId == null || targetId.isBlank()) {
+            targetId = loginUser.getUserId();
+        }
+        if (!loginUser.getUserId().equals(targetId) && !"admin".equalsIgnoreCase(loginUser.getRole())) {
+            throw new com.nageoffer.ai.ragent.framework.exception.ClientException("无权为他人充值问答次数");
+        }
+        Integer count = requestParam.getCount();
+        userChatQuotaService.addCredits(targetId, count == null ? 0 : count);
         return Results.success();
     }
 }

@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.nageoffer.ai.ragent.user.service;
 
 import cn.hutool.core.util.StrUtil;
@@ -58,7 +41,7 @@ public class UserChatQuotaService {
             return;
         }
         if (remaining <= 0) {
-            throw new ClientException("免费 AI 问答次数已用完（3 次），如需继续使用请联系站长");
+            throw new ClientException("免费 AI 问答次数已用完，请前往个人主页钱包购买问答次数");
         }
         int updated = userMapper.update(
                 null,
@@ -67,7 +50,30 @@ public class UserChatQuotaService {
                         .eq(UserDO::getId, userId)
                         .eq(UserDO::getFreeChatRemaining, remaining));
         if (updated == 0) {
-            throw new ClientException("免费 AI 问答次数已用完（3 次），如需继续使用请联系站长");
+            throw new ClientException("免费 AI 问答次数已用完，请前往个人主页钱包购买问答次数");
         }
+    }
+
+    public void addCredits(String userId, int count) {
+        if (StrUtil.isBlank(userId) || count <= 0) {
+            throw new ClientException("无效的问答次数");
+        }
+        if (DEV_BYPASS_LOGIN_ID.equals(userId)) {
+            return;
+        }
+        UserDO user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new ClientException("用户不存在");
+        }
+        if ("admin".equalsIgnoreCase(user.getRole())) {
+            return;
+        }
+        Integer remaining = user.getFreeChatRemaining();
+        int next = (remaining == null ? 0 : remaining) + count;
+        userMapper.update(
+                null,
+                Wrappers.lambdaUpdate(UserDO.class)
+                        .set(UserDO::getFreeChatRemaining, next)
+                        .eq(UserDO::getId, userId));
     }
 }

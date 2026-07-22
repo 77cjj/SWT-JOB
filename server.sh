@@ -16,7 +16,7 @@ LAST_BUILD_SHA="$STATE_DIR/last-build.sha"
 NGINX_CONF="${NGINX_CONF:-/etc/nginx/conf.d/swt-job.conf}"
 USE_SUDO="${USE_SUDO:-auto}"
 CONTAINER_RT="${CONTAINER_RT:-}"
-JAVA_MEM_OPTS="${JAVA_MEM_OPTS:--Xms256m -Xmx512m}"
+JAVA_MEM_OPTS="${JAVA_MEM_OPTS:-}"
 LOW_MEM_MODE="${LOW_MEM_MODE:-auto}"
 SKIP_ROCKETMQ="${SKIP_ROCKETMQ:-auto}"
 SKIP_UPDATE_CHECK=false
@@ -64,6 +64,7 @@ SWT-JOB 服务器一键启停脚本
   all         启动基础设施 + 后端 + Nginx 重载（默认）
   fix         一键修复：写配置、缩容器、停 MQ、重启后端并健康检查
   light       2G 小内存模式：限制容器内存 + 停 RocketMQ + 给后端腾空间
+  standard    4G+ 标准模式：更大 JVM + 启动 RocketMQ + 开启 MQ 文档分块
   swap        创建并启用 2G swap（小内存机器强烈建议）
   infra       仅启动缺失的基础设施（Podman/Docker）
   rustfs      仅启动 RustFS（创建知识库必需）
@@ -97,8 +98,8 @@ SWT-JOB 服务器一键启停脚本
   SERVER_CONFIG        服务器 Spring 覆盖配置（默认 bootstrap/config/application.yaml）
   NGINX_CONF           Nginx 站点配置路径
   BACKEND_PORT         后端端口（默认 9090）
-  JAVA_MEM_OPTS        JVM 内存（2G 机器自动降为 -Xms128m -Xmx384m）
-  LOW_MEM_MODE         auto|true|false  小内存优化（默认 auto：<3GB 自动开启）
+  JAVA_MEM_OPTS        JVM 内存；未设置时 auto：2G→384m / 4G→1536m / 8G+→2560m
+  LOW_MEM_MODE         auto|true|false  小内存优化（默认 auto：总内存 <3GB 开启）
   SKIP_ROCKETMQ        auto|true|false  是否跳过 RocketMQ（默认 auto：小内存时停掉）
   GIT_PULL_FORCE       1 或 true  拉取时用 reset --hard 对齐远程（丢弃本地未推送修改）
   USE_SUDO=yes|no|auto 操作 Nginx 时是否 sudo（默认 auto）
@@ -112,6 +113,7 @@ SWT-JOB 服务器一键启停脚本
 示例:
   ./server.sh fix                # 推荐：一键修好 502 / OOM
   ./server.sh light              # 2G 机器：缩容器 + 停 MQ + 重启后端
+  ./server.sh standard           # 4G 升级后：大 JVM + 启 MQ + 标准配置
   ./server.sh swap               # 加 2G swap，防 Java 被 OOM kill
   ./server.sh doctor             # 只诊断，不改动
   ./server.sh                    # 检查中间件 + 启动后端 + 重载 Nginx
@@ -155,12 +157,38 @@ should_skip_rocketmq() {
 }
 
 apply_low_mem_defaults() {
+  apply_mem_profile
+}
+
+# 按机器内存自动选择 JVM；若已设置 JAVA_MEM_OPTS（含 .env）则不再覆盖
+apply_mem_profile() {
+  local total
+  total="$(total_mem_mb)"
+  if [[ -n "${JAVA_MEM_OPTS:-}" ]]; then
+    info "后端 JVM: ${JAVA_MEM_OPTS}（已使用 JAVA_MEM_OPTS）"
+    return
+  fi
   if detect_low_mem_mode; then
-    # 用户若在 .env 里自定义了 JAVA_MEM_OPTS，则尊重用户设置
-    if [[ "${JAVA_MEM_OPTS}" == "-Xms256m -Xmx512m" ]]; then
-      JAVA_MEM_OPTS="-Xms128m -Xmx384m"
-    fi
-    info "小内存模式: 总内存 $(total_mem_mb)MB，后端 JVM=${JAVA_MEM_OPTS}"
+    JAVA_MEM_OPTS="-Xms128m -Xmx384m"
+    info "小内存模式 (${total}MB): JVM=${JAVA_MEM_OPTS}"
+  elif [[ "$total" -ge 6144 ]]; then
+    JAVA_MEM_OPTS="-Xms768m -Xmx2560m"
+    info "大内存模式 (${total}MB): JVM=${JAVA_MEM_OPTS}，RocketMQ + MQ 分块已启用"
+  else
+    JAVA_MEM_OPTS="-Xms512m -Xmx1536m"
+    info "标准模式 (${total}MB，约 4GB): JVM=${JAVA_MEM_OPTS}，RocketMQ + MQ 分块已启用"
+  fi
+}
+
+mem_profile_label() {
+  local total
+  total="$(total_mem_mb)"
+  if detect_low_mem_mode; then
+    echo "小内存 (<3GB)"
+  elif [[ "$total" -ge 6144 ]]; then
+    echo "大内存 (≥6GB)"
+  else
+    echo "标准 (4GB 档)"
   fi
 }
 
@@ -432,9 +460,11 @@ ct_start_rmqnamesrv() {
   if detect_low_mem_mode; then
     mem_limit=(--memory=180m --memory-swap=180m)
   fi
+  local java_opt="-Xms64m -Xmx128m"
+  detect_low_mem_mode || java_opt="-Xms128m -Xmx256m"
   $CT_CMD run -d --name "$name" --restart unless-stopped "${mem_limit[@]}" \
     -p 127.0.0.1:9876:9876 \
-    -e JAVA_OPT_EXT="-Xms64m -Xmx128m" \
+    -e JAVA_OPT_EXT="$java_opt" \
     docker.io/apache/rocketmq:5.2.0 \
     sh mqnamesrv
 }
@@ -447,6 +477,9 @@ ct_start_rmqbroker() {
   if detect_low_mem_mode; then
     mem_limit=(--memory=200m --memory-swap=200m)
   fi
+
+  local mq_java_opt="-Xms64m -Xmx128m -XX:MaxMetaspaceSize=96m"
+  detect_low_mem_mode || mq_java_opt="-Xms128m -Xmx384m -XX:MaxMetaspaceSize=128m"
 
   local broker_script='cat > /tmp/broker.conf << EOF
 brokerClusterName = DefaultCluster
@@ -467,7 +500,7 @@ exec sh mqbroker -n 127.0.0.1:9876 -c /tmp/broker.conf'
     "${mem_limit[@]}" \
     --network host \
     -e NAMESRV_ADDR="127.0.0.1:9876" \
-    -e JAVA_OPT_EXT="-Xms64m -Xmx128m -XX:MaxMetaspaceSize=96m" \
+    -e JAVA_OPT_EXT="$mq_java_opt" \
     docker.io/apache/rocketmq:5.2.0 \
     sh -c "$broker_script" >/dev/null 2>&1; then
     ok "Broker 已用 host 网络启动"
@@ -481,7 +514,7 @@ exec sh mqbroker -n 127.0.0.1:9876 -c /tmp/broker.conf'
     -p 127.0.0.1:10909:10909 \
     -p 127.0.0.1:10911:10911 \
     -e NAMESRV_ADDR="127.0.0.1:9876" \
-    -e JAVA_OPT_EXT="-Xms64m -Xmx128m -XX:MaxMetaspaceSize=96m" \
+    -e JAVA_OPT_EXT="$mq_java_opt" \
     --add-host=host.containers.internal:host-gateway \
     docker.io/apache/rocketmq:5.2.0 \
     sh -c 'cat > /tmp/broker.conf << EOF
@@ -600,6 +633,38 @@ run_light_mode() {
   if backend_http_ok; then
     ok "小内存模式完成：后端已稳定运行"
     warn "RocketMQ 已停止以节省内存；文档异步分块暂不可用（登录/知识库/聊天正常）"
+  else
+    fail "后端仍未就绪，请执行: ./server.sh doctor"
+  fi
+  print_ready
+}
+
+run_standard_mode() {
+  info "=== 标准/4GB+ 模式 (standard) ==="
+  LOW_MEM_MODE=false
+  SKIP_ROCKETMQ=false
+  ensure_dirs
+  load_env
+  # 若 .env 里仍是 2G 时代的 JVM，升级 4G 后改为自动档
+  if [[ "${JAVA_MEM_OPTS:-}" == "-Xms128m -Xmx384m" || "${JAVA_MEM_OPTS:-}" == "-Xms256m -Xmx512m" ]]; then
+    JAVA_MEM_OPTS=""
+    warn "已清除旧的 JVM 限额，将按 $(total_mem_mb)MB 内存自动分配"
+  fi
+  apply_mem_profile
+  ensure_server_config
+
+  FORCE_BACKEND=true
+  kill_stale_backend
+  start_infra || true
+  rebuild_rmqbroker || true
+  maybe_prepare_backend false
+  start_backend
+  nginx_cmd reload || true
+
+  echo ""
+  if backend_http_ok; then
+    ok "标准模式完成：JVM=${JAVA_MEM_OPTS}，RocketMQ 与 MQ 文档分块已按配置启用"
+    info "若 Broker 未就绪，可执行: ./server.sh broker"
   else
     fail "后端仍未就绪，请执行: ./server.sh doctor"
   fi
@@ -746,16 +811,16 @@ kill_stale_backend() {
 
 write_server_config() {
   mkdir -p "$(dirname "$SERVER_CONFIG")"
-  cat >"$SERVER_CONFIG" <<'EOF'
+  if detect_low_mem_mode; then
+    cat >"$SERVER_CONFIG" <<'EOF'
 # 由 server.sh 自动写入（每次启动都会覆盖）
-# 目的：2G 小内存机器上避免 MCP / RocketMQ 消费者阻塞 Spring 启动，导致 Nginx 502
+# 小内存（<3GB）：关闭 MCP / RocketMQ 消费者，避免启动卡死或 OOM
 
 rag:
   mcp:
     servers: []
   knowledge:
     chunk:
-      # server.sh 关闭 RocketMQ 消费者时同步关闭 MQ 投递，改 JVM 内异步分块
       use-message-queue: false
 
 rocketmq:
@@ -770,6 +835,31 @@ logging:
   level:
     org.apache.rocketmq: WARN
 EOF
+  else
+    cat >"$SERVER_CONFIG" <<'EOF'
+# 由 server.sh 自动写入（每次启动都会覆盖）
+# 标准/4GB+：启用 RocketMQ 异步分块与消费者（需 NameServer + Broker 在跑）
+
+rag:
+  mcp:
+    servers: []
+  knowledge:
+    chunk:
+      use-message-queue: true
+
+rocketmq:
+  consumer:
+    listeners:
+      knowledge-document-chunk_cg:
+        knowledge-document-chunk_topic: true
+      message-feedback_cg:
+        message-feedback_topic: true
+
+logging:
+  level:
+    org.apache.rocketmq: WARN
+EOF
+  fi
   # 兼容旧路径：有人可能还在用 application-server.yaml
   mkdir -p "$(dirname "$LEGACY_SERVER_CONFIG")"
   cp -f "$SERVER_CONFIG" "$LEGACY_SERVER_CONFIG"
@@ -1144,19 +1234,26 @@ show_status() {
   echo "=== SWT-JOB 服务器状态 ==="
   echo ""
   resolve_container_runtime 2>/dev/null || true
+  load_env 2>/dev/null || true
+  apply_mem_profile 2>/dev/null || true
   echo "  环境文件: ${ENV_FILE}"
   echo "  配置文件: ${SERVER_CONFIG}"
   echo "  日志目录: ${LOG_DIR}"
   if [[ -n "$CT_RT_LABEL" ]]; then
     echo "  容器运行时: ${CT_RT_LABEL}"
   fi
+  local total
+  total="$(total_mem_mb)"
+  echo "  总内存: ${total}MB · 档位: $(mem_profile_label)"
   if detect_low_mem_mode; then
-    echo -e "  ${YELLOW}●${NC} 小内存模式: 开启（总内存 $(total_mem_mb)MB）"
+    echo -e "  ${YELLOW}●${NC} 小内存模式: 开启"
     if should_skip_rocketmq; then
       echo -e "  ${YELLOW}●${NC} RocketMQ: 已跳过（为后端腾内存）"
     fi
-    echo "  后端 JVM: ${JAVA_MEM_OPTS}"
+  else
+    echo -e "  ${GREEN}●${NC} 标准/大内存模式: RocketMQ 与 MQ 分块可用（见 ${SERVER_CONFIG}）"
   fi
+  echo "  后端 JVM: ${JAVA_MEM_OPTS:-（未设置，启动时自动分配）}"
   echo ""
 
   local svc
@@ -1271,6 +1368,7 @@ fix_all() {
     stop_rocketmq_containers
     recreate_light_infra
   else
+    info "检测到约 4GB+ 内存（$(total_mem_mb)MB），使用标准策略：保留 RocketMQ + 较大 JVM"
     start_infra || true
     rebuild_rmqbroker || true
   fi
@@ -1426,6 +1524,9 @@ main() {
       ;;
     light|lowmem)
       run_light_mode
+      ;;
+    standard|4g|normal)
+      run_standard_mode
       ;;
     swap)
       setup_swap

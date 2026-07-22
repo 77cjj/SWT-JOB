@@ -38,6 +38,7 @@ import {
   sortProgramsForDisplay,
   type ResolvedProgram,
 } from '../lib/deals/deal-utils';
+import { calcDealTotalUsd } from '../lib/deals/reward-total';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
@@ -92,10 +93,15 @@ function DealCard({
     !isStale &&
     (program.siteRebateLabel?.[lang]?.trim() ||
       (program.siteRebateUsd != null ? tWithParams('deals.siteRebateChip', { amount: program.siteRebateUsd }) : ''));
+  const totalMoney = calcDealTotalUsd({
+    rewardText: reward,
+    siteRebateUsd: program.siteRebateUsd,
+  });
 
   return (
     <Box
       sx={{
+        position: 'relative',
         border: 1,
         borderColor: isStale ? 'action.disabled' : 'divider',
         borderStyle: isStale ? 'dashed' : 'solid',
@@ -106,6 +112,7 @@ function DealCard({
         gap: 1.25,
         height: '100%',
         transition: 'box-shadow 0.2s, opacity 0.2s',
+        overflow: 'hidden',
         ...(isStale
           ? {
               opacity: 0.52,
@@ -116,7 +123,40 @@ function DealCard({
           : { '&:hover': { boxShadow: 2 } }),
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+      {!isStale && totalMoney.total != null ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 1,
+            px: 1.25,
+            py: 0.5,
+            borderRadius: 1.5,
+            background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #ec4899 100%)',
+            color: '#fff',
+            boxShadow: '0 6px 16px rgba(239,68,68,0.35)',
+            animation: 'dealPulse 2.4s ease-in-out infinite',
+            '@keyframes dealPulse': {
+              '0%, 100%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.04)' },
+            },
+          }}
+        >
+          <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, lineHeight: 1.1, fontWeight: 600 }}>
+            {t('deals.totalTake')}
+          </Typography>
+          <Typography variant="h6" fontWeight={900} sx={{ lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+            ${totalMoney.total.toFixed(totalMoney.total % 1 === 0 ? 0 : 1)}
+          </Typography>
+          {totalMoney.platform != null && totalMoney.rebate > 0 ? (
+            <Typography variant="caption" sx={{ opacity: 0.95, fontSize: '0.65rem' }}>
+              ${totalMoney.platform}+${totalMoney.rebate}
+            </Typography>
+          ) : null}
+        </Box>
+      ) : null}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, pr: totalMoney.total != null ? 9 : 0 }}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
             <Typography

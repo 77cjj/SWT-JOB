@@ -7,9 +7,6 @@ import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
 
 const GSI_SCRIPT = "https://accounts.google.com/gsi/client";
 
-const SHOW_AUTH_HINTS =
-  process.env.NEXT_PUBLIC_AUTH_DEBUG === "1" || process.env.NODE_ENV === "development";
-
 type GsiCredentialResponse = {
   credential?: string;
 };
@@ -20,10 +17,7 @@ declare global {
       accounts: {
         id: {
           initialize: (config: Record<string, unknown>) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: Record<string, unknown>
-          ) => void;
+          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
         };
       };
     };
@@ -55,60 +49,43 @@ function loadGsiScript(): Promise<void> {
 }
 
 export type GoogleSignInButtonProps = {
-  /** redirect 模式走 /api/auth/google-callback；popup 模式用 onCredential */
-  onCredential?: (idToken: string) => void | Promise<void>;
   width?: number;
   className?: string;
-  /** 默认 true：整页 redirect，避免弹窗被拦 */
-  preferRedirect?: boolean;
-  /** 生产环境默认不展示 Console 配置长文案 */
   showSetupHints?: boolean;
+  /** @deprecated 已强制 redirect，忽略此参数 */
+  preferRedirect?: boolean;
+  /** @deprecated popup 已移除 */
+  onCredential?: (idToken: string) => void | Promise<void>;
 };
 
+/**
+ * 强制 ux_mode=redirect，避免 Dialog/浏览器拦截 popup（控制台两条 GSI_LOGGER 即此问题）。
+ */
 export function GoogleSignInButton({
-  onCredential,
   width = 320,
   className,
-  preferRedirect = true,
-  showSetupHints = SHOW_AUTH_HINTS,
+  showSetupHints = false,
 }: GoogleSignInButtonProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const onCredentialRef = React.useRef(onCredential);
-  onCredentialRef.current = onCredential;
 
   React.useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !containerRef.current) {
-      return;
-    }
+    if (!GOOGLE_CLIENT_ID || !containerRef.current) return;
     let cancelled = false;
     const mount = containerRef.current;
-    const origin = window.location.origin;
-    const loginUri = `${origin}/api/auth/google-callback`;
+    const loginUri = `${window.location.origin}/api/auth/google-callback`;
 
     loadGsiScript()
       .then(() => {
         if (cancelled || !mount) return;
-
-        const init: Record<string, unknown> = {
+        window.google!.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
+          ux_mode: "redirect",
+          login_uri: loginUri,
           use_fedcm_for_prompt: false,
           auto_select: false,
-        };
-
-        if (preferRedirect) {
-          init.ux_mode = "redirect";
-          init.login_uri = loginUri;
-        } else if (onCredentialRef.current) {
-          init.callback = (response: GsiCredentialResponse) => {
-            if (response.credential) {
-              void onCredentialRef.current?.(response.credential);
-            } else {
-              toast.error("Google 未返回登录凭证");
-            }
-          };
-        }
-
-        window.google!.accounts.id.initialize(init);
+          // 显式禁用 One Tap，减少二次 popup
+          cancel_on_tap_outside: true,
+        });
         mount.innerHTML = "";
         window.google!.accounts.id.renderButton(mount, {
           type: "standard",
@@ -117,29 +94,23 @@ export function GoogleSignInButton({
           text: "signin_with",
           width,
           logo_alignment: "left",
+          // 部分 GIS 版本支持；忽略未知字段无害
+          click_listener: undefined,
         });
       })
       .catch(() => {
-        toast.error("无法加载 Google 登录组件，请检查网络或广告拦截插件");
+        toast.error("无法加载 Google 登录，请检查网络或广告拦截插件");
       });
 
     return () => {
       cancelled = true;
       if (mount) mount.innerHTML = "";
     };
-  }, [width, preferRedirect]);
+  }, [width]);
 
-  if (!GOOGLE_CLIENT_ID) {
-    return null;
-  }
+  if (!GOOGLE_CLIENT_ID) return null;
 
-  const isPreview =
-    typeof window !== "undefined" && /vercel\.app$/i.test(window.location.hostname);
-
-  const redirectUriHint =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/auth/google-callback`
-      : "/api/auth/google-callback";
+  const redirectUriHint = `${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/google-callback`;
 
   return (
     <div className="space-y-2">
@@ -149,15 +120,10 @@ export function GoogleSignInButton({
         className={className ?? "flex min-h-[44px] w-full justify-center [&>div]:!w-full"}
         style={{ position: "relative", zIndex: 10_000 }}
       />
-      {showSetupHints && preferRedirect ? (
+      {showSetupHints ? (
         <p className="text-center text-xs text-muted-foreground">
-          开发提示：redirect URI 需包含
+          将整页跳转 Google 授权。Redirect URI：
           <code className="block break-all text-[10px]">{redirectUriHint}</code>
-        </p>
-      ) : null}
-      {showSetupHints && isPreview ? (
-        <p className="text-center text-xs text-amber-700">
-          预览域名需在 Google Console 添加 JavaScript 来源与 redirect URI，或使用正式域名。
         </p>
       ) : null}
     </div>

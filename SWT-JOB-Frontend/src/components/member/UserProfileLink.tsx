@@ -6,6 +6,7 @@ import { getDemoMember } from '../../lib/member/demoUsers';
 
 type UserProfileLinkProps = {
   userId: string;
+  displayName?: string;
   size?: number;
   showName?: boolean;
   nameVariant?: 'caption' | 'body2' | 'subtitle2';
@@ -13,17 +14,19 @@ type UserProfileLinkProps = {
 
 export function UserProfileLink({
   userId,
+  displayName,
   size = 32,
-  showName = false,
+  showName = true,
   nameVariant = 'caption',
 }: UserProfileLinkProps) {
   const member = getDemoMember(userId);
-  if (!member) return null;
+  const name = member?.displayName || displayName || userId.slice(0, 8);
+  const href = `/u/${userId}`;
 
   return (
     <Box
       component={Link}
-      href={`/u/${member.id}`}
+      href={href}
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -38,16 +41,16 @@ export function UserProfileLink({
         sx={{
           width: size,
           height: size,
-          bgcolor: member.avatarColor,
+          bgcolor: member?.avatarColor || 'primary.main',
           fontSize: size * 0.42,
           fontWeight: 700,
         }}
       >
-        {member.displayName.slice(0, 1)}
+        {name.slice(0, 1).toUpperCase()}
       </Avatar>
       {showName ? (
-        <Typography className="user-profile-link-name" variant={nameVariant} fontWeight={600}>
-          {member.displayName}
+        <Typography className="user-profile-link-name" variant={nameVariant} fontWeight={600} noWrap>
+          {name}
         </Typography>
       ) : null}
     </Box>

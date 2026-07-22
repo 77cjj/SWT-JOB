@@ -19,6 +19,10 @@ export type CreateListingInput = {
   platformReward?: number;
   buyerCashback?: number;
   completionCriteria?: string;
+  requiresSsn?: boolean;
+  minDepositUsd?: number;
+  unlimitedSlots?: boolean;
+  sellerContactHint?: string;
   state?: string;
   city?: string;
   jobTitle?: string;
@@ -33,8 +37,11 @@ export type CreateListingInput = {
 function validateListingInput(input: CreateListingInput) {
   if (!input.title?.trim()) throw new Error('Title required');
   if (!input.description?.trim()) throw new Error('Description required');
-  const maxSlots = input.maxSlots ?? 5;
-  if (maxSlots < 1 || maxSlots > 20) throw new Error('maxSlots must be 1–20');
+  const unlimited = Boolean(input.unlimitedSlots);
+  const maxSlots = unlimited ? 0 : (input.maxSlots ?? 5);
+  if (!unlimited && (maxSlots < 1 || maxSlots > 10000)) {
+    throw new Error('名额须为 1–10000，或选择无上限');
+  }
 
   if (input.type === 'refer') {
     if (!input.brand?.trim()) throw new Error('Brand required');
@@ -55,7 +62,7 @@ function validateListingInput(input: CreateListingInput) {
     if (!input.intelDetail?.trim()) throw new Error('Intel detail required');
   }
 
-  return maxSlots;
+  return { maxSlots, unlimited };
 }
 
 export async function listMarketListings(filters?: {
@@ -88,15 +95,17 @@ export async function getMarketListing(id: string, viewerId?: string) {
 }
 
 export async function createMarketListing(user: MarketUser, input: CreateListingInput) {
-  const maxSlots = validateListingInput(input);
+  const { maxSlots, unlimited } = validateListingInput(input);
   const store = await readMarketStore();
 
   const payoutBase =
     input.type === 'refer' ? (input.buyerCashback ?? 0) : (input.intelFee ?? 0);
+  // 无上限：仅锁定 1 个名额保证金；有限：按名额锁定
+  const escrowSlots = unlimited ? 1 : maxSlots;
   const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
     input.type,
     payoutBase,
-    maxSlots,
+    escrowSlots,
   );
 
   const wallet = getWallet(store, user.userId);
@@ -120,6 +129,10 @@ export async function createMarketListing(user: MarketUser, input: CreateListing
     platformReward: input.platformReward,
     buyerCashback: input.buyerCashback,
     completionCriteria: input.completionCriteria?.trim(),
+    requiresSsn: input.requiresSsn,
+    minDepositUsd: input.minDepositUsd,
+    unlimitedSlots: unlimited,
+    sellerContactHint: input.sellerContactHint?.trim(),
     state: input.state?.trim().toUpperCase(),
     city: input.city?.trim(),
     jobTitle: input.jobTitle?.trim(),
@@ -130,7 +143,7 @@ export async function createMarketListing(user: MarketUser, input: CreateListing
     escrowPerSlot,
     buyerPayPerSlot,
     priceCurrency: 'USD',
-    maxSlots,
+    maxSlots: unlimited ? 0 : maxSlots,
     slotsUsed: 0,
     status: 'active',
     createdAt: now,
@@ -160,7 +173,9 @@ export async function updateMarketListingStatus(
   listing.updatedAt = new Date().toISOString();
 
   if (status === 'closed') {
-    const remainingSlots = listing.maxSlots - listing.slotsUsed;
+    const remainingSlots = listing.unlimitedSlots
+      ? 1
+      : Math.max(0, listing.maxSlots - listing.slotsUsed);
     if (remainingSlots > 0) {
       const refundAmount = listing.escrowPerSlot * remainingSlots;
       unlockFunds(
@@ -173,6 +188,35 @@ export async function updateMarketListingStatus(
     }
   }
 
+  store.listings[listingId] = listing;
+  await writeMarketStore(store);
+  return sanitizeListingForPublic(listing, user.userId);
+}
+
+/** 发布者更新已参与人数（slotsUsed） */
+export async function updateMarketListingSlotsUsed(
+  user: MarketUser,
+  listingId: string,
+  slotsUsed: number,
+) {
+  if (!Number.isFinite(slotsUsed) || slotsUsed < 0 || slotsUsed > 100000) {
+    throw new Error('参与人数无效');
+  }
+  const store = await readMarketStore();
+  const listing = store.listings[listingId];
+  if (!listing) throw new Error('Listing not found');
+  if (listing.sellerId !== user.userId && user.role !== 'admin') {
+    throw new Error('Forbidden');
+  }
+  listing.slotsUsed = Math.floor(slotsUsed);
+  if (!listing.unlimitedSlots && listing.maxSlots > 0) {
+    if (listing.slotsUsed >= listing.maxSlots) {
+      listing.status = 'sold_out';
+    } else if (listing.status === 'sold_out') {
+      listing.status = 'active';
+    }
+  }
+  listing.updatedAt = new Date().toISOString();
   store.listings[listingId] = listing;
   await writeMarketStore(store);
   return sanitizeListingForPublic(listing, user.userId);

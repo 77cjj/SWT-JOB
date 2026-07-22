@@ -39,6 +39,15 @@ export interface MarketListing {
   platformReward?: number;
   buyerCashback?: number;
   completionCriteria?: string;
+  /** 是否需要 SSN */
+  requiresSsn?: boolean;
+  /** 最低存款要求（USD） */
+  minDepositUsd?: number;
+  /** true = 名额不限（maxSlots 仅作展示上限时可忽略） */
+  unlimitedSlots?: boolean;
+  /** 发布者公开联系方式（按隐私设置） */
+  sellerContactHint?: string;
+  sellerAvatarUrl?: string;
   state?: string;
   city?: string;
   jobTitle?: string;

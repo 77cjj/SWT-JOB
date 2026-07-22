@@ -4,6 +4,7 @@ import { getMarketUserFromRequest } from '../../../../lib/marketplace/auth';
 import {
   getMarketListing,
   updateMarketListingStatus,
+  updateMarketListingSlotsUsed,
 } from '../../../../lib/marketplace/listings';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,11 +21,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'PATCH') {
     if (!user) return res.status(401).json({ ok: false, message: 'Login required' });
-    const status = (req.body as { status?: string })?.status;
-    if (status !== 'active' && status !== 'paused' && status !== 'closed') {
-      return res.status(400).json({ ok: false, message: 'Invalid status' });
-    }
+    const body = req.body as { status?: string; slotsUsed?: number };
     try {
+      if (typeof body.slotsUsed === 'number') {
+        const listing = await updateMarketListingSlotsUsed(user, id, body.slotsUsed);
+        return res.status(200).json({ ok: true, listing });
+      }
+      const status = body.status;
+      if (status !== 'active' && status !== 'paused' && status !== 'closed') {
+        return res.status(400).json({ ok: false, message: 'Invalid status' });
+      }
       const listing = await updateMarketListingStatus(user, id, status);
       return res.status(200).json({ ok: true, listing });
     } catch (error) {

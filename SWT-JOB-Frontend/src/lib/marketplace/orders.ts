@@ -159,7 +159,13 @@ export async function claimMarketOrder(user: MarketUser, listingId: string) {
   if (!listing) throw new Error('Listing not found');
   if (listing.status !== 'active') throw new Error('Listing not active');
   if (listing.sellerId === user.userId) throw new Error('Cannot claim own listing');
-  if (listing.slotsUsed >= listing.maxSlots) throw new Error('No slots left');
+  if (
+    !listing.unlimitedSlots &&
+    listing.maxSlots > 0 &&
+    listing.slotsUsed >= listing.maxSlots
+  ) {
+    throw new Error('No slots left');
+  }
 
   const existing = Object.values(store.orders).find(
     (o) =>
@@ -204,7 +210,13 @@ export async function claimMarketOrder(user: MarketUser, listingId: string) {
   };
 
   listing.slotsUsed += 1;
-  if (listing.slotsUsed >= listing.maxSlots) listing.status = 'sold_out';
+  if (
+    !listing.unlimitedSlots &&
+    listing.maxSlots > 0 &&
+    listing.slotsUsed >= listing.maxSlots
+  ) {
+    listing.status = 'sold_out';
+  }
   listing.updatedAt = new Date().toISOString();
 
   store.orders[order.id] = order;

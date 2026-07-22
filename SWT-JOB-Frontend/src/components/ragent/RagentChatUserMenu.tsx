@@ -22,6 +22,7 @@ import {
   AdminPanelSettings as AdminPanelSettingsIcon,
   Logout as LogoutIcon,
   VpnKey as VpnKeyIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
@@ -186,6 +187,18 @@ export function RagentChatUserMenu() {
             ))}
             <Divider />
           </>
+        ) : null}
+        {isAuthenticated ? (
+          <MenuItem
+            component={Link}
+            href={`/u/${user?.userId || ""}`}
+            onClick={() => setAnchor(null)}
+          >
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <PersonIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="个人主页" />
+          </MenuItem>
         ) : null}
         {isAuthenticated ? (
           <MenuItem onClick={handleOpenPassword}>

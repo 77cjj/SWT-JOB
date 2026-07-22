@@ -11,7 +11,7 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 export function LoginPage() {
   const router = useRouter();
-  const { login, googleLogin, isLoading } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = React.useState(false);
   const [remember, setRemember] = React.useState(true);
   const [form, setForm] = React.useState({ username: "", password: "" });
@@ -95,19 +95,9 @@ export function LoginPage() {
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {GOOGLE_CLIENT_ID ? (
             <div className="space-y-2 py-1">
-              <GoogleSignInButton
-                width={320}
-                onCredential={async (idToken) => {
-                  try {
-                    await googleLogin(idToken);
-                    void router.push("/chat");
-                  } catch {
-                    // store toast
-                  }
-                }}
-              />
+              <GoogleSignInButton width={320} />
               <p className="text-center text-xs text-muted-foreground">
-                请允许 pop-up；并在 Google Cloud 控制台授权当前站点域名（JavaScript 来源）。
+                将整页跳转至 Google 授权（非弹窗）。请确认 Console 已配置 redirect URI。
               </p>
             </div>
           ) : null}

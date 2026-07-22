@@ -33,10 +33,10 @@ interface MobileLayoutProps extends PropsWithChildren {
 type NavKey = 'home' | 'jobs' | 'docs' | 'chat' | 'deals';
 
 const NAV_ITEMS: { key: NavKey; href: string; icon: React.ReactNode; match: (path: string) => boolean }[] = [
-  { key: 'home', href: '/compare', icon: <BarChartRounded fontSize="small" />, match: (p) => p === '/compare' },
-  { key: 'jobs', href: '/jobs', icon: <HistoryRounded fontSize="small" />, match: (p) => p === '/jobs' || p.startsWith('/jobs/') },
   { key: 'chat', href: '/', icon: <SmartToyRounded fontSize="small" />, match: (p) => p === '/' || p.startsWith('/chat') },
   { key: 'deals', href: '/deals', icon: <LocalOfferRounded fontSize="small" />, match: (p) => p === '/deals' || p.startsWith('/deals/') },
+  { key: 'home', href: '/compare', icon: <BarChartRounded fontSize="small" />, match: (p) => p === '/compare' },
+  { key: 'jobs', href: '/jobs', icon: <HistoryRounded fontSize="small" />, match: (p) => p === '/jobs' || p.startsWith('/jobs/') },
   { key: 'docs', href: '/docs', icon: <MenuBookRounded fontSize="small" />, match: (p) => p.startsWith('/docs') },
 ];
 

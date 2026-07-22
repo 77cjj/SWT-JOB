@@ -54,8 +54,36 @@ export default function UserProfilePage() {
 
   const content = (
     <Container maxWidth="sm" sx={{ py: 4 }}>
-      {!member ? (
-        <Typography color="text.secondary">未找到该用户（示例档案仅包含演示账号）。</Typography>
+      {!userId ? (
+        <Typography color="text.secondary">缺少用户 ID</Typography>
+      ) : !member ? (
+        <Stack spacing={2}>
+          <Paper variant="outlined" sx={{ p: 3 }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              用户主页
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 1 }}>
+              ID：{userId}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              该用户尚未完善公开档案。联系方式默认不展示；发布者可在个人设置中开启微信/邮箱等隐私项。
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<ChatBubbleOutlineIcon />}
+              onClick={() => {
+                const prefill = `想联系用户 ${userId}：\n`;
+                if (!isAuthenticated) {
+                  openLoginDialog('登录后可留言，站长会协助转发联系该用户');
+                  return;
+                }
+                requestSupportOpen('human', prefill);
+              }}
+            >
+              {isAuthenticated ? '发消息（经站长转发）' : '登录后发消息'}
+            </Button>
+          </Paper>
+        </Stack>
       ) : (
         <Stack spacing={2}>
           <Paper variant="outlined" sx={{ p: 3 }}>

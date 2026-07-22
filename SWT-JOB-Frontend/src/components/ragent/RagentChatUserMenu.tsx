@@ -1,38 +1,29 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Link from "next/link";
+import * as React from 'react';
+import Link from 'next/link';
 import {
   Button,
   ButtonBase,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
   ListItemIcon,
   ListItemText,
   Menu,
   MenuItem,
-  TextField,
   Tooltip,
   Typography,
-} from "@mui/material";
+} from '@mui/material';
 import {
   AdminPanelSettings as AdminPanelSettingsIcon,
   Logout as LogoutIcon,
-  VpnKey as VpnKeyIcon,
   Person as PersonIcon,
-} from "@mui/icons-material";
-import { useRouter } from "next/router";
-import { toast } from "sonner";
-import { useAuthStore } from "@/stores/authStore";
-import { changePassword } from "@/services/userService";
-import { getVisibleAdminNavItems } from "@/lib/adminNavLinks";
-import { useI18n } from "../../context/I18nContext";
+} from '@mui/icons-material';
+import { useRouter } from 'next/router';
+import { useAuthStore } from '@/stores/authStore';
+import { useI18n } from '../../context/I18nContext';
 
 /**
- * 全局顶栏右侧：胶囊式头像+用户名；下拉菜单含管理后台子菜单（按角色）、修改密码与退出登录
+ * 全局顶栏右侧：头像下拉 — 管理后台入口、个人主页、退出登录。
+ * 修改密码与钱包在个人主页内完成。
  */
 export function RagentChatUserMenu() {
   const router = useRouter();
@@ -44,19 +35,12 @@ export function RagentChatUserMenu() {
   const [anchor, setAnchor] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchor);
   const [imgFailed, setImgFailed] = React.useState(false);
-  const [passwordOpen, setPasswordOpen] = React.useState(false);
-  const [passwordSubmitting, setPasswordSubmitting] = React.useState(false);
-  const [passwordForm, setPasswordForm] = React.useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
 
-  const adminNavItems = React.useMemo(() => getVisibleAdminNavItems(user), [user]);
+  const isAdmin = user?.role === 'admin';
 
   const displayName = (() => {
-    const fallback = user?.username || user?.userId || "用户";
-    return /^\d+$/.test(fallback) ? "用户" : fallback;
+    const fallback = user?.username || user?.userId || '用户';
+    return /^\d+$/.test(fallback) ? '用户' : fallback;
   })();
 
   const initial = displayName.slice(0, 1).toUpperCase();
@@ -66,46 +50,20 @@ export function RagentChatUserMenu() {
   const handleLogout = async () => {
     setAnchor(null);
     await logout();
-    void router.push("/chat");
+    void router.push('/chat');
   };
 
   if (!isAuthenticated) {
     return (
-      <Button variant="outlined" size="small" onClick={() => openLoginDialog("登录后可保存对话与使用完整 AI 功能")}>
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => openLoginDialog('登录后可保存对话与使用完整 AI 功能')}
+      >
         请登录
       </Button>
     );
   }
-
-  const handleOpenPassword = () => {
-    setAnchor(null);
-    setPasswordOpen(true);
-  };
-
-  const handlePasswordSubmit = async () => {
-    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
-      toast.error("请输入当前密码和新密码");
-      return;
-    }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error("两次输入的新密码不一致");
-      return;
-    }
-    try {
-      setPasswordSubmitting(true);
-      await changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-      toast.success("密码已更新");
-      setPasswordOpen(false);
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (error) {
-      toast.error((error as Error).message || "修改密码失败");
-    } finally {
-      setPasswordSubmitting(false);
-    }
-  };
 
   return (
     <>
@@ -116,14 +74,14 @@ export function RagentChatUserMenu() {
           aria-haspopup="true"
           aria-expanded={open}
           sx={{
-            border: "1px solid",
-            borderColor: "divider",
+            border: '1px solid',
+            borderColor: 'divider',
             borderRadius: 999,
             px: 1,
             py: 0.5,
             gap: 1,
-            alignItems: "center",
-            maxWidth: "100%",
+            alignItems: 'center',
+            maxWidth: '100%',
           }}
         >
           {showImg ? (
@@ -144,7 +102,7 @@ export function RagentChatUserMenu() {
             noWrap
             sx={{
               maxWidth: { xs: 96, sm: 140 },
-              textAlign: "left",
+              textAlign: 'left',
               fontWeight: 500,
             }}
           >
@@ -156,125 +114,43 @@ export function RagentChatUserMenu() {
         anchorEl={anchor}
         open={open}
         onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
           paper: {
-            sx: { maxHeight: 420, minWidth: 220 },
+            sx: { minWidth: 200 },
           },
         }}
       >
-        {adminNavItems.length > 0 ? (
-          <>
-            <Typography
-              variant="caption"
-              sx={{ px: 2, pt: 1.25, pb: 0.5, display: "block", color: "text.secondary" }}
-            >
-              {t("nav.admin")}
-            </Typography>
-            {adminNavItems.map((item, index) => (
-              <MenuItem
-                key={item.path}
-                component={Link}
-                href={item.path}
-                onClick={() => setAnchor(null)}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  {index === 0 ? <AdminPanelSettingsIcon fontSize="small" /> : null}
-                </ListItemIcon>
-                <ListItemText primaryTypographyProps={{ variant: "body2" }} primary={item.label} />
-              </MenuItem>
-            ))}
-            <Divider />
-          </>
-        ) : null}
-        {isAuthenticated ? (
+        {isAdmin ? (
           <MenuItem
             component={Link}
-            href={`/u/${user?.userId || ""}`}
+            href="/admin/dashboard"
             onClick={() => setAnchor(null)}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              <PersonIcon fontSize="small" />
+              <AdminPanelSettingsIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="个人主页" />
+            <ListItemText primary={t('nav.admin')} />
           </MenuItem>
         ) : null}
-        {isAuthenticated ? (
-          <MenuItem onClick={handleOpenPassword}>
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <VpnKeyIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="修改密码" />
-          </MenuItem>
-        ) : null}
-        <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
+        <MenuItem
+          component={Link}
+          href={`/u/${user?.userId || ''}`}
+          onClick={() => setAnchor(null)}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <PersonIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="个人主页" />
+        </MenuItem>
+        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <LogoutIcon fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText primary={t("common.logout")} />
+          <ListItemText primary={t('common.logout')} />
         </MenuItem>
       </Menu>
-
-      <Dialog
-        open={passwordOpen}
-        onClose={() => {
-          if (!passwordSubmitting) {
-            setPasswordOpen(false);
-            setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-          }
-        }}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>修改密码</DialogTitle>
-        <DialogContent className="flex flex-col gap-3 pt-1">
-          <TextField
-            label="当前密码"
-            type="password"
-            name="current-password"
-            autoComplete="current-password"
-            value={passwordForm.currentPassword}
-            onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))}
-            size="small"
-            margin="dense"
-          />
-          <TextField
-            label="新密码"
-            type="password"
-            name="new-password"
-            autoComplete="new-password"
-            value={passwordForm.newPassword}
-            onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
-            size="small"
-            margin="dense"
-          />
-          <TextField
-            label="确认新密码"
-            type="password"
-            name="confirm-new-password"
-            autoComplete="new-password"
-            value={passwordForm.confirmPassword}
-            onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))}
-            size="small"
-            margin="dense"
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => {
-              setPasswordOpen(false);
-              setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-            }}
-            disabled={passwordSubmitting}
-          >
-            取消
-          </Button>
-          <Button variant="contained" onClick={() => void handlePasswordSubmit()} disabled={passwordSubmitting}>
-            {passwordSubmitting ? "保存中…" : "保存"}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }

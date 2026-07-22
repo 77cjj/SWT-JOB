@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMarketUserFromRequest } from '../../../../lib/marketplace/auth';
 import {
   getMarketListing,
+  updateMarketListing,
   updateMarketListingStatus,
   updateMarketListingSlotsUsed,
 } from '../../../../lib/marketplace/listings';
@@ -21,8 +22,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'PATCH') {
     if (!user) return res.status(401).json({ ok: false, message: 'Login required' });
-    const body = req.body as { status?: string; slotsUsed?: number };
+    const body = req.body as {
+      status?: string;
+      slotsUsed?: number;
+      edit?: boolean;
+      [key: string]: unknown;
+    };
     try {
+      if (body.edit === true || body.action === 'edit') {
+        const { status: _s, slotsUsed: _u, edit: _e, action: _a, ...fields } = body;
+        const listing = await updateMarketListing(user, id, fields as Parameters<typeof updateMarketListing>[2]);
+        return res.status(200).json({ ok: true, listing });
+      }
       if (typeof body.slotsUsed === 'number') {
         const listing = await updateMarketListingSlotsUsed(user, id, body.slotsUsed);
         return res.status(200).json({ ok: true, listing });

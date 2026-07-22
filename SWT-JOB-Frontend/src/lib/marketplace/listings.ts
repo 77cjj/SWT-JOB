@@ -169,14 +169,17 @@ export async function updateMarketListingStatus(
     throw new Error('Forbidden');
   }
 
-  listing.status = status;
-  listing.updatedAt = new Date().toISOString();
+  const prev = listing.status;
+  if (prev === status) {
+    return sanitizeListingForPublic(listing, user.userId);
+  }
 
-  if (status === 'closed') {
+  // 关闭：退回剩余保证金（仅从 active/paused/sold_out → closed 时执行一次）
+  if (status === 'closed' && prev !== 'closed') {
     const remainingSlots = listing.unlimitedSlots
       ? 1
       : Math.max(0, listing.maxSlots - listing.slotsUsed);
-    if (remainingSlots > 0) {
+    if (remainingSlots > 0 && listing.escrowPerSlot > 0) {
       const refundAmount = listing.escrowPerSlot * remainingSlots;
       unlockFunds(
         store,
@@ -188,6 +191,168 @@ export async function updateMarketListingStatus(
     }
   }
 
+  // 从关闭恢复上架：重新锁定剩余名额保证金
+  if (status === 'active' && prev === 'closed') {
+    const remainingSlots = listing.unlimitedSlots
+      ? 1
+      : Math.max(0, listing.maxSlots - listing.slotsUsed);
+    if (remainingSlots > 0 && listing.escrowPerSlot > 0) {
+      const relock = listing.escrowPerSlot * remainingSlots;
+      lockFunds(
+        store,
+        listing.sellerId,
+        relock,
+        listing.id,
+        `Resume listing escrow ${remainingSlots} slots`,
+      );
+    }
+  }
+
+  // 暂停不解锁；从暂停恢复仅改状态
+  listing.status = status;
+  listing.updatedAt = new Date().toISOString();
+  store.listings[listingId] = listing;
+  await writeMarketStore(store);
+  return sanitizeListingForPublic(listing, user.userId);
+}
+
+export type UpdateListingInput = Partial<CreateListingInput> & {
+  /** 编辑时不可改类型；由服务端校验 */
+};
+
+/** 编辑帖子文案与条件；金额/名额仅在尚无成交时可改（避免破坏已锁定保证金） */
+export async function updateMarketListing(
+  user: MarketUser,
+  listingId: string,
+  input: UpdateListingInput,
+) {
+  const store = await readMarketStore();
+  const listing = store.listings[listingId];
+  if (!listing) throw new Error('Listing not found');
+  if (listing.sellerId !== user.userId && user.role !== 'admin') {
+    throw new Error('Forbidden');
+  }
+  if (listing.status === 'closed') {
+    throw new Error('已关闭的帖子请先恢复上架再编辑');
+  }
+
+  const type = listing.type;
+  if (input.title !== undefined) {
+    if (!String(input.title).trim()) throw new Error('Title required');
+    listing.title = String(input.title).trim();
+  }
+  if (input.description !== undefined) {
+    if (!String(input.description).trim()) throw new Error('Description required');
+    listing.description = String(input.description).trim();
+  }
+  if (input.sellerContactHint !== undefined) {
+    listing.sellerContactHint = String(input.sellerContactHint).trim() || undefined;
+  }
+
+  const canChangeMoney = listing.slotsUsed === 0;
+
+  if (type === 'refer') {
+    if (input.brand !== undefined) listing.brand = String(input.brand).trim() || undefined;
+    if (input.referLink !== undefined) listing.referLink = String(input.referLink).trim() || undefined;
+    if (input.referCode !== undefined) listing.referCode = String(input.referCode).trim() || undefined;
+    if (input.completionCriteria !== undefined) {
+      listing.completionCriteria = String(input.completionCriteria).trim() || undefined;
+    }
+    if (input.requiresSsn !== undefined) listing.requiresSsn = Boolean(input.requiresSsn);
+    if (input.minDepositUsd !== undefined) {
+      listing.minDepositUsd = Number(input.minDepositUsd) || undefined;
+    }
+    if (input.platformReward !== undefined) {
+      listing.platformReward = Number(input.platformReward) || undefined;
+    }
+    if (canChangeMoney && input.buyerCashback !== undefined) {
+      const cashback = Number(input.buyerCashback);
+      if (!cashback || cashback <= 0) throw new Error('Buyer cashback required');
+      listing.buyerCashback = cashback;
+      const escrowSlots = listing.unlimitedSlots ? 1 : listing.maxSlots;
+      const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
+        'refer',
+        cashback,
+        escrowSlots,
+      );
+      const prevLock = listing.escrowPerSlot * escrowSlots;
+      const delta = totalLock - prevLock;
+      if (delta > 0) {
+        lockFunds(store, listing.sellerId, delta, listing.id, 'Edit listing extra escrow');
+      } else if (delta < 0) {
+        unlockFunds(store, listing.sellerId, -delta, listing.id, 'Edit listing escrow refund');
+      }
+      listing.escrowPerSlot = escrowPerSlot;
+      listing.buyerPayPerSlot = buyerPayPerSlot;
+    }
+  }
+
+  if (type === 'job_intel') {
+    if (input.state !== undefined) listing.state = String(input.state).trim().toUpperCase() || undefined;
+    if (input.city !== undefined) listing.city = String(input.city).trim() || undefined;
+    if (input.jobTitle !== undefined) listing.jobTitle = String(input.jobTitle).trim() || undefined;
+    if (input.employerHint !== undefined) {
+      listing.employerHint = String(input.employerHint).trim() || undefined;
+    }
+    if (input.intelPreview !== undefined) {
+      listing.intelPreview = String(input.intelPreview).trim() || undefined;
+    }
+    if (input.intelDetail !== undefined) {
+      listing.intelDetail = String(input.intelDetail).trim() || undefined;
+    }
+    if (canChangeMoney && input.intelFee !== undefined) {
+      const fee = Number(input.intelFee);
+      if (!fee || fee <= 0) throw new Error('Intel fee required');
+      listing.intelFee = fee;
+      const escrowSlots = listing.unlimitedSlots ? 1 : listing.maxSlots;
+      const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
+        'job_intel',
+        fee,
+        escrowSlots,
+      );
+      const prevLock = listing.escrowPerSlot * escrowSlots;
+      const delta = totalLock - prevLock;
+      if (delta > 0) {
+        lockFunds(store, listing.sellerId, delta, listing.id, 'Edit listing extra escrow');
+      } else if (delta < 0) {
+        unlockFunds(store, listing.sellerId, -delta, listing.id, 'Edit listing escrow refund');
+      }
+      listing.escrowPerSlot = escrowPerSlot;
+      listing.buyerPayPerSlot = buyerPayPerSlot;
+    }
+  }
+
+  if (canChangeMoney && input.unlimitedSlots !== undefined) {
+    listing.unlimitedSlots = Boolean(input.unlimitedSlots);
+    if (listing.unlimitedSlots) listing.maxSlots = 0;
+  }
+  if (canChangeMoney && !listing.unlimitedSlots && input.maxSlots !== undefined) {
+    const maxSlots = Number(input.maxSlots);
+    if (!Number.isFinite(maxSlots) || maxSlots < 1 || maxSlots > 10000) {
+      throw new Error('名额须为 1–10000，或选择无上限');
+    }
+    const payoutBase =
+      type === 'refer' ? (listing.buyerCashback ?? 0) : (listing.intelFee ?? 0);
+    const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
+      type,
+      payoutBase,
+      maxSlots,
+    );
+    const prevSlots = listing.unlimitedSlots ? 1 : listing.maxSlots;
+    const prevLock = listing.escrowPerSlot * prevSlots;
+    const delta = totalLock - prevLock;
+    if (delta > 0) {
+      lockFunds(store, listing.sellerId, delta, listing.id, 'Edit listing slots escrow');
+    } else if (delta < 0) {
+      unlockFunds(store, listing.sellerId, -delta, listing.id, 'Edit listing slots refund');
+    }
+    listing.maxSlots = maxSlots;
+    listing.unlimitedSlots = false;
+    listing.escrowPerSlot = escrowPerSlot;
+    listing.buyerPayPerSlot = buyerPayPerSlot;
+  }
+
+  listing.updatedAt = new Date().toISOString();
   store.listings[listingId] = listing;
   await writeMarketStore(store);
   return sanitizeListingForPublic(listing, user.userId);

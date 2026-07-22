@@ -31,8 +31,26 @@ export async function getMarketUserFromRequest(req: NextApiRequest): Promise<Mar
     });
     if (!res.ok) return null;
     const body = await parseJsonResponse<unknown>(res);
-    const data = unwrapRagentResult<MarketUser>(body);
-    if (data?.userId) return data;
+    const data = unwrapRagentResult<{
+      userId?: string;
+      id?: string;
+      username?: string;
+      role?: string;
+    }>(body);
+    const userId = data?.userId || data?.id;
+    if (userId) {
+      return {
+        userId: String(userId),
+        username: data.username,
+        role: data.role,
+      };
+    }
+    // 兼容部分 Result 直接展开字段
+    const raw = body as { userId?: string; id?: string; data?: { userId?: string } };
+    const fallbackId = raw?.data?.userId || raw?.userId || raw?.id;
+    if (fallbackId) {
+      return { userId: String(fallbackId), username: data?.username, role: data?.role };
+    }
     return null;
   } catch {
     return null;

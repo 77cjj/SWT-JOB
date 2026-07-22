@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
   Box,
@@ -178,10 +177,6 @@ export default function HistoricalJobsPage() {
           onClick={() => setDialogOpen(true)}
         >
           {t('historicalJobs.contributeButton')}
-        </Button>
-
-        <Button component={Link} href="/compare" variant="outlined" size="medium">
-          {t('historicalJobs.compareLink')}
         </Button>
       </Box>
 

@@ -55,8 +55,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
         },
       ],
-      success_url: `${origin}/deals/market?tab=wallet&deposit=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/deals/market?tab=wallet&deposit=cancel`,
+      success_url: `${origin}/u/${encodeURIComponent(user.userId)}?tab=wallet&deposit=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/u/${encodeURIComponent(user.userId)}?tab=wallet&deposit=cancel`,
       metadata: {
         userId: user.userId,
         amountUsd: String(amount),

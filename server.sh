@@ -1112,7 +1112,11 @@ start_backend() {
 
   info "启动 Spring Boot 后端..."
   info "日志: ${log_file}"
-  info "配置: ${SERVER_CONFIG}（关 MCP + 关 MQ 消费者，避免卡死）"
+  if detect_low_mem_mode; then
+    info "配置: ${SERVER_CONFIG}（小内存：关 MCP + 关 MQ 消费者）"
+  else
+    info "配置: ${SERVER_CONFIG}（标准模式：MQ 分块与消费者已启用）"
+  fi
   warn_if_broker_unstable
 
   : >"$log_file"

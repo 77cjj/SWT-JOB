@@ -30,4 +30,10 @@ public class GoogleOAuthProperties {
      * Google Cloud OAuth Web Client ID（与前端 NEXT_PUBLIC_GOOGLE_CLIENT_ID 一致）
      */
     private String clientId = "";
+
+    /**
+     * 可选：当 ECS 无法直连 Google 时，经 Vercel 代理校验 id_token。
+     * 例：https://swtjob.vercel.app/api/auth/google-tokeninfo
+     */
+    private String tokeninfoProxyUrl = "";
 }

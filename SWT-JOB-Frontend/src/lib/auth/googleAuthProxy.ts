@@ -51,6 +51,24 @@ export async function exchangeGoogleIdToken(idToken: string): Promise<GoogleLogi
     throw new Error("缺少 Google 登录凭证");
   }
 
+  // 先在 Vercel 侧探测 token 是否有效，便于给出明确错误（ECS 可能连不上 Google）
+  try {
+    const probe = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      { method: "GET" },
+    );
+    if (probe.ok) {
+      const info = (await probe.json()) as { aud?: string; error?: string };
+      const expected = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+      if (expected && info.aud && info.aud !== expected) {
+        throw new Error("Google Client ID 不匹配，请检查前后端配置是否为同一 Client");
+      }
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("Client ID")) throw e;
+    // 探测失败不阻断，仍交给后端（可能走代理）
+  }
+
   const upstream = await fetch(`${apiBase}/auth/google`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },

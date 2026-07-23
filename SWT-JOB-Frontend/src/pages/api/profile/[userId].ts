@@ -2,21 +2,41 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { getMarketUserFromRequest } from '../../../lib/marketplace/auth';
 import { readProfileStore, writeProfileStore } from '../../../lib/profile/store';
-import { defaultProfile, seedFromMarketUser, toPublicView } from '../../../lib/profile/types';
+import {
+  defaultProfile,
+  normalizeExperiences,
+  seedFromMarketUser,
+  syncLegacyFields,
+  toPublicView,
+  type SwtExperience,
+} from '../../../lib/profile/types';
+
+function parseExperiences(body: Record<string, unknown>, prev: ReturnType<typeof defaultProfile>): SwtExperience[] {
+  if (Array.isArray(body.swtExperiences)) {
+    return normalizeExperiences({ swtExperiences: body.swtExperiences as SwtExperience[] });
+  }
+  // 兼容只改旧字段
+  return normalizeExperiences({
+    programYear: String(body.programYear ?? prev.programYear),
+    workState: String(body.workState ?? prev.workState),
+    jobTitle: String(body.jobTitle ?? prev.jobTitle),
+    swtExperiences: prev.swtExperiences,
+  });
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const userId = typeof req.query.userId === 'string' ? req.query.userId : '';
   if (!userId) return res.status(400).json({ ok: false, message: 'Missing userId' });
 
   const viewer = await getMarketUserFromRequest(req);
-  const isOwner = Boolean(viewer && (viewer.userId === userId || viewer.role === 'admin'));
+  const isOwnerViewer = Boolean(viewer && (viewer.userId === userId || viewer.role === 'admin'));
 
   if (req.method === 'GET') {
     const store = await readProfileStore();
-    const profile = store.profiles[userId] ?? defaultProfile(userId);
+    const profile = defaultProfile(userId, store.profiles[userId]);
     return res.status(200).json({
       ok: true,
-      profile: toPublicView(profile, isOwner),
+      profile: toPublicView(profile, isOwnerViewer),
       isOwner: Boolean(viewer?.userId === userId),
     });
   }
@@ -27,14 +47,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     const body = (req.body || {}) as Record<string, unknown>;
     const store = await readProfileStore();
-    const prev = store.profiles[userId] ?? defaultProfile(userId, seedFromMarketUser(viewer));
+    const prev = defaultProfile(userId, store.profiles[userId] ?? seedFromMarketUser(viewer));
+    const experiences = parseExperiences(body, prev);
+    const legacy = syncLegacyFields(experiences);
     const next = {
       ...prev,
       displayName: String(body.displayName ?? prev.displayName).slice(0, 64),
       bio: String(body.bio ?? prev.bio).slice(0, 500),
-      programYear: String(body.programYear ?? prev.programYear).slice(0, 16),
-      workState: String(body.workState ?? prev.workState).slice(0, 8).toUpperCase(),
-      jobTitle: String(body.jobTitle ?? prev.jobTitle).slice(0, 128),
+      ...legacy,
+      swtExperiences: experiences,
       wechat: String(body.wechat ?? prev.wechat).slice(0, 64),
       email: String(body.email ?? prev.email).slice(0, 128),
       showWechat: Boolean(body.showWechat ?? prev.showWechat),

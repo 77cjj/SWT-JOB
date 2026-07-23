@@ -18,17 +18,20 @@
 package com.nageoffer.ai.ragent.user.service;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.config.GoogleOAuthProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoogleOAuthService {
@@ -43,14 +46,7 @@ public class GoogleOAuthService {
             throw new ClientException("服务端未配置 GOOGLE_CLIENT_ID");
         }
 
-        String encoded = URLEncoder.encode(idToken.trim(), StandardCharsets.UTF_8);
-        String body;
-        try {
-            body = HttpUtil.get("https://oauth2.googleapis.com/tokeninfo?id_token=" + encoded, 8000);
-        } catch (Exception ex) {
-            throw new ClientException("无法验证 Google 登录，请稍后重试");
-        }
-
+        String body = fetchTokenInfo(idToken.trim());
         JSONObject json = JSONUtil.parseObj(body);
         if (json.containsKey("error_description") || json.containsKey("error")) {
             throw new ClientException("Google 登录无效或已过期");
@@ -77,6 +73,32 @@ public class GoogleOAuthService {
                 json.getStr("name"),
                 json.getStr("picture")
         );
+    }
+
+    private String fetchTokenInfo(String idToken) {
+        String encoded = URLEncoder.encode(idToken, StandardCharsets.UTF_8);
+        Exception directError = null;
+        try {
+            return HttpUtil.get("https://oauth2.googleapis.com/tokeninfo?id_token=" + encoded, 10000);
+        } catch (Exception ex) {
+            directError = ex;
+            log.warn("Google tokeninfo 直连失败，尝试代理: {}", ex.toString());
+        }
+
+        String proxy = StrUtil.trimToEmpty(googleOAuthProperties.getTokeninfoProxyUrl());
+        if (StrUtil.isNotBlank(proxy)) {
+            try {
+                String sep = proxy.contains("?") ? "&" : "?";
+                String url = proxy + sep + "id_token=" + encoded;
+                return HttpRequest.get(url).timeout(12000).execute().body();
+            } catch (Exception proxyEx) {
+                log.error("Google tokeninfo 代理也失败", proxyEx);
+                throw new ClientException("无法验证 Google 登录，请稍后重试（代理校验失败）");
+            }
+        }
+
+        log.error("Google tokeninfo 不可达且未配置 GOOGLE_TOKENINFO_PROXY_URL", directError);
+        throw new ClientException("无法验证 Google 登录，请稍后重试（服务器无法连接 Google，请配置 GOOGLE_TOKENINFO_PROXY_URL）");
     }
 
     public record VerifiedGoogleUser(String subject, String email, String name, String picture) {

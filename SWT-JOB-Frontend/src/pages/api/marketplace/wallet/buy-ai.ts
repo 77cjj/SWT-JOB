@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { getMarketUserFromRequest } from '../../../../lib/marketplace/auth';
+import { getMarketUserFromRequest, toSaTokenAuthorization } from '../../../../lib/marketplace/auth';
 import { readMarketStore, writeMarketStore, newId } from '../../../../lib/marketplace/store';
 import { getWallet } from '../../../../lib/marketplace/wallet';
 
@@ -38,7 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const base = process.env.NEXT_PUBLIC_RAGENT_API_BASE_URL?.replace(/\/$/, '');
-    if (!base || !req.headers.authorization) {
+    const token = toSaTokenAuthorization(req.headers.authorization);
+    if (!base || !token) {
       return res.status(503).json({
         ok: false,
         message: 'AI 额度服务未配置，请稍后重试或联系站长',
@@ -52,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: req.headers.authorization,
+          Authorization: token,
         },
         body: JSON.stringify({ userId: user.userId, count }),
       });

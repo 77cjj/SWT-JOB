@@ -867,15 +867,35 @@ function ListingsGrid({
                   <UserProfileLink userId={item.sellerId} displayName={item.sellerName} />
                 </Box>
               </Box>
-              <Typography
-                variant="caption"
-                display="block"
-                sx={{ mt: 0.75, color: low ? 'error.main' : 'text.secondary', fontWeight: low ? 700 : 400 }}
+              <Box
+                sx={{
+                  mt: 0.75,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
               >
-                {item.unlimitedSlots || item.maxSlots <= 0
-                  ? tWithParams('marketplace.slotsUnlimited', { used: item.slotsUsed })
-                  : tWithParams('marketplace.slotsLeft', { left: left ?? 0, max: item.maxSlots })}
-              </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: low ? 'error.main' : 'text.secondary',
+                    fontWeight: low ? 700 : 400,
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.unlimitedSlots || item.maxSlots <= 0
+                    ? tWithParams('marketplace.slotsUnlimited', { used: item.slotsUsed })
+                    : tWithParams('marketplace.slotsLeft', { left: left ?? 0, max: item.maxSlots })}
+                </Typography>
+                {!item.unlimitedSlots && item.maxSlots > 0 ? (
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.max(0, Math.min(100, ((left ?? 0) / item.maxSlots) * 100))}
+                    color={low ? 'error' : 'primary'}
+                    sx={{ flex: 1, height: 6, borderRadius: 999, bgcolor: 'action.hover' }}
+                  />
+                ) : null}
+              </Box>
             </CardContent>
             <CardActions sx={{ px: 2, pb: 2, flexWrap: 'wrap', gap: 0.5 }}>
               {tab === 'my_listings' ? (
@@ -917,10 +937,11 @@ function ListingsGrid({
                 <Button size="small" variant="contained" onClick={() => onClaim(item.id)}>
                   {item.type === 'refer' ? t('marketplace.useRefer') : t('marketplace.buyIntel')}
                 </Button>
-              ) : null}
-              <Button size="small" onClick={() => onOpenDetail(item)}>
-                {t('marketplace.viewDetail')}
-              </Button>
+              ) : (
+                <Button size="small" onClick={() => onOpenDetail(item)}>
+                  {t('marketplace.viewDetail')}
+                </Button>
+              )}
             </CardActions>
           </Card>
         );

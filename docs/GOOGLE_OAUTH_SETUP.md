@@ -17,14 +17,12 @@ http://localhost:3000
 
 ### 已获授权的重定向 URI
 
-Google Identity Services（前端按钮）通常**可不填重定向 URI**；若控制台强制要求，可填：
+本项目登录为 GIS **redirect** 模式，须配置：
 
 ```
-https://swtjob.vercel.app
-http://localhost:3000
+https://swtjob.vercel.app/api/auth/google-callback
+http://localhost:3000/api/auth/google-callback
 ```
-
-（本项目使用前端 `GoogleLogin` 组件 + 后端验证 `idToken`，不是服务端 redirect 回调。）
 
 4. 保存后复制 **客户端 ID** 与 **客户端密钥**
 
@@ -44,9 +42,11 @@ http://localhost:3000
 ```env
 GOOGLE_CLIENT_ID=与上面相同的客户端 ID
 GOOGLE_CLIENT_SECRET=客户端密钥
+# 国内 ECS 常无法直连 oauth2.googleapis.com，务必配置：
+GOOGLE_TOKENINFO_PROXY_URL=https://swtjob.vercel.app/api/auth/google-tokeninfo
 ```
 
-`GOOGLE_CLIENT_SECRET` 仅后端验证扩展接口时使用；当前实现用 `tokeninfo` 校验 `idToken`，**必须配置 `GOOGLE_CLIENT_ID`**。
+`GOOGLE_CLIENT_SECRET` 仅后端验证扩展接口时使用；当前实现用 `tokeninfo` 校验 `idToken`，**必须配置 `GOOGLE_CLIENT_ID`**。若直连 Google 超时并报「无法验证 Google 登录」，配置 `GOOGLE_TOKENINFO_PROXY_URL` 后重启即可。
 
 重启后端（**代码更新后必须重新编译 jar**）：
 

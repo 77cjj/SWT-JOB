@@ -10,6 +10,14 @@ function resolveRagentApiBase() {
   return null;
 }
 
+/** Sa-Token 使用裸 token，不能带 Bearer 前缀 */
+export function toSaTokenAuthorization(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/^Bearer\s+/i, '').trim() || null;
+}
+
 export async function getMarketUserFromRequest(req: NextApiRequest): Promise<MarketUser | null> {
   const bypass = process.env.NEXT_PUBLIC_RAGENT_BYPASS_AUTH === 'true';
   if (bypass && process.env.NODE_ENV !== 'production') {
@@ -19,15 +27,15 @@ export async function getMarketUserFromRequest(req: NextApiRequest): Promise<Mar
     }
   }
 
-  const auth = req.headers.authorization;
-  if (!auth) return null;
+  const token = toSaTokenAuthorization(req.headers.authorization);
+  if (!token) return null;
 
   const base = resolveRagentApiBase();
   if (!base) return null;
 
   try {
     const res = await fetch(`${base}/user/me`, {
-      headers: { Authorization: auth },
+      headers: { Authorization: token },
     });
     if (!res.ok) return null;
     const body = await parseJsonResponse<unknown>(res);
@@ -45,7 +53,6 @@ export async function getMarketUserFromRequest(req: NextApiRequest): Promise<Mar
         role: data.role,
       };
     }
-    // 兼容部分 Result 直接展开字段
     const raw = body as { userId?: string; id?: string; data?: { userId?: string } };
     const fallbackId = raw?.data?.userId || raw?.userId || raw?.id;
     if (fallbackId) {

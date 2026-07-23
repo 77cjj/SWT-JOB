@@ -232,6 +232,8 @@ sa-token:
 google:
   oauth:
     client-id: ${GOOGLE_CLIENT_ID:}
+    # ECS 无法直连 Google 时，填 Vercel 代理，例如 https://swtjob.vercel.app/api/auth/google-tokeninfo
+    tokeninfo-proxy-url: ${GOOGLE_TOKENINFO_PROXY_URL:}
 
 app:
   demo-mode: false

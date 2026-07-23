@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Eye, EyeOff, Lock, User } from "lucide-react";
-import { toast } from "sonner";
+import * as React from 'react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { useAuthStore } from "@/stores/authStore";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { GOOGLE_CLIENT_ID } from '@/config/runtimeEnv';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { useAuthStore } from '@/stores/authStore';
+import { useSupportWidgetStore } from '../../stores/supportWidgetStore';
 
 export function LoginDialog() {
   const open = useAuthStore((s) => s.loginDialogOpen);
@@ -17,9 +18,10 @@ export function LoginDialog() {
   const closeLoginDialog = useAuthStore((s) => s.closeLoginDialog);
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const requestSupportOpen = useSupportWidgetStore((s) => s.requestOpen);
 
   const [showPassword, setShowPassword] = React.useState(false);
-  const [form, setForm] = React.useState({ username: "", password: "" });
+  const [form, setForm] = React.useState({ username: '', password: '' });
 
   const handleClose = () => {
     if (isLoading) return;
@@ -29,7 +31,7 @@ export function LoginDialog() {
   const handlePasswordLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.username.trim() || !form.password.trim()) {
-      toast.error("请输入用户名和密码");
+      toast.error('请输入用户名和密码');
       return;
     }
     try {
@@ -40,19 +42,29 @@ export function LoginDialog() {
     }
   };
 
+  const handleForgotPassword = () => {
+    const name = form.username.trim() || '（未填写）';
+    closeLoginDialog();
+    requestSupportOpen(
+      'human',
+      `【忘记密码】\n用户名：${name}\n请协助重置密码，我会用微信/邮箱接收新密码。\n`,
+    );
+    toast.message('已打开联系站长，说明用户名后即可申请重置密码');
+  };
+
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? handleClose() : undefined)}>
       <DialogContent
         className="max-w-md rounded-2xl border-border/70 bg-background/95 p-0 shadow-xl backdrop-blur"
         onPointerDownOutside={(event) => {
           const target = event.target as HTMLElement | null;
-          if (target?.closest("[data-google-signin]") || target?.closest('iframe[src*="accounts.google.com"]')) {
+          if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
             event.preventDefault();
           }
         }}
         onInteractOutside={(event) => {
           const target = event.target as HTMLElement | null;
-          if (target?.closest("[data-google-signin]") || target?.closest('iframe[src*="accounts.google.com"]')) {
+          if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
             event.preventDefault();
           }
         }}
@@ -60,7 +72,7 @@ export function LoginDialog() {
         <DialogHeader className="space-y-2 px-6 pt-6 text-left">
           <DialogTitle className="font-display text-xl">登录后继续</DialogTitle>
           <DialogDescription>
-            {reason || "登录后可使用 AI 问答、保存对话历史。不登录也可以浏览示例问题与站点内容。"}
+            {reason || '登录后可使用 AI 问答、保存对话历史。不登录也可以浏览示例问题与站点内容。'}
           </DialogDescription>
         </DialogHeader>
 
@@ -97,7 +109,7 @@ export function LoginDialog() {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="密码"
                 value={form.password}
                 onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
@@ -113,15 +125,19 @@ export function LoginDialog() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                onClick={handleForgotPassword}
+              >
+                忘记密码？
+              </button>
+            </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "正在登录…" : "登录"}
+              {isLoading ? '正在登录…' : '登录'}
             </Button>
           </form>
-
-          <p className="text-center text-xs text-muted-foreground">
-            体验账号：<span className="font-mono">demo</span> / <span className="font-mono">demo2026</span>
-            （普通用户，非管理员）
-          </p>
 
           <Button type="button" variant="ghost" className="w-full" onClick={handleClose}>
             暂不登录，继续浏览

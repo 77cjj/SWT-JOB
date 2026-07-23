@@ -13,7 +13,7 @@ import type {
 function authHeaders(): HeadersInit {
   const token = storage.getToken();
   return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    ? { Authorization: token, 'Content-Type': 'application/json' }
     : { 'Content-Type': 'application/json' };
 }
 

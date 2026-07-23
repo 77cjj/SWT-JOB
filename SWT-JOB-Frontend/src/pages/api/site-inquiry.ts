@@ -7,18 +7,18 @@ type InquiryBody = {
   topic?: string;
 };
 
-async function notifyPushPlus(token: string, title: string, content: string) {
+async function notifyPushChannel(token: string, title: string, content: string) {
   const res = await fetch('https://www.pushplus.plus/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, title, content, template: 'txt' }),
   });
   if (!res.ok) {
-    throw new Error(`PushPlus HTTP ${res.status}`);
+    throw new Error(`通知通道 HTTP ${res.status}`);
   }
   const data = (await res.json()) as { code?: number; msg?: string };
   if (data.code !== 200) {
-    throw new Error(data.msg || 'PushPlus 发送失败');
+    throw new Error(data.msg || '通知发送失败');
   }
 }
 
@@ -70,20 +70,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const webhookUrl = process.env.SITE_INQUIRY_WEBHOOK_URL;
 
   try {
-    if (pushplusToken) {
-      await notifyPushPlus(
+    // 优先走企业微信/自建 webhook（已配置时），避免旧 PushPlus 通道抢先
+    if (webhookUrl) {
+      await notifyWebhook(webhookUrl, payload);
+    } else if (pushplusToken) {
+      await notifyPushChannel(
         pushplusToken,
         `SWT Helper · ${topic === 'deals' ? '羊毛咨询' : '站点留言'}`,
         [`页面: ${payload.pageUrl}`, `联系方式: ${payload.contact}`, '', message].join('\n'),
       );
-    } else if (webhookUrl) {
-      await notifyWebhook(webhookUrl, payload);
     } else if (process.env.NODE_ENV !== 'production' || process.env.SITE_INQUIRY_ALLOW_DEV_FALLBACK === 'true') {
       console.info('[site-inquiry]', payload);
     } else {
       return res.status(503).json({
         ok: false,
-        message: '留言通道尚未配置，请联系站长',
+        message: '留言通道暂时不可用，请稍后再试',
       });
     }
 

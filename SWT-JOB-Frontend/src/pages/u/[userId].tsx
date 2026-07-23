@@ -29,13 +29,18 @@ import { useSupportWidgetStore } from '../../stores/supportWidgetStore';
 import { changePassword } from '@/services/userService';
 import { storage } from '@/utils/storage';
 import type { UserPublicProfile } from '../../lib/profile/types';
+import { emptyExperience, formatExperienceLine, normalizeExperiences } from '../../lib/profile/types';
 import type { WalletAccount, WalletTransaction } from '../../lib/marketplace/types';
 import { toast } from 'sonner';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import IconButton from '@mui/material/IconButton';
 
 function authHeaders(): HeadersInit {
   const token = storage.getToken();
+  // Sa-Token 使用裸 token；勿加 Bearer（市集 API 侧也会剥离，双保险）
   return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    ? { Authorization: token, 'Content-Type': 'application/json' }
     : { 'Content-Type': 'application/json' };
 }
 
@@ -81,7 +86,13 @@ export default function UserProfilePage() {
         message?: string;
       };
       if (!res.ok || !data.profile) throw new Error(data.message || '加载失败');
-      setProfile(data.profile);
+      setProfile({
+        ...data.profile,
+        swtExperiences:
+          normalizeExperiences(data.profile).length > 0
+            ? normalizeExperiences(data.profile)
+            : [emptyExperience()],
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '加载主页失败');
       setProfile(null);
@@ -265,12 +276,14 @@ export default function UserProfilePage() {
                     {profile.bio || (isOwner ? '完善简介，让其他用户更信任你。' : '')}
                   </Typography>
                 ) : null}
-                {(profile.showJobInfo || isOwner) && (profile.programYear || profile.workState || profile.jobTitle) ? (
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                    {[profile.programYear && `SWT ${profile.programYear}`, profile.workState, profile.jobTitle]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Typography>
+                {(profile.showJobInfo || isOwner) && normalizeExperiences(profile).length > 0 ? (
+                  <Stack spacing={0.25} sx={{ mt: 0.5 }}>
+                    {normalizeExperiences(profile).map((exp) => (
+                      <Typography key={exp.id} variant="caption" color="text.secondary" display="block">
+                        {formatExperienceLine(exp)}
+                      </Typography>
+                    ))}
+                  </Stack>
                 ) : null}
               </Box>
             </Stack>
@@ -352,9 +365,22 @@ export default function UserProfilePage() {
           {isOwner && tab === 'edit' ? (
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Stack spacing={2}>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  基本信息
-                </Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    基本信息
+                  </Typography>
+                  <FormControlLabel
+                    sx={{ m: 0 }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={profile.showBio}
+                        onChange={(e) => setProfile({ ...profile, showBio: e.target.checked })}
+                      />
+                    }
+                    label={<Typography variant="body2">公开简介</Typography>}
+                  />
+                </Stack>
                 <TextField
                   label="显示名称"
                   size="small"
@@ -372,82 +398,167 @@ export default function UserProfilePage() {
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                 />
                 <Divider />
-                <Typography variant="subtitle1" fontWeight={700}>
-                  SWT / 岗位信息
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    SWT 经历（可多届）
+                  </Typography>
+                  <FormControlLabel
+                    sx={{ m: 0 }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={profile.showJobInfo}
+                        onChange={(e) => setProfile({ ...profile, showJobInfo: e.target.checked })}
+                      />
+                    }
+                    label={<Typography variant="body2">公开经历</Typography>}
+                  />
+                </Stack>
+                <Typography variant="caption" color="text.secondary">
+                  可参加多届项目，请按届次分别填写；年份、州、岗位会随经历变化。
                 </Typography>
-                <TextField
-                  label="项目年份"
-                  size="small"
-                  placeholder="如 2025"
-                  value={profile.programYear}
-                  onChange={(e) => setProfile({ ...profile, programYear: e.target.value })}
-                />
-                <TextField
-                  label="工作州 (State)"
-                  size="small"
-                  placeholder="如 NJ"
-                  value={profile.workState}
-                  onChange={(e) => setProfile({ ...profile, workState: e.target.value })}
-                />
-                <TextField
-                  label="岗位"
-                  size="small"
-                  value={profile.jobTitle}
-                  onChange={(e) => setProfile({ ...profile, jobTitle: e.target.value })}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={profile.showJobInfo}
-                      onChange={(e) => setProfile({ ...profile, showJobInfo: e.target.checked })}
-                    />
+                {(profile.swtExperiences?.length ? profile.swtExperiences : [emptyExperience()]).map((exp, index) => (
+                  <Paper key={exp.id || index} variant="outlined" sx={{ p: 1.5 }}>
+                    <Stack spacing={1.25}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" fontWeight={600}>
+                          第 {index + 1} 届
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          aria-label="删除经历"
+                          disabled={(profile.swtExperiences?.length || 0) <= 1}
+                          onClick={() => {
+                            const next = (profile.swtExperiences || []).filter((x) => x.id !== exp.id);
+                            setProfile({ ...profile, swtExperiences: next.length ? next : [emptyExperience()] });
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                        <TextField
+                          label="项目年份"
+                          size="small"
+                          placeholder="如 2025"
+                          value={exp.programYear}
+                          onChange={(e) => {
+                            const next = [...(profile.swtExperiences || [])];
+                            next[index] = { ...exp, programYear: e.target.value };
+                            setProfile({ ...profile, swtExperiences: next });
+                          }}
+                          sx={{ flex: 1 }}
+                        />
+                        <TextField
+                          label="工作州"
+                          size="small"
+                          placeholder="如 NJ"
+                          value={exp.workState}
+                          onChange={(e) => {
+                            const next = [...(profile.swtExperiences || [])];
+                            next[index] = { ...exp, workState: e.target.value };
+                            setProfile({ ...profile, swtExperiences: next });
+                          }}
+                          sx={{ flex: 1 }}
+                        />
+                      </Stack>
+                      <TextField
+                        label="城市（选填）"
+                        size="small"
+                        fullWidth
+                        value={exp.city || ''}
+                        onChange={(e) => {
+                          const next = [...(profile.swtExperiences || [])];
+                          next[index] = { ...exp, city: e.target.value };
+                          setProfile({ ...profile, swtExperiences: next });
+                        }}
+                      />
+                      <TextField
+                        label="岗位"
+                        size="small"
+                        fullWidth
+                        value={exp.jobTitle}
+                        onChange={(e) => {
+                          const next = [...(profile.swtExperiences || [])];
+                          next[index] = { ...exp, jobTitle: e.target.value };
+                          setProfile({ ...profile, swtExperiences: next });
+                        }}
+                      />
+                      <TextField
+                        label="雇主提示（选填，可脱敏）"
+                        size="small"
+                        fullWidth
+                        value={exp.employerHint || ''}
+                        onChange={(e) => {
+                          const next = [...(profile.swtExperiences || [])];
+                          next[index] = { ...exp, employerHint: e.target.value };
+                          setProfile({ ...profile, swtExperiences: next });
+                        }}
+                      />
+                    </Stack>
+                  </Paper>
+                ))}
+                <Button
+                  startIcon={<AddIcon />}
+                  variant="outlined"
+                  onClick={() =>
+                    setProfile({
+                      ...profile,
+                      swtExperiences: [...(profile.swtExperiences || []), emptyExperience()],
+                    })
                   }
-                  label="公开展示 SWT / 岗位信息"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={profile.showBio}
-                      onChange={(e) => setProfile({ ...profile, showBio: e.target.checked })}
-                    />
-                  }
-                  label="公开展示简介"
-                />
+                >
+                  添加一届经历
+                </Button>
                 <Divider />
                 <Typography variant="subtitle1" fontWeight={700}>
-                  联系方式（默认不公开）
+                  联系方式
                 </Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    微信号
+                  </Typography>
+                  <FormControlLabel
+                    sx={{ m: 0 }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={profile.showWechat}
+                        onChange={(e) => setProfile({ ...profile, showWechat: e.target.checked })}
+                      />
+                    }
+                    label={<Typography variant="body2">公开</Typography>}
+                  />
+                </Stack>
                 <TextField
-                  label="微信号"
                   size="small"
                   fullWidth
                   value={profile.wechat}
                   onChange={(e) => setProfile({ ...profile, wechat: e.target.value })}
+                  placeholder="微信号"
                 />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={profile.showWechat}
-                      onChange={(e) => setProfile({ ...profile, showWechat: e.target.checked })}
-                    />
-                  }
-                  label="公开微信号"
-                />
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    邮箱
+                  </Typography>
+                  <FormControlLabel
+                    sx={{ m: 0 }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={profile.showEmail}
+                        onChange={(e) => setProfile({ ...profile, showEmail: e.target.checked })}
+                      />
+                    }
+                    label={<Typography variant="body2">公开</Typography>}
+                  />
+                </Stack>
                 <TextField
-                  label="邮箱"
                   size="small"
                   fullWidth
                   value={profile.email}
                   onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={profile.showEmail}
-                      onChange={(e) => setProfile({ ...profile, showEmail: e.target.checked })}
-                    />
-                  }
-                  label="公开邮箱"
+                  placeholder="邮箱"
                 />
                 <Button variant="contained" onClick={() => void saveProfile()} disabled={saving}>
                   {saving ? '保存中…' : '保存'}
@@ -525,6 +636,9 @@ export default function UserProfilePage() {
           {isOwner && tab === 'password' ? (
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Stack spacing={2} maxWidth={400}>
+                <Alert severity="info">
+                  此处需输入当前密码。若已忘记密码，请退出后在登录弹窗点击「忘记密码？」联系站长重置。
+                </Alert>
                 <TextField
                   label="当前密码"
                   type="password"
@@ -548,6 +662,17 @@ export default function UserProfilePage() {
                 />
                 <Button variant="contained" onClick={() => void handlePassword()}>
                   更新密码
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => {
+                    requestSupportOpen(
+                      'human',
+                      `【忘记密码】\n用户：${authUser?.username || userId}\n请协助重置密码。\n`,
+                    );
+                  }}
+                >
+                  忘记当前密码？联系站长
                 </Button>
               </Stack>
             </Paper>

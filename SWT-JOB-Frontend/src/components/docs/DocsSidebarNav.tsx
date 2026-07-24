@@ -6,7 +6,7 @@ import { Search } from "@mui/icons-material";
 
 import type { DocNavSection, DocPageData, DocsNavigation } from "../../lib/docs/types";
 import { toChineseTitle } from "../../lib/docs/title";
-import { SANITY_STUDIO_BASE_PATH } from "../../lib/sanity/env";
+import { hasSanityConfig } from "../../lib/sanity/env";
 import { openDocsSearch } from "./DocsSearchDialog";
 
 function sectionHasActivePage(section: DocNavSection, page: DocPageData) {
@@ -20,7 +20,7 @@ export function DocsSidebarNav({
   navigation: DocsNavigation;
   page: DocPageData;
 }) {
-  const studioHref = `${SANITY_STUDIO_BASE_PATH || "/studio"}/structure`;
+  const showStudioLink = hasSanityConfig();
 
   return (
     <div className="docs-sidebar-inner">
@@ -55,16 +55,18 @@ export function DocsSidebarNav({
           />
         );
       })}
-      <div className="docs-sidebar-footer">
-        <a
-          href={studioHref}
-          className="docs-studio-link"
-          target="_blank"
-          rel="noreferrer"
-        >
-          打开内容后台
-        </a>
-      </div>
+      {showStudioLink ? (
+        <div className="docs-sidebar-footer">
+          <a
+            href="/studio/structure"
+            className="docs-studio-link"
+            target="_blank"
+            rel="noreferrer"
+          >
+            打开内容后台
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }

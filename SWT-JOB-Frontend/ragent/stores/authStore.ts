@@ -84,7 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         streamingMessageId: null,
         cancelRequested: false
       });
-      toast.success("登录成功");
+      toast.success("登录成功", { position: "top-center" });
     } catch (error) {
       toast.error((error as Error).message || "登录失败");
       throw error;
@@ -136,7 +136,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         streamingMessageId: null,
         cancelRequested: false,
       });
-      toast.success("Google 登录成功");
+      toast.success("Google 登录成功", { position: "top-center" });
     } catch (error) {
       toast.error((error as Error).message || "Google 登录失败");
       throw error;
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     storage.clearAuth();
     setAuthToken(null);
     set({ user: null, token: null, isAuthenticated: false });
-    toast.success("已退出登录");
+    toast.success("已退出登录", { position: "top-center" });
   },
   checkAuth: async () => {
     if (BYPASS_AUTH) {

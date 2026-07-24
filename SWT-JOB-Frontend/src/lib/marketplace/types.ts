@@ -64,6 +64,8 @@ export interface MarketListing {
   createdAt: string;
   updatedAt: string;
   expiresAt?: string;
+  /** 发布者市集信誉（公开列表 API 附带） */
+  sellerStats?: UserMarketStats;
 }
 
 export interface MarketOrder {

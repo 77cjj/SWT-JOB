@@ -1,4 +1,5 @@
 import type { MarketListing, MarketStoreData, MarketUser } from './types';
+import { computeSellerRating, defaultSellerStats } from './credit';
 import { displayName } from './auth';
 import { newId, readMarketStore, writeMarketStore } from './store';
 import {
@@ -76,12 +77,26 @@ export async function listMarketListings(filters?: {
   if (filters?.status) items = items.filter((l) => l.status === filters.status);
   if (filters?.sellerId) items = items.filter((l) => l.sellerId === filters.sellerId);
   items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return items.map((listing) => sanitizeListingForPublic(listing));
+  return items.map((listing) => sanitizeListingForPublic(store, listing));
 }
 
-function sanitizeListingForPublic(listing: MarketListing, viewerId?: string): MarketListing {
-  const copy = { ...listing };
+function attachSellerStats(store: MarketStoreData, listing: MarketListing): MarketListing {
+  const raw = store.userStats[listing.sellerId] ?? defaultSellerStats();
+  const rating = computeSellerRating(raw);
+  return {
+    ...listing,
+    sellerStats: { ...raw, rating },
+  };
+}
+
+function sanitizeListingForPublic(
+  store: MarketStoreData,
+  listing: MarketListing,
+  viewerId?: string,
+): MarketListing {
+  let copy = attachSellerStats(store, listing);
   if (listing.type === 'job_intel' && listing.sellerId !== viewerId) {
+    copy = { ...copy };
     delete copy.intelDetail;
   }
   return copy;
@@ -91,7 +106,7 @@ export async function getMarketListing(id: string, viewerId?: string) {
   const store = await readMarketStore();
   const listing = store.listings[id];
   if (!listing) return null;
-  return sanitizeListingForPublic(listing, viewerId);
+  return sanitizeListingForPublic(store, listing, viewerId);
 }
 
 export async function createMarketListing(user: MarketUser, input: CreateListingInput) {
@@ -154,7 +169,7 @@ export async function createMarketListing(user: MarketUser, input: CreateListing
   lockFunds(store, user.userId, totalLock, listing.id, `Listing escrow: ${listing.title}`);
   store.listings[listing.id] = listing;
   await writeMarketStore(store);
-  return sanitizeListingForPublic(listing, user.userId);
+  return sanitizeListingForPublic(store, listing, user.userId);
 }
 
 export async function updateMarketListingStatus(
@@ -171,7 +186,7 @@ export async function updateMarketListingStatus(
 
   const prev = listing.status;
   if (prev === status) {
-    return sanitizeListingForPublic(listing, user.userId);
+    return sanitizeListingForPublic(store, listing, user.userId);
   }
 
   // 关闭：退回剩余保证金（仅从 active/paused/sold_out → closed 时执行一次）
@@ -213,7 +228,7 @@ export async function updateMarketListingStatus(
   listing.updatedAt = new Date().toISOString();
   store.listings[listingId] = listing;
   await writeMarketStore(store);
-  return sanitizeListingForPublic(listing, user.userId);
+  return sanitizeListingForPublic(store, listing, user.userId);
 }
 
 export type UpdateListingInput = Partial<CreateListingInput> & {
@@ -355,7 +370,7 @@ export async function updateMarketListing(
   listing.updatedAt = new Date().toISOString();
   store.listings[listingId] = listing;
   await writeMarketStore(store);
-  return sanitizeListingForPublic(listing, user.userId);
+  return sanitizeListingForPublic(store, listing, user.userId);
 }
 
 /** 发布者更新已参与人数（slotsUsed） */
@@ -384,7 +399,7 @@ export async function updateMarketListingSlotsUsed(
   listing.updatedAt = new Date().toISOString();
   store.listings[listingId] = listing;
   await writeMarketStore(store);
-  return sanitizeListingForPublic(listing, user.userId);
+  return sanitizeListingForPublic(store, listing, user.userId);
 }
 
 export function getIntelDetailForBuyer(

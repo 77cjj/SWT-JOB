@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GOOGLE_CLIENT_ID, APPLE_CLIENT_ID, WECHAT_APP_ID } from '@/config/runtimeEnv';
+import { GOOGLE_CLIENT_ID } from '@/config/runtimeEnv';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 import { WeChatSignInButton } from '@/components/auth/WeChatSignInButton';
@@ -24,8 +24,6 @@ export function LoginDialog() {
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [form, setForm] = React.useState({ username: '', password: '' });
-
-  const hasSocial = Boolean(GOOGLE_CLIENT_ID || APPLE_CLIENT_ID || WECHAT_APP_ID);
 
   const handleClose = () => {
     if (isLoading) return;
@@ -81,36 +79,32 @@ export function LoginDialog() {
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
-          {hasSocial ? (
-            <div className="space-y-2">
-              {GOOGLE_CLIENT_ID ? (
-                <div className="flex flex-col items-center gap-1">
-                  <GoogleSignInButton
-                    width={300}
-                    preferRedirect
-                    showSetupHints={false}
-                    className="flex min-h-[44px] w-full max-w-[300px] justify-center [&>div]:!w-full"
-                  />
-                </div>
-              ) : null}
-              <AppleSignInButton />
-              <WeChatSignInButton />
-              <p className="text-center text-xs text-muted-foreground">
-                Google / Apple 将跳转授权页；微信请用手机扫码
-              </p>
-            </div>
-          ) : null}
+          <div className="space-y-2">
+            {GOOGLE_CLIENT_ID ? (
+              <div className="flex flex-col items-center gap-1">
+                <GoogleSignInButton
+                  width={300}
+                  preferRedirect
+                  showSetupHints={false}
+                  className="flex min-h-[44px] w-full max-w-[300px] justify-center [&>div]:!w-full"
+                />
+              </div>
+            ) : null}
+            <AppleSignInButton />
+            <WeChatSignInButton />
+            <p className="text-center text-xs text-muted-foreground">
+              Google / Apple 将跳转授权页；微信请用手机扫码
+            </p>
+          </div>
 
-          {hasSocial ? (
-            <div className="relative py-1">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">或使用账号密码</span>
-              </div>
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
             </div>
-          ) : null}
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">或使用账号密码</span>
+            </div>
+          </div>
 
           <form className="space-y-3" onSubmit={handlePasswordLogin}>
             <div className="relative">

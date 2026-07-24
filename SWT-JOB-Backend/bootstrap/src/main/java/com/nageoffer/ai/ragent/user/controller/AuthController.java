@@ -18,6 +18,8 @@
 package com.nageoffer.ai.ragent.user.controller;
 
 import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.AppleLoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.WeChatLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
@@ -52,6 +54,18 @@ public class AuthController {
     @PostMapping("/auth/google")
     public Result<LoginVO> googleLogin(@RequestBody GoogleLoginRequest requestParam) {
         return Results.success(authService.loginWithGoogle(requestParam.getIdToken()));
+    }
+
+    /** Apple Sign In（前端/Vercel 传入 idToken） */
+    @PostMapping("/auth/apple")
+    public Result<LoginVO> appleLogin(@RequestBody AppleLoginRequest requestParam) {
+        return Results.success(authService.loginWithApple(requestParam.getIdToken()));
+    }
+
+    /** 微信开放平台网站应用扫码登录 */
+    @PostMapping("/auth/wechat")
+    public Result<LoginVO> weChatLogin(@RequestBody WeChatLoginRequest requestParam) {
+        return Results.success(authService.loginWithWeChat(requestParam.getCode()));
     }
 
     /**

@@ -235,6 +235,16 @@ google:
     # ECS 无法直连 Google 时，填 Vercel 代理，例如 https://swtjob.vercel.app/api/auth/google-tokeninfo
     tokeninfo-proxy-url: ${GOOGLE_TOKENINFO_PROXY_URL:}
 
+apple:
+  oauth:
+    client-id: ${APPLE_CLIENT_ID:}
+    verify-proxy-url: ${APPLE_VERIFY_PROXY_URL:}
+
+wechat:
+  oauth:
+    app-id: ${WECHAT_APP_ID:}
+    app-secret: ${WECHAT_APP_SECRET:}
+
 app:
   demo-mode: false
   auth:

@@ -26,8 +26,12 @@ import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.config.AuthProperties;
+import com.nageoffer.ai.ragent.user.service.AppleOAuthService;
+import com.nageoffer.ai.ragent.user.service.AppleOAuthService.VerifiedAppleUser;
 import com.nageoffer.ai.ragent.user.service.GoogleOAuthService;
 import com.nageoffer.ai.ragent.user.service.GoogleOAuthService.VerifiedGoogleUser;
+import com.nageoffer.ai.ragent.user.service.WeChatOAuthService;
+import com.nageoffer.ai.ragent.user.service.WeChatOAuthService.VerifiedWeChatUser;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
     private final GoogleOAuthService googleOAuthService;
+    private final AppleOAuthService appleOAuthService;
+    private final WeChatOAuthService weChatOAuthService;
     private final AuthProperties authProperties;
 
     @Override
@@ -72,32 +78,65 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginVO loginWithGoogle(String idToken) {
         VerifiedGoogleUser googleUser = googleOAuthService.verifyIdToken(idToken);
-        UserDO user = findByUsername(googleUser.email());
-        if (user == null) {
-            user = UserDO.builder()
-                    .username(googleUser.email())
-                    .password("oauth:" + UUID.randomUUID())
-                    .role("user")
-                    .avatar(StrUtil.blankToDefault(googleUser.picture(), DEFAULT_AVATAR_URL))
-                    .freeChatRemaining(Math.max(0, authProperties.getNewUserFreeChatQuota()))
-                    .build();
-            userMapper.insert(user);
-        } else if (StrUtil.isNotBlank(googleUser.picture()) && StrUtil.isBlank(user.getAvatar())) {
-            user.setAvatar(googleUser.picture());
-            userMapper.updateById(user);
-        }
-        if (user.getId() == null) {
-            throw new ClientException("Google 登录失败：用户创建异常");
-        }
-        String loginId = user.getId().toString();
-        StpUtil.login(loginId);
-        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
-        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+        UserDO user = findOrCreateOAuthUser(
+                googleUser.email(),
+                StrUtil.blankToDefault(googleUser.picture(), DEFAULT_AVATAR_URL),
+                googleUser.name());
+        return finishLogin(user);
+    }
+
+    @Override
+    public LoginVO loginWithApple(String idToken) {
+        VerifiedAppleUser appleUser = appleOAuthService.verifyIdToken(idToken);
+        String username = StrUtil.isNotBlank(appleUser.email())
+                ? appleUser.email()
+                : "apple:" + appleUser.subject();
+        UserDO user = findOrCreateOAuthUser(username, DEFAULT_AVATAR_URL, null);
+        return finishLogin(user);
+    }
+
+    @Override
+    public LoginVO loginWithWeChat(String code) {
+        VerifiedWeChatUser wx = weChatOAuthService.exchangeCode(code);
+        String username = StrUtil.isNotBlank(wx.unionId())
+                ? "wechat:" + wx.unionId()
+                : "wechat:" + wx.openId();
+        String avatar = StrUtil.blankToDefault(wx.avatar(), DEFAULT_AVATAR_URL);
+        UserDO user = findOrCreateOAuthUser(username, avatar, wx.nickname());
+        return finishLogin(user);
     }
 
     @Override
     public void logout() {
         StpUtil.logout();
+    }
+
+    private UserDO findOrCreateOAuthUser(String username, String avatar, String displayHint) {
+        UserDO user = findByUsername(username);
+        if (user == null) {
+            user = UserDO.builder()
+                    .username(username)
+                    .password("oauth:" + UUID.randomUUID())
+                    .role("user")
+                    .avatar(StrUtil.blankToDefault(avatar, DEFAULT_AVATAR_URL))
+                    .freeChatRemaining(Math.max(0, authProperties.getNewUserFreeChatQuota()))
+                    .build();
+            userMapper.insert(user);
+        } else if (StrUtil.isNotBlank(avatar) && StrUtil.isBlank(user.getAvatar())) {
+            user.setAvatar(avatar);
+            userMapper.updateById(user);
+        }
+        if (user.getId() == null) {
+            throw new ClientException("登录失败：用户创建异常");
+        }
+        return user;
+    }
+
+    private LoginVO finishLogin(UserDO user) {
+        String loginId = user.getId().toString();
+        StpUtil.login(loginId);
+        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
+        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
     }
 
     private UserDO findByUsername(String username) {

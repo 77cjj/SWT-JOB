@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
-import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
+import { GOOGLE_CLIENT_ID, APPLE_CLIENT_ID, WECHAT_APP_ID } from "@/config/runtimeEnv";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { AppleSignInButton } from "@/components/auth/AppleSignInButton";
+import { WeChatSignInButton } from "@/components/auth/WeChatSignInButton";
 
 export function LoginPage() {
   const router = useRouter();
@@ -93,12 +95,11 @@ export function LoginPage() {
             <span className="text-xs text-muted-foreground">账号由管理员初始化</span>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {GOOGLE_CLIENT_ID ? (
+          {GOOGLE_CLIENT_ID || APPLE_CLIENT_ID || WECHAT_APP_ID ? (
             <div className="space-y-2 py-1">
-              <GoogleSignInButton width={320} />
-              <p className="text-center text-xs text-muted-foreground">
-                将整页跳转至 Google 授权（非弹窗）。请确认 Console 已配置 redirect URI。
-              </p>
+              {GOOGLE_CLIENT_ID ? <GoogleSignInButton width={320} /> : null}
+              <AppleSignInButton />
+              <WeChatSignInButton />
             </div>
           ) : null}
           <Button type="submit" className="w-full" disabled={isLoading}>

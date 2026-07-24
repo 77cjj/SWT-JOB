@@ -26,5 +26,9 @@ public interface AuthService {
 
     LoginVO loginWithGoogle(String idToken);
 
+    LoginVO loginWithApple(String idToken);
+
+    LoginVO loginWithWeChat(String code);
+
     void logout();
 }

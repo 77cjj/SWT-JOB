@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
-import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
+import { GOOGLE_CLIENT_ID, APPLE_CLIENT_ID, WECHAT_APP_ID } from "@/config/runtimeEnv";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { AppleSignInButton } from "@/components/auth/AppleSignInButton";
+import { WeChatSignInButton } from "@/components/auth/WeChatSignInButton";
 
 export function LoginPage() {
   const router = useRouter();

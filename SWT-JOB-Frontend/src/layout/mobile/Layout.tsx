@@ -2,11 +2,10 @@ import React, { type PropsWithChildren } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-import { IconButton, Tooltip, Menu, MenuItem } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import {
   DarkMode,
   LightMode,
-  Language as LanguageIcon,
   BarChartRounded,
   HistoryRounded,
   MenuBookRounded,
@@ -15,8 +14,8 @@ import {
 } from '@mui/icons-material';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
-import { SUPPORTED_LANGUAGES, type Language } from '../../i18n/types';
 import { cn } from '../../../ragent/lib/utils';
+import { LanguageMenu } from '../../components/common/LanguageMenu';
 
 const RagentChatUserMenu = dynamic(
   () =>
@@ -42,24 +41,10 @@ const NAV_ITEMS: { key: NavKey; href: string; icon: React.ReactNode; match: (pat
 
 export default function MobileLayout({ children, mainClassName, rootClassName }: MobileLayoutProps) {
   const { mode, toggleMode } = useAppTheme();
-  const { language, setLanguage, t } = useI18n();
+  const { language, t } = useI18n();
   const router = useRouter();
   const pathname = router.pathname;
   const isDark = mode === 'dark';
-  const [langMenuAnchor, setLangMenuAnchor] = React.useState<null | HTMLElement>(null);
-
-  const handleLangMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setLangMenuAnchor(event.currentTarget);
-  };
-
-  const handleLangMenuClose = () => {
-    setLangMenuAnchor(null);
-  };
-
-  const handleLanguageChange = (lang: string) => {
-    setLanguage(lang as Language);
-    handleLangMenuClose();
-  };
 
   const navLabel = (key: NavKey) => {
     const full = t(`nav.${key}`);
@@ -87,30 +72,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
       >
         <h1 className="text-lg font-semibold">SWT Helper</h1>
         <div className="flex items-center gap-2">
-          <IconButton
-            size="small"
-            onClick={handleLangMenuOpen}
-            color="inherit"
-            sx={{ border: '1px solid', borderColor: 'divider' }}
-          >
-            <LanguageIcon fontSize="small" />
-          </IconButton>
-          <Menu
-            anchorEl={langMenuAnchor}
-            open={Boolean(langMenuAnchor)}
-            onClose={handleLangMenuClose}
-          >
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <MenuItem
-                key={lang.code}
-                selected={language === lang.code}
-                onClick={() => handleLanguageChange(lang.code)}
-              >
-                <span className="mr-2">{lang.flag}</span>
-                {lang.nativeName}
-              </MenuItem>
-            ))}
-          </Menu>
+          <LanguageMenu />
           <Tooltip title={t('theme.toggle')}>
             <IconButton
               size="small"

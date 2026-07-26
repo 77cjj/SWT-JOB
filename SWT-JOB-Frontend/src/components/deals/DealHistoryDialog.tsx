@@ -11,6 +11,7 @@ import {
 import { Close, History } from '@mui/icons-material';
 import type { ReferralProgram } from '../../data/referralDeals';
 import type { Language } from '../../i18n/types';
+import { pickBilingual, pickBilingualList } from '../../i18n/bilingual';
 import { useI18n } from '../../context/I18nContext';
 import {
   formatEditionPeriod,
@@ -18,14 +19,6 @@ import {
   sortedEditionsForTimeline,
   type ResolvedProgram,
 } from '../../lib/deals/deal-utils';
-
-function pickLang(obj: { zh: string; en: string }, lang: Language): string {
-  return lang === 'zh' ? obj.zh : obj.en;
-}
-
-function pickLangList(obj: { zh: string[]; en: string[] }, lang: Language): string[] {
-  return lang === 'zh' ? obj.zh : obj.en;
-}
 
 interface DealHistoryDialogProps {
   open: boolean;
@@ -53,7 +46,7 @@ export default function DealHistoryDialog({
 
   if (!program || !resolved) return null;
 
-  const brand = pickLang(program.brandName, language);
+  const brand = pickBilingual(program.brandName, language);
   const editions = sortedEditionsForTimeline(program);
 
   return (
@@ -130,11 +123,11 @@ export default function DealHistoryDialog({
                   </Box>
 
                   <Typography variant="h6" color="primary.main" fontWeight={800} gutterBottom>
-                    {pickLang(edition.reward, language)}
+                    {pickBilingual(edition.reward, language)}
                   </Typography>
 
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {pickLang(edition.summary, language)}
+                    {pickBilingual(edition.summary, language)}
                   </Typography>
 
                   <Typography
@@ -147,7 +140,7 @@ export default function DealHistoryDialog({
                     {t('deals.timeline.requirements')}
                   </Typography>
                   <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 1.5 }}>
-                    {pickLangList(edition.requirements, language).map((req) => (
+                    {pickBilingualList(edition.requirements, language).map((req) => (
                       <Typography component="li" variant="body2" key={req} color="text.secondary">
                         {req}
                       </Typography>
@@ -167,7 +160,7 @@ export default function DealHistoryDialog({
                         {t('deals.timeline.changeNote')}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {pickLang(edition.changeNote, language)}
+                        {pickBilingual(edition.changeNote, language)}
                       </Typography>
                     </>
                   ) : null}

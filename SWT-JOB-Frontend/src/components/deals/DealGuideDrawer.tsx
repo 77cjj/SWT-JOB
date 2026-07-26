@@ -16,6 +16,8 @@ import DealHistoryDialog from './DealHistoryDialog';
 import { DealCommentsSection } from '../docs/DocCommentsSection';
 import { useI18n } from '../../context/I18nContext';
 import type { Language } from '../../i18n/types';
+import { resolveBilingualLang } from '../../i18n/types';
+import { pickBilingual, pickBilingualList } from '../../i18n/bilingual';
 import {
   formatEditionPeriod,
   resolveProgram,
@@ -24,14 +26,6 @@ import {
 import type { ReferralProgram } from '../../data/referralDeals';
 import { openExternalUrl } from '../../lib/openExternalUrl';
 
-function pickLang(obj: { zh: string; en: string }, lang: Language) {
-  return lang === 'zh' ? obj.zh : obj.en;
-}
-
-function pickLangList(obj: { zh: string[]; en: string[] } | undefined, lang: Language) {
-  if (!obj) return [] as string[];
-  return lang === 'zh' ? obj.zh : obj.en;
-}
 
 function StepList({ title, steps }: { title: string; steps: string[] }) {
   if (!steps.length) return null;
@@ -90,19 +84,20 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
   }
 
   const { edition, isStale } = resolved;
-  const title = pickLang(program.brandName, lang);
+  const title = pickBilingual(program.brandName, lang);
+  const contentLang = resolveBilingualLang(lang);
   const siteRebateLabel =
-    program.siteRebateLabel?.[lang] ||
+    program.siteRebateLabel?.[contentLang] ||
     (program.siteRebateUsd != null
-      ? lang === 'zh'
+      ? contentLang === 'zh'
         ? `约 $${program.siteRebateUsd}（以管理员设置为准）`
         : `About $${program.siteRebateUsd}`
       : t('deals.siteRebateTbd'));
 
-  const howToClaim = pickLangList(program.howToClaim, lang);
-  const practicalSteps = pickLangList(program.practicalSteps, lang);
-  const requirements = pickLangList(edition.requirements, lang);
-  const officialDetail = program.officialDetail ? pickLang(program.officialDetail, lang) : '';
+  const howToClaim = pickBilingualList(program.howToClaim, lang);
+  const practicalSteps = pickBilingualList(program.practicalSteps, lang);
+  const requirements = pickBilingualList(edition.requirements, lang);
+  const officialDetail = program.officialDetail ? pickBilingual(program.officialDetail, lang) : '';
 
   return (
     <>
@@ -137,7 +132,7 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
                 {title}
               </Typography>
               <Typography variant="subtitle1" color="primary.main" fontWeight={700}>
-                {pickLang(edition.reward, lang)}
+                {pickBilingual(edition.reward, lang)}
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block">
                 {formatEditionPeriod(edition, lang)}
@@ -164,7 +159,7 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
               ) : null}
 
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65 }}>
-                {pickLang(edition.summary, lang)}
+                {pickBilingual(edition.summary, lang)}
               </Typography>
               {officialDetail ? (
                 <Typography variant="body2" color="text.secondary">

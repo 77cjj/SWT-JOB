@@ -338,7 +338,7 @@ export const en = {
     heroHint: 'Drag the sliders below — the amount rolls in real time',
     heroDetails: 'Tax & more',
     cycleCurrency: 'Switch display currency (now {currency})',
-    cycleCurrencyHint: 'Tap the amount to switch currency',
+    cycleCurrencyHint: 'Tap the amount to switch to USD',
     showingCurrency: 'Showing {currency} · tap amount to switch',
     projectSummaryTitle: 'Estimated project total income',
     projectSummaryLine: 'From {start} to {end}, about {weeks} weeks',

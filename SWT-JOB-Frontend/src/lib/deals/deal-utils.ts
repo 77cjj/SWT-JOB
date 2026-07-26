@@ -1,4 +1,6 @@
 import type { DealEdition, ReferralProgram } from '../../data/referralDeals';
+import type { Language } from '../../i18n/types';
+import { resolveBilingualLang } from '../../i18n/types';
 
 export type DealDisplayStatus = 'active' | 'expiring' | 'expired_stale';
 
@@ -130,14 +132,15 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
 
 export function formatEditionPeriod(
   edition: DealEdition,
-  lang: 'zh' | 'en',
+  lang: Language,
 ): string {
+  const contentLang = resolveBilingualLang(lang);
   const from = edition.validFrom;
   const until = edition.validUntil;
   if (!until) {
-    return lang === 'zh' ? `${from} 起 · 长期有效` : `From ${from} · Ongoing`;
+    return contentLang === 'zh' ? `${from} 起 · 长期有效` : `From ${from} · Ongoing`;
   }
-  return lang === 'zh' ? `${from} — ${until}` : `${from} — ${until}`;
+  return contentLang === 'zh' ? `${from} — ${until}` : `${from} — ${until}`;
 }
 
 export type EditionTimelineRole = 'current' | 'past' | 'future';

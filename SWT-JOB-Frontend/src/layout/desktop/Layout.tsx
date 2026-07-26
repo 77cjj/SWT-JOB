@@ -2,12 +2,12 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { type PropsWithChildren } from 'react';
-import { IconButton, Tooltip, Menu, MenuItem } from '@mui/material';
-import { DarkMode, LightMode, Language as LanguageIcon } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
+import { DarkMode, LightMode } from '@mui/icons-material';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
-import { SUPPORTED_LANGUAGES, type Language } from '../../i18n/types';
 import { cn } from '../../../ragent/lib/utils';
+import { LanguageMenu } from '../../components/common/LanguageMenu';
 
 const RagentChatUserMenu = dynamic(
   () =>
@@ -35,8 +35,7 @@ export default function DesktopLayout({
   const router = useRouter();
   const pathname = router.pathname;
   const { mode, toggleMode } = useAppTheme();
-  const { language, setLanguage, t } = useI18n();
-  const [langMenuAnchor, setLangMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const { t } = useI18n();
 
   const isDark = mode === 'dark';
   const rootClass = isDark
@@ -50,19 +49,6 @@ export default function DesktopLayout({
   const navTextClass = isDark ? 'text-neutral-400' : 'text-neutral-600';
   const linkHoverClass = isDark ? 'hover:text-neutral-100' : 'hover:text-neutral-900';
   const linkActiveClass = isDark ? 'text-neutral-100 font-semibold' : 'text-neutral-900 font-semibold';
-
-  const handleLangMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setLangMenuAnchor(event.currentTarget);
-  };
-
-  const handleLangMenuClose = () => {
-    setLangMenuAnchor(null);
-  };
-
-  const handleLanguageChange = (lang: string) => {
-    setLanguage(lang as Language);
-    handleLangMenuClose();
-  };
 
   return (
     <div className={cn(rootClass, 'flex flex-col', rootMinH, rootClassName)}>
@@ -147,36 +133,7 @@ export default function DesktopLayout({
             </nav>
 
             <div className="flex items-center gap-2">
-              <Tooltip title={t('language.switch')}>
-                <IconButton
-                  size="small"
-                  onClick={handleLangMenuOpen}
-                  color="inherit"
-                  sx={{
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 999,
-                  }}
-                >
-                  <LanguageIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                anchorEl={langMenuAnchor}
-                open={Boolean(langMenuAnchor)}
-                onClose={handleLangMenuClose}
-              >
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <MenuItem
-                    key={lang.code}
-                    selected={language === lang.code}
-                    onClick={() => handleLanguageChange(lang.code)}
-                  >
-                    <span className="mr-2">{lang.flag}</span>
-                    {lang.nativeName}
-                  </MenuItem>
-                ))}
-              </Menu>
+              <LanguageMenu />
 
               <Tooltip title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}>
                 <IconButton

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 
 import { useAuthStore } from "@/stores/authStore";
 import { storage } from "@/utils/storage";
@@ -60,6 +61,7 @@ export default function OAuthCompletePage() {
         loginDialogReason: null,
       });
       void useAuthStore.getState().fetchCurrentUser().catch(() => null);
+      toast.success("登录成功", { position: "top-center" });
       void router.replace("/chat");
     } catch {
       useAuthStore.getState().openLoginDialog("第三方登录未完成，请重试");

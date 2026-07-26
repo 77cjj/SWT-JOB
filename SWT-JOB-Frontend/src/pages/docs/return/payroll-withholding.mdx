@@ -1,0 +1,121 @@
+# 薪资代扣详解（Payroll Withholding）
+
+美国薪资代扣（Payroll Withholding）是一个高度系统化、基于税法**硬性约束**的逻辑计算体系。每次发放工资（Paycheck）时，系统按**固定顺序**从 Gross Earnings 中逐层扣除，最终得到 Net Pay。
+
+> 本文适用于**全美**任何使用标准 Payroll 系统的雇主（ADP、Paychex、Gusto 等）。各州第三、四层差异见 [分州附录](#分州附录)。
+
+---
+
+## 四层核心框架
+
+```
+[总应发薪资 Gross Earnings]
+       │
+       ├── 1. 强制性社保与医保税 (FICA Taxes)
+       ├── 2. 州级强制性保险与基金 (State Non-Tax Withholdings)
+       ├── 3. 联邦所得税 (Federal Income Tax - W-4)
+       └── 4. 州所得税 (State Income Tax)
+       │
+[实际到账 Net Pay]
+```
+
+**计算顺序不可颠倒**：FICA 与州强制扣款基于 Gross；联邦税与州税基于「Gross 减已扣项」或独立年化基数（视系统实现）。
+
+---
+
+## 1. FICA Taxes（联邦硬性）
+
+| 税种 | 员工费率 | 封顶 | NRA (J-1/F-1) |
+| --- | --- | --- | --- |
+| Social Security | 6.2% | 有年薪上限（每年调整） | **0%** |
+| Medicare | 1.45% | 无 | **0%** |
+
+**硬性条件**（[IRS Foreign Students Guidance](https://www.irs.gov/individuals/international-taxpayers/foreign-students-and-scholars)）：
+
+- 持 **J-1 / F-1** 签证且税务身份为 **Nonresident Alien** → IRC §3121(b)(19) **豁免 FICA**。
+- 系统误设为 **Resident** → 强制扣 **7.65%**；只有确认为 **NRA** 时才锁定 **$0.00**。
+
+**次年报税属性**：不参与 1040-NR 常规退税；多扣需 Form 843 或雇主修正。
+
+---
+
+## 2. 州级强制性扣款（Statutory，非所得税）
+
+此类项目由**州立法**强制，**不属于所得税，通常不可退还**。
+
+各州差异极大，常见项目：
+
+| 类型 | 示例州 | 说明 |
+| --- | --- | --- |
+| 州残疾险 SDI | CA, NJ, NY, HI, RI | 员工预扣约 0%–1% |
+| 失业保险 UI | NJ, NY 等 | 员工份额固定比例 |
+| 家庭假 / 医疗假基金 | NJ, NY, WA | 近年新增较多 |
+
+**硬性约束**：只要在该州产生 W-2 薪资，**不论签证类型**，通常均强制扣除。
+
+详见 [新泽西州示例](/docs/return/tax-states/nj)。
+
+---
+
+## 3. 联邦所得税（Federal Income Tax）
+
+### 年化算法（Payroll 通用逻辑）
+
+Payroll **不知道**你全年只工作 3 个月。每次发薪时：
+
+```
+单期 Gross × 全年发薪周期数（通常 52）= 系统预估年收入
+→ 查联邦累进税率表 → 算出全年应税额 → 除以 52 回填当期
+```
+
+### 硬性边界
+
+| 规则 | NRA 约束 |
+| --- | --- |
+| W-4 Standard Deduction | **不得**勾选（NRA 不适用） |
+| Tax Treaty（Form 8233） | 年化收入中可先扣减 treaty 免税额（如 **$5,000**）再算税 |
+| 申报表格 | 次年 **Form 1040-NR** 多退少补 |
+
+参考：[IRS Tax Treaties A–Z](https://www.irs.gov/businesses/international-businesses/united-states-income-tax-treaties-a-to-z)
+
+---
+
+## 4. 州所得税（State Income Tax）
+
+- 各州独立税率表（累进或 flat）。
+- **多数州不承认联邦 Tax Treaty 免税额**——州税预扣常以 Gross 年化为基数。
+- 次年用州 NR 表格申报（如 **NJ-1040NR**、**CA 540NR**）。
+
+### 无州所得税州（9 个）
+
+Alaska, Florida, Nevada, New Hampshire（仅利息股息）, South Dakota, Tennessee, Texas, Washington, Wyoming。
+
+---
+
+## 边界条件总结表（全美模板）
+
+| 项目 | 扣除依据 | 签证/身份约束 | 次年报税属性 |
+| --- | --- | --- | --- |
+| Social Security | 6.2% | J-1 NRA → **0%** | 多扣需 843，非常规退税 |
+| Medicare | 1.45% | J-1 NRA → **0%** | 同上 |
+| 州 SDI / UI 等 | 州法固定比例 | **无豁免** | **不可退**（Statutory Fee） |
+| Federal Income Tax | 年化 + 累进 | Treaty 可调减 | **多退少补**（1040-NR） |
+| State Income Tax | 年化 + 州累进 | 通常无 Treaty | **多退少补**（州 NR 表） |
+
+---
+
+## 分州附录
+
+| 州 | 链接 |
+| --- | --- |
+| 新泽西 NJ | [NJ 完整扣税表与 Paychex 对照](/docs/return/tax-states/nj) |
+
+---
+
+## 实用核对清单
+
+1. 工资单 FICA 是否为 **$0.00**？若不是 → 联系 HR 改 NRA 身份。
+2. W-4 是否误勾 Standard Deduction？→ 重新提交 W-4。
+3. 是否提交 Form 8233 申请 Treaty？→ 与 HR 确认审核状态。
+4. 州强制扣款（NJ Disability 等）→ 预期**不可退**，计入生活成本。
+5. 预扣偏高？→ 正常（短期工作年化效应），**保留 W-2，次年 Sprintax 申报**。

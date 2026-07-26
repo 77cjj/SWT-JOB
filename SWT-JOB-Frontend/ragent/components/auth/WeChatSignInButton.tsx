@@ -6,14 +6,20 @@ import { Button } from "@/components/ui/button";
 import { WECHAT_APP_ID } from "@/config/runtimeEnv";
 
 export function WeChatSignInButton({ className }: { className?: string }) {
-  if (!WECHAT_APP_ID) return null;
+  const configured = Boolean(WECHAT_APP_ID);
 
   return (
     <Button
       type="button"
       variant="outline"
-      className={className ?? "w-full gap-2 border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200"}
+      className={
+        className ??
+        "w-full gap-2 border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200"
+      }
+      disabled={!configured}
+      title={configured ? undefined : "微信登录尚未配置，请联系管理员"}
       onClick={() => {
+        if (!configured) return;
         window.location.href = "/api/auth/wechat-start";
       }}
     >
@@ -24,6 +30,9 @@ export function WeChatSignInButton({ className }: { className?: string }) {
         />
       </svg>
       微信扫码登录
+      {!configured ? (
+        <span className="text-[10px] font-normal text-muted-foreground">（待配置）</span>
+      ) : null}
     </Button>
   );
 }

@@ -35,6 +35,8 @@ import {
   Add,
   Gavel,
   Storefront,
+  VerifiedUser,
+  Shield,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -47,7 +49,9 @@ import type {
   MarketListing,
   MarketOrder,
   OrderStatus,
+  UserMarketStats,
 } from '../lib/marketplace/types';
+import { getSellerCreditTier, listingTotalEscrow, type SellerCreditTier } from '../lib/marketplace/credit';
 import { US_STATE_OPTIONS } from '../lib/member/profile';
 import { referralPrograms } from '../data/referralDeals';
 import { formatFetchError } from '../lib/formatFetchError';
@@ -173,9 +177,11 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   });
 
   const [form, setForm] = useState<ListingFormState>(emptyListingForm);
-  const [referSort, setReferSort] = useState<'newest' | 'cashback'>('newest');
+  const [referSort, setReferSort] = useState<'newest' | 'cashback' | 'rating' | 'escrow'>('newest');
   const [filterSsn, setFilterSsn] = useState<'all' | 'yes' | 'no'>('all');
   const [filterMinDeposit, setFilterMinDeposit] = useState('');
+  const [filterBrand, setFilterBrand] = useState<string | null>(null);
+  const [filterMinRating, setFilterMinRating] = useState<'all' | '3' | '4' | '4.5'>('all');
   const [detailListing, setDetailListing] = useState<MarketListing | null>(null);
   const [hideSoldOut, setHideSoldOut] = useState(true);
 
@@ -385,11 +391,18 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   const visibleListings = useMemo(() => {
     let items = [...listings];
     if (tab === 'refer') {
+      if (filterBrand) {
+        items = items.filter((l) => l.brand === filterBrand);
+      }
       if (filterSsn === 'yes') items = items.filter((l) => l.requiresSsn);
       if (filterSsn === 'no') items = items.filter((l) => !l.requiresSsn);
       const minDep = Number(filterMinDeposit);
       if (Number.isFinite(minDep) && minDep > 0) {
         items = items.filter((l) => (l.minDepositUsd ?? 0) <= minDep);
+      }
+      if (filterMinRating !== 'all') {
+        const min = Number(filterMinRating);
+        items = items.filter((l) => (l.sellerStats?.rating ?? 5) >= min);
       }
       if (hideSoldOut) {
         items = items.filter(
@@ -402,12 +415,18 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
             (b.buyerCashback ?? 0) + (b.platformReward ?? 0) -
             ((a.buyerCashback ?? 0) + (a.platformReward ?? 0)),
         );
+      } else if (referSort === 'rating') {
+        items.sort(
+          (a, b) => (b.sellerStats?.rating ?? 5) - (a.sellerStats?.rating ?? 5),
+        );
+      } else if (referSort === 'escrow') {
+        items.sort((a, b) => listingTotalEscrow(b) - listingTotalEscrow(a));
       } else {
         items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       }
     }
     return items;
-  }, [listings, tab, filterSsn, filterMinDeposit, hideSoldOut, referSort]);
+  }, [listings, tab, filterBrand, filterSsn, filterMinDeposit, filterMinRating, hideSoldOut, referSort]);
 
   const showLoadingBar =
     loading &&
@@ -533,12 +552,24 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
                 <Select
                   label={t('marketplace.sortBy')}
                   value={referSort}
-                  onChange={(e) => setReferSort(e.target.value as 'newest' | 'cashback')}
+                  onChange={(e) => setReferSort(e.target.value as 'newest' | 'cashback' | 'rating' | 'escrow')}
                 >
                   <MenuItem value="newest">{t('marketplace.sortNewest')}</MenuItem>
                   <MenuItem value="cashback">{t('marketplace.sortCashback')}</MenuItem>
+                  <MenuItem value="rating">{t('marketplace.sortRating')}</MenuItem>
+                  <MenuItem value="escrow">{t('marketplace.sortEscrow')}</MenuItem>
                 </Select>
               </FormControl>
+              <Autocomplete
+                size="small"
+                options={brandOptions}
+                value={filterBrand}
+                onChange={(_, v) => setFilterBrand(v)}
+                sx={{ minWidth: 160 }}
+                renderInput={(params) => (
+                  <TextField {...params} label={t('marketplace.filterBrand')} />
+                )}
+              />
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>SSN</InputLabel>
                 <Select
@@ -549,6 +580,19 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
                   <MenuItem value="all">{t('marketplace.filterAll')}</MenuItem>
                   <MenuItem value="yes">{t('marketplace.filterSsnYes')}</MenuItem>
                   <MenuItem value="no">{t('marketplace.filterSsnNo')}</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel>{t('marketplace.filterMinRating')}</InputLabel>
+                <Select
+                  label={t('marketplace.filterMinRating')}
+                  value={filterMinRating}
+                  onChange={(e) => setFilterMinRating(e.target.value as 'all' | '3' | '4' | '4.5')}
+                >
+                  <MenuItem value="all">{t('marketplace.filterAll')}</MenuItem>
+                  <MenuItem value="3">≥ 3.0</MenuItem>
+                  <MenuItem value="4">≥ 4.0</MenuItem>
+                  <MenuItem value="4.5">≥ 4.5</MenuItem>
                 </Select>
               </FormControl>
               <TextField
@@ -656,6 +700,16 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
                     {t('marketplace.fieldCriteria')}: {detailListing.completionCriteria}
                   </Typography>
                 ) : null}
+                <Alert severity="success" variant="outlined" sx={{ mt: 1.5 }}>
+                  <Typography variant="body2" fontWeight={700}>
+                    {t('marketplace.escrowLocked')}: {fmtUsd(listingTotalEscrow(detailListing))}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {tWithParams('marketplace.escrowDetailHint', {
+                      perSlot: fmtUsd(detailListing.escrowPerSlot),
+                    })}
+                  </Typography>
+                </Alert>
                 {detailListing.requiresSsn ? <Chip size="small" label="SSN" sx={{ mt: 1, mr: 0.5 }} /> : null}
                 {detailListing.minDepositUsd ? (
                   <Chip size="small" label={`≥$${detailListing.minDepositUsd}`} sx={{ mt: 1 }} />
@@ -666,7 +720,20 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
             <Typography variant="subtitle2" gutterBottom>
               {t('marketplace.publisher')}
             </Typography>
-            <UserProfileLink userId={detailListing.sellerId} displayName={detailListing.sellerName} size={40} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+              <UserProfileLink userId={detailListing.sellerId} displayName={detailListing.sellerName} size={40} />
+              {detailListing.type === 'refer' ? (
+                <SellerCreditChip stats={detailListing.sellerStats} t={t} />
+              ) : null}
+            </Box>
+            {detailListing.sellerStats ? (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                {tWithParams('marketplace.sellerTrackRecord', {
+                  sold: detailListing.sellerStats.completedAsSeller,
+                  disputes: detailListing.sellerStats.disputes,
+                })}
+              </Typography>
+            ) : null}
             {detailListing.sellerContactHint ? (
               <Typography variant="body2" sx={{ mt: 1.5 }}>
                 {t('marketplace.fieldSellerContact')}: {detailListing.sellerContactHint}
@@ -733,6 +800,35 @@ function isSoldOut(item: MarketListing) {
   return item.slotsUsed >= item.maxSlots || item.status === 'sold_out';
 }
 
+const CREDIT_TIER_COLOR: Record<SellerCreditTier, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
+  new: 'default',
+  good: 'primary',
+  excellent: 'success',
+  gold: 'warning',
+  caution: 'error',
+};
+
+function SellerCreditChip({
+  stats,
+  t,
+}: {
+  stats?: UserMarketStats;
+  t: (k: string) => string;
+}) {
+  if (!stats) return null;
+  const tier = getSellerCreditTier(stats);
+  return (
+    <Chip
+      size="small"
+      icon={<VerifiedUser sx={{ fontSize: 14 }} />}
+      label={`${t(`marketplace.creditTier.${tier}`)} · ${stats.rating.toFixed(1)}`}
+      color={CREDIT_TIER_COLOR[tier]}
+      variant={tier === 'new' ? 'outlined' : 'filled'}
+      sx={{ fontWeight: 600 }}
+    />
+  );
+}
+
 function ListingsGrid({
   listings,
   tab,
@@ -782,6 +878,7 @@ function ListingsGrid({
             : item.intelFee ?? 0;
         const left = slotsRemaining(item);
         const low = slotsLow(item);
+        const totalEscrow = item.type === 'refer' ? listingTotalEscrow(item) : item.escrowPerSlot * (item.maxSlots || 1);
         return (
           <Card
             key={item.id}
@@ -843,8 +940,34 @@ function ListingsGrid({
                     {t('marketplace.cashback')}: <strong>{fmtUsd(item.buyerCashback ?? 0)}</strong>
                     {item.platformReward ? ` + ${t('marketplace.platformReward')} ${fmtUsd(item.platformReward)}` : ''}
                   </Typography>
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 1,
+                      borderRadius: 1,
+                      bgcolor: 'success.50',
+                      border: '1px solid',
+                      borderColor: 'success.200',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                    }}
+                  >
+                    <Shield sx={{ fontSize: 18, color: 'success.main' }} />
+                    <Box>
+                      <Typography variant="caption" color="success.dark" fontWeight={700} display="block">
+                        {t('marketplace.escrowLocked')}
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700}>
+                        {fmtUsd(totalEscrow)}
+                        <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                          ({tWithParams('marketplace.escrowPerSlot', { amount: fmtUsd(item.escrowPerSlot) })})
+                        </Typography>
+                      </Typography>
+                    </Box>
+                  </Box>
                   {item.brand ? (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
                       {item.brand}
                     </Typography>
                   ) : null}
@@ -859,14 +982,23 @@ function ListingsGrid({
                   </Typography>
                 </>
               )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.25 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.25, flexWrap: 'wrap' }}>
                 <Avatar sx={{ width: 28, height: 28, fontSize: 14 }}>
                   {(item.sellerName || '?').slice(0, 1)}
                 </Avatar>
                 <Box sx={{ minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
                   <UserProfileLink userId={item.sellerId} displayName={item.sellerName} />
                 </Box>
+                {item.type === 'refer' ? <SellerCreditChip stats={item.sellerStats} t={t} /> : null}
               </Box>
+              {item.type === 'refer' && item.sellerStats ? (
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                  {tWithParams('marketplace.sellerTrackRecord', {
+                    sold: item.sellerStats.completedAsSeller,
+                    disputes: item.sellerStats.disputes,
+                  })}
+                </Typography>
+              ) : null}
               <Box
                 sx={{
                   mt: 0.75,

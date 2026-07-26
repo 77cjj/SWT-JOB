@@ -1,3 +1,4 @@
+import { computeSellerRating } from './credit';
 import {
   AUTO_CONFIRM_DAYS,
   type DisputeWinner,
@@ -30,6 +31,7 @@ function bumpStats(
     rating: 5,
   };
   store.userStats[userId][field] += 1;
+  store.userStats[userId].rating = computeSellerRating(store.userStats[userId]);
 }
 
 export async function runAutoConfirmPass(store: MarketStoreData) {

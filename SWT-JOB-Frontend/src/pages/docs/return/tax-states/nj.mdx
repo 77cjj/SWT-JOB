@@ -1,0 +1,100 @@
+# 新泽西州 NJ · 薪资代扣与退税
+
+本文以 **Paychex** 系统下的新泽西州 W-2 薪资为例，说明第三、四层（州强制扣款 + 州所得税）的具体规则。可与你的工资单逐项对照。
+
+> 全美 FICA 与联邦税框架见 [薪资代扣详解](/docs/return/payroll-withholding)。
+
+---
+
+## NJ 扣税一览
+
+| 层级 | 项目 | 员工比例 / 计算 | NRA 约束 | 能否退税 |
+| --- | --- | --- | --- | --- |
+| 1 | Social Security | 6.2% | **0%** | 多扣需 843 |
+| 1 | Medicare | 1.45% | **0%** | 多扣需 843 |
+| 2 | NJ Disability | 约 0.00%–0.15%（动态） | 无豁免 | **不可退** |
+| 2 | NJ UI + Work Dev | **0.425%**（0.385% + 0.040%） | 无豁免 | **不可退** |
+| 3 | Federal Income Tax | 年化 + 联邦累进 | Treaty $5,000 可调 | **1040-NR** |
+| 4 | NJ Income Tax | 年化 + **1.4%–10.75%** 累进 | **无 Treaty** | **NJ-1040NR** |
+
+---
+
+## 第 2 层：NJ 州强制扣款
+
+在新泽西产生 W-2 收入时，**不论 J-1 与否**，以下项目强制扣除：
+
+### NJ Disability（州残疾险）
+
+- 员工预扣约 **0.00% – 0.15%**，由州每年调整。
+- 性质：州社交安全网基金，**非所得税**。
+
+### NJ Unemployment / Work Development
+
+- 失业保险：**0.385%**
+- 职业发展基金：**0.040%**
+- 合计：**0.425%**
+
+**硬性约束**：无法通过 HR 申请豁免；**不可在报税时申请退还**。
+
+---
+
+## 第 3 层：联邦所得税（在 NJ 工作同样适用）
+
+Payroll 年化逻辑：
+
+```
+本期 Gross × 52 = 预估年收入 → 查 2026 联邦税率表 → 当期预扣
+```
+
+**NRA + Form 8233（中美 Tax Treaty）**：
+
+- 若 HR 审核通过，年化收入中先扣减 **$5,000** treaty 免税额，再算联邦预扣。
+- 仅影响**联邦**层，**不影响 NJ 州税**。
+
+**W-4 注意**：NRA 不得勾选 Standard Deduction。
+
+---
+
+## 第 4 层：NJ 州所得税
+
+- 税率：**1.4% – 10.75%** 累进（2026 年表以 NJ Division of Taxation 为准）。
+- **NJ 不承认**大部分联邦 Tax Treaty 免税额。
+- 系统直接以 Gross（年化后）按 NJ 阶梯预扣。
+
+**次年报税**：Form **NJ-1040NR**（非居民）或 1040-NR（若需联报）。
+
+---
+
+## Paychex 工资单核对示例
+
+假设：J-1 NRA，单期 Gross **$800**，双周发薪，已提交 Form 8233。
+
+| 行项目 | 预期 |
+| --- | --- |
+| FICA SS / Med | **$0.00** |
+| NJ Disability | 约 $0 – $1.20 |
+| NJ UI / Work Dev | 约 **$3.40**（800 × 0.425%） |
+| Federal Tax | 视 W-4 / Treaty，可能 $40–$80 |
+| NJ State Tax | 视年化阶梯，可能 $15–$35 |
+| **Net Pay** | Gross 减以上各项 |
+
+> 数字仅为示意；实际以 Paychex 输出为准。
+
+---
+
+## NJ 退税预期
+
+| 项目 | 预期 |
+| --- | --- |
+| 联邦预扣 | 短期工作通常**可退大部分** |
+| NJ 州预扣 | 视总收入与 treaty 不适用情况，**部分可退** |
+| NJ Disability / UI | **不可退** |
+
+---
+
+## 相关链接
+
+- [税务总览](/docs/return/taxes)
+- [薪资代扣四层框架](/docs/return/payroll-withholding)
+- [IRS J-1 学生税务指南](https://www.irs.gov/individuals/international-taxpayers/foreign-students-and-scholars)
+- [NJ Division of Taxation](https://www.nj.gov/treasury/taxation/)

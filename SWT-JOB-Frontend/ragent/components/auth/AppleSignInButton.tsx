@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { APPLE_CLIENT_ID } from "@/config/runtimeEnv";
 
 export function AppleSignInButton({ className }: { className?: string }) {
-  if (!APPLE_CLIENT_ID) return null;
+  const configured = Boolean(APPLE_CLIENT_ID);
 
   return (
     <Button
       type="button"
       variant="outline"
       className={className ?? "w-full gap-2"}
+      disabled={!configured}
+      title={configured ? undefined : "Apple 登录尚未配置，请联系管理员"}
       onClick={() => {
+        if (!configured) return;
         window.location.href = "/api/auth/apple-start";
       }}
     >
@@ -24,6 +27,9 @@ export function AppleSignInButton({ className }: { className?: string }) {
         />
       </svg>
       使用 Apple 登录
+      {!configured ? (
+        <span className="text-[10px] font-normal text-muted-foreground">（待配置）</span>
+      ) : null}
     </Button>
   );
 }

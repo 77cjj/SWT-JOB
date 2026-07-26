@@ -82,8 +82,12 @@ const SECTION_META: Record<string, Record<string, string>> = {
   },
   return: {
     taxes: "税务与退税",
+    "payroll-withholding": "薪资代扣详解",
     "grace-travel": "Grace Period 旅行",
     "side-hustles": "副业与羊毛",
+  },
+  "return/tax-states": {
+    nj: "新泽西 NJ",
   },
 };
 

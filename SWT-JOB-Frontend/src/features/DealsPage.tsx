@@ -41,6 +41,8 @@ import {
 import { calcDealTotalUsd } from '../lib/deals/reward-total';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
+import { resolveBilingualLang } from '../i18n/types';
+import { pickBilingual, pickBilingualList } from '../i18n/bilingual';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
 import { openExternalUrl } from '../lib/openExternalUrl';
 
@@ -49,13 +51,6 @@ const categoryIcons: Record<'bank' | 'other', React.ReactNode> = {
   other: <MoreHoriz fontSize="small" />,
 };
 
-function pickLang(obj: { zh: string; en: string }, lang: Language): string {
-  return lang === 'zh' ? obj.zh : obj.en;
-}
-
-function pickLangList(obj: { zh: string[]; en: string[] }, lang: Language): string[] {
-  return lang === 'zh' ? obj.zh : obj.en;
-}
 
 function hasReferralLink(item: ResolvedProgram): boolean {
   const url = item.edition.referralUrl;
@@ -80,18 +75,19 @@ function DealCard({
   const { t, tWithParams } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const { program, edition, status, isStale, daysUntilExpiry } = item;
-  const title = pickLang(program.brandName, lang);
-  const reward = pickLang(edition.reward, lang);
-  const summary = pickLang(edition.summary, lang);
-  const requirements = pickLangList(edition.requirements, lang);
-  const tags = edition.tags ? pickLangList(edition.tags, lang) : [];
+  const title = pickBilingual(program.brandName, lang);
+  const reward = pickBilingual(edition.reward, lang);
+  const summary = pickBilingual(edition.summary, lang);
+  const requirements = pickBilingualList(edition.requirements, lang);
+  const tags = edition.tags ? pickBilingualList(edition.tags, lang) : [];
   const showReferral = hasReferralLink(item);
   const period = formatEditionPeriod(edition, lang);
   const offerKind = program.offerKind as OfferKind;
   const officialUrl = edition.officialUrl;
+  const contentLang = resolveBilingualLang(lang);
   const siteRebateChip =
     !isStale &&
-    (program.siteRebateLabel?.[lang]?.trim() ||
+    (program.siteRebateLabel?.[contentLang]?.trim() ||
       (program.siteRebateUsd != null ? tWithParams('deals.siteRebateChip', { amount: program.siteRebateUsd }) : ''));
   const totalMoney = calcDealTotalUsd({
     rewardText: reward,

@@ -18,6 +18,7 @@ import {
   convertFromUsd,
   currenciesForLanguage,
   CURRENCIES,
+  defaultCurrencyForLanguage,
   nextCurrency,
   type CurrencyCode,
 } from '../../utils/displayCurrency';
@@ -120,15 +121,14 @@ export default function IncomeHero({
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const availableCurrencies = useMemo(() => currenciesForLanguage(language), [language]);
-  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(
-    () => availableCurrencies[0] ?? 'USD',
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(() =>
+    defaultCurrencyForLanguage(language),
   );
 
+  /** 切换语言时默认展示该国货币，点击金额可在 USD 间切换 */
   useEffect(() => {
-    if (!availableCurrencies.includes(displayCurrency)) {
-      setDisplayCurrency(availableCurrencies[0] ?? 'USD');
-    }
-  }, [availableCurrencies, displayCurrency]);
+    setDisplayCurrency(defaultCurrencyForLanguage(language));
+  }, [language]);
 
   const weeks = Number.isFinite(projectWeeks) && projectWeeks > 0 ? projectWeeks : 0;
   const scale = weeks > 0 ? weeks : 1;

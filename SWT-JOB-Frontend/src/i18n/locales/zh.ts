@@ -269,7 +269,7 @@ export const zh = {
     heroHint: '拖动下方滑块，金额会实时滚动更新',
     heroDetails: '税费等明细',
     cycleCurrency: '切换展示币种（当前 {currency}）',
-    cycleCurrencyHint: '点击金额切换展示币种',
+    cycleCurrencyHint: '点击金额切换为美元',
     showingCurrency: '展示 {currency} · 点击金额切换',
     projectSummaryTitle: '项目总收入预估',
     projectSummaryLine: '{start} ~ {end}，约 {weeks} 周',

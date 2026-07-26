@@ -17,6 +17,8 @@ import DealHistoryDialog from '../components/deals/DealHistoryDialog';
 import { DealCommentsSection } from '../components/docs/DocCommentsSection';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
+import { resolveBilingualLang } from '../i18n/types';
+import { pickBilingual, pickBilingualList } from '../i18n/bilingual';
 import {
   formatEditionPeriod,
   resolveProgram,
@@ -25,14 +27,6 @@ import {
 import { findReferralProgram, useReferralPrograms } from '../lib/deals/useReferralPrograms';
 import { openExternalUrl } from '../lib/openExternalUrl';
 
-function pickLang(obj: { zh: string; en: string }, lang: Language) {
-  return lang === 'zh' ? obj.zh : obj.en;
-}
-
-function pickLangList(obj: { zh: string[]; en: string[] } | undefined, lang: Language) {
-  if (!obj) return [] as string[];
-  return lang === 'zh' ? obj.zh : obj.en;
-}
 
 function StepList({ title, steps }: { title: string; steps: string[] }) {
   if (!steps.length) return null;
@@ -94,19 +88,20 @@ export default function DealDetailPage() {
   }
 
   const { edition, isStale } = resolved;
-  const title = pickLang(program.brandName, lang);
+  const title = pickBilingual(program.brandName, lang);
+  const contentLang = resolveBilingualLang(lang);
   const siteRebateLabel =
-    program.siteRebateLabel?.[lang] ||
+    program.siteRebateLabel?.[contentLang] ||
     (program.siteRebateUsd != null
-      ? lang === 'zh'
+      ? contentLang === 'zh'
         ? `约 $${program.siteRebateUsd}（以管理员设置为准）`
         : `About $${program.siteRebateUsd} (as configured)`
       : t('deals.siteRebateTbd'));
 
-  const howToClaim = pickLangList(program.howToClaim, lang);
-  const practicalSteps = pickLangList(program.practicalSteps, lang);
-  const requirements = pickLangList(edition.requirements, lang);
-  const officialDetail = program.officialDetail ? pickLang(program.officialDetail, lang) : '';
+  const howToClaim = pickBilingualList(program.howToClaim, lang);
+  const practicalSteps = pickBilingualList(program.practicalSteps, lang);
+  const requirements = pickBilingualList(edition.requirements, lang);
+  const officialDetail = program.officialDetail ? pickBilingual(program.officialDetail, lang) : '';
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
@@ -120,7 +115,7 @@ export default function DealDetailPage() {
             {title}
           </Typography>
           <Typography variant="h5" color="primary.main" fontWeight={700}>
-            {pickLang(edition.reward, lang)}
+            {pickBilingual(edition.reward, lang)}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {formatEditionPeriod(edition, lang)}
@@ -146,7 +141,7 @@ export default function DealDetailPage() {
         )}
 
         <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-          {pickLang(edition.summary, lang)}
+          {pickBilingual(edition.summary, lang)}
         </Typography>
 
         {officialDetail ? (

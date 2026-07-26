@@ -1,16 +1,31 @@
 import type { Language } from './types';
+import { mergeTranslations } from './merge';
 import { zh } from './locales/zh';
 import { en } from './locales/en';
+import { LOCALE_OVERRIDES } from './locales/overrides';
 
 export type TranslationKey = keyof typeof zh;
 
-export const translations = {
-  zh,
-  en,
-} as const;
+const mergedCache = new Map<Language, typeof zh>();
 
+/**
+ * 获取完整翻译：中文独立；英文为基准；其它语言在英文上合并局部覆盖。
+ */
 export function getTranslation(lang: Language): typeof zh {
-  return translations[lang] || translations.zh;
+  if (lang === 'zh') return zh;
+
+  const cached = mergedCache.get(lang);
+  if (cached) return cached;
+
+  if (lang === 'en') {
+    mergedCache.set('en', en as typeof zh);
+    return en as typeof zh;
+  }
+
+  const override = LOCALE_OVERRIDES[lang];
+  const merged = mergeTranslations(en, override) as typeof zh;
+  mergedCache.set(lang, merged);
+  return merged;
 }
 
 export function t(key: TranslationKey, lang: Language = 'zh'): string {
@@ -22,14 +37,13 @@ export function t(key: TranslationKey, lang: Language = 'zh'): string {
     if (value && typeof value === 'object' && k in value) {
       value = (value as Record<string, unknown>)[k];
     } else {
-      return key; // 如果找不到翻译，返回 key
+      return key;
     }
   }
 
   return typeof value === 'string' ? value : key;
 }
 
-// 支持参数替换的翻译函数
 export function tWithParams(
   key: TranslationKey,
   params: Record<string, string | number>,
@@ -42,3 +56,5 @@ export function tWithParams(
   return text;
 }
 
+/** @deprecated 使用 getTranslation */
+export const translations = { zh, en } as const;

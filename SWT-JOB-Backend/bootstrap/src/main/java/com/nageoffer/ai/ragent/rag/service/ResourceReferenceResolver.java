@@ -31,11 +31,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -97,6 +99,11 @@ public class ResourceReferenceResolver {
         Map<String, KnowledgeDocumentDO> docById = loadDocMap(docIds);
 
         Map<String, ResourceReference> deduplicated = new LinkedHashMap<>();
+        Set<String> seenTitles = new HashSet<>();
+        Set<String> seenFingerprints = new HashSet<>();
+        Set<String> seenDocsPaths = new HashSet<>();
+        Set<String> seenDocNames = new HashSet<>();
+
         for (RetrievedChunk retrievedChunk : ranked) {
             if (deduplicated.size() >= RESOURCE_MAX_COUNT) {
                 break;
@@ -106,14 +113,33 @@ public class ResourceReferenceResolver {
                 continue;
             }
             KnowledgeDocumentDO doc = docById.get(chunk.getDocId());
+            String chunkText = firstNonBlank(chunk.getContent(), retrievedChunk.getText());
+            String title = resolveTitle(doc, chunkText);
+            String titleKey = normalizeDedupKey(title);
+            String fingerprint = contentFingerprint(chunkText);
+            String docsPath = resolveDocsPath(doc);
+            String docNameKey = normalizeDedupKey(doc != null ? doc.getDocName() : null);
+
+            if (StrUtil.isNotBlank(titleKey) && seenTitles.contains(titleKey)) {
+                continue;
+            }
+            if (StrUtil.isNotBlank(fingerprint) && seenFingerprints.contains(fingerprint)) {
+                continue;
+            }
+            if (StrUtil.isNotBlank(docsPath) && seenDocsPaths.contains(docsPath)) {
+                continue;
+            }
+            if (StrUtil.isNotBlank(docNameKey) && seenDocNames.contains(docNameKey)) {
+                continue;
+            }
+
             String docKey = StrUtil.isNotBlank(chunk.getDocId()) ? chunk.getDocId() : chunk.getId();
             if (deduplicated.containsKey(docKey)) {
                 continue;
             }
 
-            String chunkText = firstNonBlank(chunk.getContent(), retrievedChunk.getText());
             ResourceReference resource = ResourceReference.builder()
-                    .title(resolveTitle(doc, chunkText))
+                    .title(title)
                     .url(resolvePublicUrl(doc))
                     .snippet(buildSnippet(chunkText))
                     .content(buildContent(chunkText))
@@ -123,8 +149,41 @@ public class ResourceReferenceResolver {
                     .chunkId(chunk.getId())
                     .build();
             deduplicated.put(docKey, resource);
+            if (StrUtil.isNotBlank(titleKey)) {
+                seenTitles.add(titleKey);
+            }
+            if (StrUtil.isNotBlank(fingerprint)) {
+                seenFingerprints.add(fingerprint);
+            }
+            if (StrUtil.isNotBlank(docsPath)) {
+                seenDocsPaths.add(docsPath);
+            }
+            if (StrUtil.isNotBlank(docNameKey)) {
+                seenDocNames.add(docNameKey);
+            }
         }
         return new ArrayList<>(deduplicated.values());
+    }
+
+    private String normalizeDedupKey(String raw) {
+        if (StrUtil.isBlank(raw)) {
+            return null;
+        }
+        return raw.trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", "")
+                .replaceAll("[/_\\\\-]+", "");
+    }
+
+    private String contentFingerprint(String content) {
+        if (StrUtil.isBlank(content)) {
+            return null;
+        }
+        String normalized = content.trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", " ");
+        int len = Math.min(normalized.length(), 240);
+        return normalized.substring(0, len);
     }
 
     private Map<String, RetrievedChunk> collectBestChunks(RetrievalContext retrievalContext) {

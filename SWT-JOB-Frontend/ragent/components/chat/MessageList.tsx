@@ -52,7 +52,7 @@ export function MessageList({ messages, isLoading, isStreaming, sessionKey }: Me
       ({ className, ...props }, ref) => (
         <div
           ref={ref}
-          className={cn("mx-auto max-w-[800px] px-6 pt-10 pb-2 md:px-8", className)}
+          className={cn("mx-auto w-full max-w-6xl px-3 pt-6 pb-2 sm:px-5 md:px-6", className)}
           {...props}
         />
       )

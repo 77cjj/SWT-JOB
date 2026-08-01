@@ -38,7 +38,8 @@ public class RAGCapabilitiesController {
     public Result<ChatCapabilitiesVO> capabilities() {
         return Results.success(
                 ChatCapabilitiesVO.builder()
-                        .deepThinking(chatCapabilitiesService.isDeepThinkingAvailable())
+                        .webSearch(chatCapabilitiesService.isWebSearchAvailable())
+                        .deepThinking(false)
                         .build()
         );
     }

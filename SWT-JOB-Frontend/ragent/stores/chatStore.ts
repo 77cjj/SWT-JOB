@@ -39,7 +39,7 @@ interface ChatState {
   inputFocusKey: number;
   isStreaming: boolean;
   isCreatingNew: boolean;
-  deepThinkingEnabled: boolean;
+  webSearchEnabled: boolean;
   thinkingStartAt: number | null;
   streamTaskId: string | null;
   streamAbort: (() => void) | null;
@@ -53,7 +53,7 @@ interface ChatState {
   renameSession: (sessionId: string, title: string) => Promise<void>;
   selectSession: (sessionId: string) => Promise<void>;
   updateSessionTitle: (sessionId: string, title: string) => void;
-  setDeepThinkingEnabled: (enabled: boolean) => void;
+  setWebSearchEnabled: (enabled: boolean) => void;
   sendMessage: (content: string) => Promise<void>;
   cancelGeneration: () => void;
   appendStreamContent: (delta: string) => void;
@@ -121,6 +121,11 @@ function normalizeResources(payload?: ResourcesPayload | null): MessageResource[
   });
   return Array.from(unique.values())
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .filter((item, index, arr) => {
+      const titleKey = (item.title || "").trim().toLowerCase().replace(/\s+/g, "");
+      if (!titleKey) return true;
+      return arr.findIndex((other) => (other.title || "").trim().toLowerCase().replace(/\s+/g, "") === titleKey) === index;
+    })
     .slice(0, 5);
 }
 
@@ -133,7 +138,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   inputFocusKey: 0,
   isStreaming: false,
   isCreatingNew: false,
-  deepThinkingEnabled: false,
+  webSearchEnabled: false,
   thinkingStartAt: null,
   streamTaskId: null,
   streamAbort: null,
@@ -199,7 +204,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isStreaming: false,
       isLoading: false,
       isCreatingNew: true,
-      deepThinkingEnabled: false,
+      webSearchEnabled: false,
       thinkingStartAt: null,
       streamTaskId: null,
       streamAbort: null,
@@ -341,8 +346,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       )
     }));
   },
-  setDeepThinkingEnabled: (enabled) => {
-    set({ deepThinkingEnabled: enabled });
+  setWebSearchEnabled: (enabled) => {
+    set({ webSearchEnabled: enabled });
   },
   sendMessage: async (content) => {
     const trimmed = content.trim();
@@ -355,7 +360,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    const deepThinkingEnabled = get().deepThinkingEnabled;
+    const webSearchEnabled = get().webSearchEnabled;
     const inputFocusKey = Date.now();
 
     const userMessage: Message = {
@@ -370,9 +375,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       id: assistantId,
       role: "assistant",
       content: "",
-      thinking: deepThinkingEnabled ? "" : undefined,
-      isDeepThinking: deepThinkingEnabled,
-      isThinking: deepThinkingEnabled,
       status: "streaming",
       feedback: null,
       createdAt: new Date().toISOString()
@@ -392,7 +394,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const query = buildQuery({
       question: trimmed,
       conversationId: conversationId || undefined,
-      deepThinking: deepThinkingEnabled ? true : undefined
+      webSearch: webSearchEnabled ? true : undefined
     });
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${query}`;
 

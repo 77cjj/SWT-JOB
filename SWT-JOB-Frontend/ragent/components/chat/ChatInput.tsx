@@ -1,16 +1,16 @@
 import * as React from "react";
-import { Brain, Lightbulb, Send, Square } from "lucide-react";
+import { Globe, Lightbulb, Send, Square } from "lucide-react";
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
-import { useDeepThinkingAvailable } from "@/hooks/useDeepThinkingAvailable";
+import { useWebSearchAvailable } from "@/hooks/useWebSearchAvailable";
 
 export function ChatInput() {
   const { t } = useI18n();
-  const deepThinkingAvailable = useDeepThinkingAvailable();
+  const webSearchAvailable = useWebSearchAvailable();
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
   const isComposingRef = React.useRef(false);
@@ -19,8 +19,8 @@ export function ChatInput() {
     sendMessage,
     isStreaming,
     cancelGeneration,
-    deepThinkingEnabled,
-    setDeepThinkingEnabled,
+    webSearchEnabled,
+    setWebSearchEnabled,
     inputFocusKey
   } = useChatStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -70,10 +70,10 @@ export function ChatInput() {
   const hasContent = value.trim().length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 w-full">
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl border bg-white px-4 pt-3 pb-2 transition-all duration-200 dark:border-neutral-700 dark:bg-neutral-950",
+          "relative flex w-full flex-col rounded-2xl border bg-white px-4 pt-3 pb-2 transition-all duration-200 dark:border-neutral-700 dark:bg-neutral-950",
           isFocused
             ? "border-neutral-400 ring-1 ring-neutral-300/90 dark:border-indigo-500/50 dark:ring-indigo-500/35"
             : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600"
@@ -84,7 +84,7 @@ export function ChatInput() {
             ref={textareaRef}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder={deepThinkingEnabled ? t("chat.deepInputPlaceholder") : t("chat.inputPlaceholder")}
+            placeholder={webSearchEnabled ? t("chat.webSearchInputPlaceholder") : t("chat.inputPlaceholder")}
             className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-neutral-900 shadow-none placeholder:text-neutral-400 focus-visible:ring-0 dark:text-neutral-100 dark:placeholder:text-neutral-500"
             rows={1}
             onFocus={() => setIsFocused(true)}
@@ -109,25 +109,25 @@ export function ChatInput() {
           />
         </div>
         <div className="relative mt-2 flex items-center">
-          {deepThinkingAvailable ? (
+          {webSearchAvailable ? (
           <button
             type="button"
-            onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
+            onClick={() => setWebSearchEnabled(!webSearchEnabled)}
             disabled={isStreaming}
-            aria-pressed={deepThinkingEnabled}
+            aria-pressed={webSearchEnabled}
             className={cn(
               "absolute left-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
-              deepThinkingEnabled
-                ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/80 dark:text-indigo-300"
+              webSearchEnabled
+                ? "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-500/50 dark:bg-sky-950/80 dark:text-sky-300"
                 : "border-transparent bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600",
               isStreaming && "cursor-not-allowed opacity-60"
             )}
           >
             <span className="inline-flex items-center gap-2">
-              <Brain className={cn("h-3.5 w-3.5", deepThinkingEnabled && "text-indigo-600 dark:text-indigo-400")} />
-              {t("chat.deepThinking")}
-              {deepThinkingEnabled ? (
-                <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse dark:bg-indigo-400" />
+              <Globe className={cn("h-3.5 w-3.5", webSearchEnabled && "text-sky-600 dark:text-sky-400")} />
+              {t("chat.webSearch")}
+              {webSearchEnabled ? (
+                <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse dark:bg-sky-400" />
               ) : null}
             </span>
           </button>
@@ -150,11 +150,11 @@ export function ChatInput() {
           </button>
         </div>
       </div>
-      {deepThinkingAvailable && deepThinkingEnabled ? (
-        <p className="text-xs text-indigo-700 dark:text-indigo-400">
+      {webSearchAvailable && webSearchEnabled ? (
+        <p className="text-xs text-sky-700 dark:text-sky-400">
           <span className="inline-flex items-center gap-1.5">
             <Lightbulb className="h-3.5 w-3.5" />
-            {t("chat.deepThinkingOn")}
+            {t("chat.webSearchOn")}
           </span>
         </p>
       ) : null}

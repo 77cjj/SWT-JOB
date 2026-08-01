@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.service.pipeline;
 
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
+import com.nageoffer.ai.ragent.framework.convention.ResourceReference;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
@@ -54,6 +55,11 @@ public class StreamChatContext {
     private final boolean deepThinking;
 
     /**
+     * 是否启用联网搜索补充
+     */
+    private final boolean webSearch;
+
+    /**
      * 用户ID
      */
     private final String userId;
@@ -77,4 +83,9 @@ public class StreamChatContext {
      * 子问题意图列表（过程中填充）
      */
     private List<SubQuestionIntent> subIntents;
+
+    /**
+     * 联网搜索命中的资源（过程中填充）
+     */
+    private List<ResourceReference> webResources;
 }

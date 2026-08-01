@@ -43,6 +43,11 @@ public class RetrievalContext {
     private String kbContext;
 
     /**
+     * 联网搜索补充上下文
+     */
+    private String webContext;
+
+    /**
      * 意图 ID -> 分片列表
      */
     private Map<String, List<RetrievedChunk>> intentChunks;
@@ -61,10 +66,14 @@ public class RetrievalContext {
         return StrUtil.isNotBlank(kbContext);
     }
 
+    public boolean hasWeb() {
+        return StrUtil.isNotBlank(webContext);
+    }
+
     /**
      * 是否无任何上下文
      */
     public boolean isEmpty() {
-        return !hasMcp() && !hasKb();
+        return !hasMcp() && !hasKb() && !hasWeb();
     }
 }

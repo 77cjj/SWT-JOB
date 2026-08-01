@@ -36,6 +36,8 @@ public class PromptContext {
 
     private String kbContext;
 
+    private String webContext;
+
     private List<NodeScore> mcpIntents;
 
     private List<NodeScore> kbIntents;
@@ -48,5 +50,9 @@ public class PromptContext {
 
     public boolean hasKb() {
         return StrUtil.isNotBlank(kbContext);
+    }
+
+    public boolean hasWeb() {
+        return StrUtil.isNotBlank(webContext);
     }
 }

@@ -28,6 +28,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChatCapabilitiesVO {
 
-    /** 是否配置了深度思考模型且存在 supports-thinking 候选 */
+    /** 是否配置了联网搜索（Tavily API Key） */
+    private boolean webSearch;
+
+    /** @deprecated 已由 webSearch 替代 */
+    @Deprecated
     private boolean deepThinking;
 }

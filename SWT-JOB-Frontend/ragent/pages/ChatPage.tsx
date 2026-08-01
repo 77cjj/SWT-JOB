@@ -139,7 +139,7 @@ export function ChatPage() {
     <MainLayout>
       <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-neutral-950">
         {/* 仅右侧主列（与侧栏并列）：标题 + 可滚动消息区 + 输入框同宽叠放，输入框不 sticky 视口、不随整页滚动，只在该列底部 */}
-        <div className="mx-auto flex min-h-0 w-full max-w-[800px] flex-1 flex-col">
+        <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-3 sm:px-5">
           {messages.length > 0 ? (
             <header className="relative shrink-0 bg-white px-6 pb-3 pt-1 dark:bg-neutral-950">
               <ChatSessionTitle />

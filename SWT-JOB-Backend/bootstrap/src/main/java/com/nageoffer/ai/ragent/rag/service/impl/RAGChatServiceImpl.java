@@ -49,14 +49,13 @@ public class RAGChatServiceImpl implements RAGChatService {
 
     @Override
     @ChatRateLimit
-    public void streamChat(String question, String conversationId, Boolean deepThinking, SseEmitter emitter) {
+    public void streamChat(String question, String conversationId, Boolean webSearch, SseEmitter emitter) {
         userChatQuotaService.consumeOneChatOrThrow(UserContext.getUserId());
         String actualConversationId = StrUtil.isBlank(conversationId) ? IdUtil.getSnowflakeNextIdStr() : conversationId;
         String taskId = StrUtil.isBlank(RagTraceContext.getTaskId())
                 ? IdUtil.getSnowflakeNextIdStr()
                 : RagTraceContext.getTaskId();
-        log.info("开始流式对话，会话ID：{}，任务ID：{}", actualConversationId, taskId);
-        boolean thinkingEnabled = Boolean.TRUE.equals(deepThinking);
+        log.info("开始流式对话，会话ID：{}，任务ID：{}，联网搜索：{}", actualConversationId, taskId, Boolean.TRUE.equals(webSearch));
 
         StreamCallback callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
 
@@ -64,7 +63,8 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .question(question)
                 .conversationId(actualConversationId)
                 .taskId(taskId)
-                .deepThinking(thinkingEnabled)
+                .deepThinking(false)
+                .webSearch(Boolean.TRUE.equals(webSearch))
                 .userId(UserContext.getUserId())
                 .callback(callback)
                 .build();

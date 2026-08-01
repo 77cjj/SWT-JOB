@@ -34,6 +34,9 @@ import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
+import com.nageoffer.ai.ragent.rag.core.web.WebSearchBundle;
+import com.nageoffer.ai.ragent.rag.core.web.WebSearchService;
+import com.nageoffer.ai.ragent.framework.convention.ResourceReference;
 import com.nageoffer.ai.ragent.rag.dto.IntentGroup;
 import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
 import com.nageoffer.ai.ragent.rag.service.ResourceReferenceResolver;
@@ -48,6 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CHAT_SYSTEM_PROMPT_PATH;
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;
@@ -80,32 +84,77 @@ public class StreamChatPipeline {
     private final PromptTemplateLoader promptTemplateLoader;
     private final StreamTaskManager taskManager;
     private final ResourceReferenceResolver resourceReferenceResolver;
+    private final WebSearchService webSearchService;
 
     /**
      * 执行流式对话管道
      */
     public void execute(StreamChatContext ctx) {
+        long startedAt = System.currentTimeMillis();
+
         loadMemory(ctx);
+        long afterMemory = System.currentTimeMillis();
+
         rewriteQuery(ctx);
+        long afterRewrite = System.currentTimeMillis();
+
         resolveIntents(ctx);
+        long afterIntent = System.currentTimeMillis();
 
         if (handleGuidance(ctx)) {
+            logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, -1, -1);
             return;
         }
         if (handleSystemOnly(ctx)) {
+            logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, -1, -1);
             return;
         }
         if (handleChitchatOnly(ctx)) {
+            logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, -1, -1);
             return;
         }
 
         RetrievalContext retrievalCtx = retrieve(ctx);
+        long afterRetrieve = System.currentTimeMillis();
+
         emitResources(ctx, retrievalCtx);
         if (handleEmptyRetrieval(ctx, retrievalCtx)) {
+            logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, afterRetrieve, -1);
             return;
         }
 
         streamRagResponse(ctx, retrievalCtx);
+        logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, afterRetrieve, System.currentTimeMillis());
+    }
+
+    private void logPipelineTiming(StreamChatContext ctx,
+                                   long startedAt,
+                                   long afterMemory,
+                                   long afterRewrite,
+                                   long afterIntent,
+                                   long afterRetrieve,
+                                   long finishedAt) {
+        if (afterRetrieve < 0) {
+            log.info("RAG pipeline short-circuit conversationId={} total={}ms memory={}ms rewrite={}ms intent={}ms webSearch={}",
+                    ctx.getConversationId(),
+                    afterIntent - startedAt,
+                    afterMemory - startedAt,
+                    afterRewrite - afterMemory,
+                    afterIntent - afterRewrite,
+                    ctx.isWebSearch());
+            return;
+        }
+        log.info(
+                "RAG pipeline conversationId={} total={}ms memory={}ms rewrite={}ms intent={}ms retrieve={}ms llmStart={}ms webSearch={}",
+                ctx.getConversationId(),
+                (finishedAt > 0 ? finishedAt : System.currentTimeMillis()) - startedAt,
+                afterMemory - startedAt,
+                afterRewrite - afterMemory,
+                afterIntent - afterRewrite,
+                afterRetrieve - afterIntent,
+                (finishedAt > 0 ? finishedAt : System.currentTimeMillis()) - afterRetrieve,
+                ctx.isWebSearch()
+        );
     }
 
     // ==================== 流水线阶段 ====================
@@ -201,7 +250,23 @@ public class StreamChatPipeline {
     }
 
     private RetrievalContext retrieve(StreamChatContext ctx) {
-        return retrievalEngine.retrieve(ctx.getSubIntents(), DEFAULT_TOP_K);
+        int topK = ctx.isWebSearch() ? Math.min(DEFAULT_TOP_K, 6) : DEFAULT_TOP_K;
+        RetrievalContext base = retrievalEngine.retrieve(ctx.getSubIntents(), topK);
+        if (!ctx.isWebSearch()) {
+            ctx.setWebResources(List.of());
+            return base;
+        }
+        WebSearchBundle web = webSearchService.search(ctx.getRewriteResult().rewrittenQuestion());
+        ctx.setWebResources(web != null && web.getResources() != null ? web.getResources() : List.of());
+        if (web == null || web.isEmpty()) {
+            return base;
+        }
+        return RetrievalContext.builder()
+                .mcpContext(base.getMcpContext())
+                .kbContext(base.getKbContext())
+                .webContext(web.getContextText())
+                .intentChunks(base.getIntentChunks())
+                .build();
     }
 
     private boolean handleEmptyRetrieval(StreamChatContext ctx, RetrievalContext retrievalCtx) {
@@ -215,7 +280,10 @@ public class StreamChatPipeline {
     }
 
     private void emitResources(StreamChatContext ctx, RetrievalContext retrievalCtx) {
-        ctx.getCallback().onResources(resourceReferenceResolver.resolve(retrievalCtx));
+        List<ResourceReference> kbResources = resourceReferenceResolver.resolve(retrievalCtx);
+        List<ResourceReference> webResources = ctx.getWebResources() != null ? ctx.getWebResources() : List.of();
+        List<ResourceReference> merged = Stream.concat(kbResources.stream(), webResources.stream()).toList();
+        ctx.getCallback().onResources(merged);
     }
 
     private void streamRagResponse(StreamChatContext ctx, RetrievalContext retrievalCtx) {
@@ -227,7 +295,7 @@ public class StreamChatPipeline {
                 retrievalCtx,
                 mergedGroup,
                 ctx.getHistory(),
-                ctx.isDeepThinking(),
+                false,
                 ctx.getCallback()
         );
         taskManager.bindHandle(ctx.getTaskId(), handle);
@@ -263,6 +331,7 @@ public class StreamChatPipeline {
                 .question(rewriteResult.rewrittenQuestion())
                 .mcpContext(ctx.getMcpContext())
                 .kbContext(ctx.getKbContext())
+                .webContext(ctx.getWebContext())
                 .mcpIntents(intentGroup.mcpIntents())
                 .kbIntents(intentGroup.kbIntents())
                 .intentChunks(ctx.getIntentChunks())

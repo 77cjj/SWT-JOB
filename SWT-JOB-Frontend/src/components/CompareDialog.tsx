@@ -104,7 +104,7 @@ export default function CompareDialog({ open, jobs, onClose, onRemove }: Props) 
 
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${buildQuery({
       question,
-      deepThinking: false,
+      webSearch: false,
     })}`;
 
     let assistant = '';

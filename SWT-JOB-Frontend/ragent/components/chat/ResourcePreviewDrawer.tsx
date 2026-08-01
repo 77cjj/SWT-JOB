@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   Box,
   Button,
@@ -6,12 +6,13 @@ import {
   IconButton,
   Stack,
   Typography,
-} from '@mui/material';
-import { Close, MenuBook, OpenInNew } from '@mui/icons-material';
-import Link from 'next/link';
+} from "@mui/material";
+import { Close, Language, MenuBook, OpenInNew } from "@mui/icons-material";
+import Link from "next/link";
 
-import { useI18n } from '../../../src/context/I18nContext';
-import type { MessageResource } from '@/types';
+import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
+import { useI18n } from "../../../src/context/I18nContext";
+import type { MessageResource } from "@/types";
 
 type ResourcePreviewDrawerProps = {
   open: boolean;
@@ -20,16 +21,17 @@ type ResourcePreviewDrawerProps = {
 };
 
 function isInternalDocsPath(url?: string): boolean {
-  return Boolean(url && url.startsWith('/docs/'));
+  return Boolean(url && url.startsWith("/docs/"));
 }
 
 export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePreviewDrawerProps) {
   const { t, tWithParams } = useI18n();
 
-  const body = resource?.content || resource?.snippet || '';
+  const body = resource?.content || resource?.snippet || "";
   const docsPath = isInternalDocsPath(resource?.url) ? resource!.url! : null;
   const externalUrl =
     resource?.url && !isInternalDocsPath(resource.url) ? resource.url : null;
+  const isWebSource = Boolean(externalUrl && !resource?.docId);
 
   return (
     <Drawer
@@ -38,58 +40,51 @@ export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePrevi
       onClose={onClose}
       PaperProps={{
         sx: {
-          width: { xs: '100%', sm: 420, md: 480 },
-          display: 'flex',
-          flexDirection: 'column',
+          width: { xs: "100%", sm: 420, md: 480 },
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
+          display: "flex",
+          alignItems: "flex-start",
           gap: 1,
           px: 2,
           py: 1.5,
           borderBottom: 1,
-          borderColor: 'divider',
+          borderColor: "divider",
         }}
       >
-        <MenuBook sx={{ mt: 0.25, color: 'primary.main', fontSize: 22 }} />
+        {isWebSource ? (
+          <Language sx={{ mt: 0.25, color: "primary.main", fontSize: 22 }} />
+        ) : (
+          <MenuBook sx={{ mt: 0.25, color: "primary.main", fontSize: 22 }} />
+        )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
-            {resource?.title || t('chat.resourceUntitled')}
+          <Typography variant="subtitle1" fontWeight={700} sx={{ wordBreak: "break-word" }}>
+            {resource?.title || t("chat.resourceUntitled")}
           </Typography>
-          {typeof resource?.score === 'number' ? (
+          {typeof resource?.score === "number" ? (
             <Typography variant="caption" color="text.secondary">
-              {tWithParams('chat.resourceRelevance', { score: Math.round(resource.score * 100) })}
+              {tWithParams("chat.resourceRelevance", { score: Math.round(resource.score * 100) })}
             </Typography>
           ) : null}
         </Box>
-        <IconButton aria-label={t('common.close')} onClick={onClose} size="small">
+        <IconButton aria-label={t("common.close")} onClick={onClose} size="small">
           <Close fontSize="small" />
         </IconButton>
       </Box>
 
-      <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 2 }}>
+      <Box sx={{ flex: 1, overflow: "auto", px: 2, py: 2 }}>
         {body ? (
-          <Typography
-            component="pre"
-            variant="body2"
-            sx={{
-              m: 0,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              fontFamily: 'inherit',
-              lineHeight: 1.65,
-              color: 'text.primary',
-            }}
-          >
-            {body}
-          </Typography>
+          <Box className="resource-preview-markdown">
+            <MarkdownRenderer content={body} />
+          </Box>
         ) : (
           <Typography variant="body2" color="text.secondary">
-            {t('chat.resourceNoContent')}
+            {t("chat.resourceNoContent")}
           </Typography>
         )}
       </Box>
@@ -98,7 +93,7 @@ export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePrevi
         <Stack
           direction="row"
           spacing={1}
-          sx={{ px: 2, py: 1.5, borderTop: 1, borderColor: 'divider' }}
+          sx={{ px: 2, py: 1.5, borderTop: 1, borderColor: "divider" }}
         >
           {docsPath ? (
             <Button
@@ -109,7 +104,7 @@ export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePrevi
               startIcon={<MenuBook />}
               onClick={onClose}
             >
-              {t('chat.resourceOpenDocs')}
+              {t("chat.resourceOpenDocs")}
             </Button>
           ) : null}
           {externalUrl ? (
@@ -117,11 +112,11 @@ export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePrevi
               href={externalUrl}
               target="_blank"
               rel="noreferrer"
-              variant={docsPath ? 'outlined' : 'contained'}
+              variant={docsPath ? "outlined" : "contained"}
               size="small"
               startIcon={<OpenInNew />}
             >
-              {t('chat.resourceOpenExternal')}
+              {t("chat.resourceOpenExternal")}
             </Button>
           ) : null}
         </Stack>

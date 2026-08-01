@@ -139,7 +139,7 @@ export default function FloatingSupportWidget() {
 
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${buildQuery({
       question: q,
-      deepThinking: false,
+      webSearch: false,
     })}`;
 
     const stream = createStreamResponse(

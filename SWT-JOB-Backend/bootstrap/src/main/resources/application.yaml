@@ -58,10 +58,17 @@ rag:
   rate-limit:
     global:
       enabled: true
-      max-concurrent: 1
-      max-wait-seconds: 3
+      max-concurrent: 2
+      max-wait-seconds: 5
       lease-seconds: 30
       poll-interval-ms: 200
+
+  web-search:
+    enabled: true
+    api-key: ${TAVILY_API_KEY:}
+    max-results: 3
+    timeout-seconds: 8
+    max-snippet-chars: 600
 
   memory:
     history-keep-turns: 4

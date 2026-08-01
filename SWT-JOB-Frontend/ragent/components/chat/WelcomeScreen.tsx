@@ -1,12 +1,12 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Bot, Brain, Calculator, Gift, Lightbulb, MapPin, Send, Square } from "lucide-react";
+import { ArrowUpRight, BookOpen, Bot, Calculator, Gift, Globe, Lightbulb, MapPin, Send, Square } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useI18n } from "../../../src/context/I18nContext";
-import { useDeepThinkingAvailable } from "@/hooks/useDeepThinkingAvailable";
+import { useWebSearchAvailable } from "@/hooks/useWebSearchAvailable";
 
 type PromptPreset = {
   id?: string;
@@ -36,8 +36,8 @@ export function WelcomeScreen() {
   const [isFocused, setIsFocused] = React.useState(false);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const deepThinkingAvailable = useDeepThinkingAvailable();
-  const { sendMessage, isStreaming, cancelGeneration, deepThinkingEnabled, setDeepThinkingEnabled } =
+  const webSearchAvailable = useWebSearchAvailable();
+  const { sendMessage, isStreaming, cancelGeneration, webSearchEnabled, setWebSearchEnabled } =
     useChatStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const openLoginDialog = useAuthStore((s) => s.openLoginDialog);
@@ -90,8 +90,8 @@ export function WelcomeScreen() {
   const hasContent = value.trim().length > 0;
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-contain bg-white px-4 py-8 dark:bg-neutral-950 sm:px-6 sm:py-10">
-      <div className="relative mx-auto w-full max-w-[860px] min-w-0">
+    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col items-stretch justify-start overflow-y-auto overflow-x-hidden overscroll-contain bg-white px-3 py-4 dark:bg-neutral-950 sm:px-5 sm:py-6">
+      <div className="relative mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col">
         <div className="animate-fade-up text-center" style={{ animationFillMode: "both" }}>
           <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/90 px-3 py-1 text-xs font-medium text-indigo-600 shadow-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-indigo-400">
             <Bot className="h-3.5 w-3.5" />
@@ -123,7 +123,7 @@ export function WelcomeScreen() {
                 ref={textareaRef}
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                placeholder={deepThinkingEnabled ? t("chat.deepInputPlaceholder") : t("chat.inputPlaceholder")}
+                placeholder={webSearchEnabled ? t("chat.webSearchInputPlaceholder") : t("chat.inputPlaceholder")}
                 className="max-h-40 min-h-[52px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none sm:text-base dark:text-neutral-100 dark:placeholder:text-neutral-500"
                 rows={1}
                 onFocus={() => setIsFocused(true)}
@@ -148,25 +148,25 @@ export function WelcomeScreen() {
               />
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              {deepThinkingAvailable ? (
+              {webSearchAvailable ? (
               <button
                 type="button"
-                onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
+                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
                 disabled={isStreaming}
-                aria-pressed={deepThinkingEnabled}
+                aria-pressed={webSearchEnabled}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                  deepThinkingEnabled
-                    ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/50 dark:bg-indigo-950/80 dark:text-indigo-300"
+                  webSearchEnabled
+                    ? "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-500/50 dark:bg-sky-950/80 dark:text-sky-300"
                     : "border-transparent bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-900",
                   isStreaming && "cursor-not-allowed opacity-60"
                 )}
               >
                 <span className="inline-flex items-center gap-2">
-                  <Brain className={cn("h-3.5 w-3.5", deepThinkingEnabled && "text-indigo-600 dark:text-indigo-400")} />
-                  {t("chat.deepThinking")}
-                  {deepThinkingEnabled ? (
-                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse dark:bg-indigo-400" />
+                  <Globe className={cn("h-3.5 w-3.5", webSearchEnabled && "text-sky-600 dark:text-sky-400")} />
+                  {t("chat.webSearch")}
+                  {webSearchEnabled ? (
+                    <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse dark:bg-sky-400" />
                   ) : null}
                 </span>
               </button>
@@ -189,11 +189,11 @@ export function WelcomeScreen() {
               </button>
             </div>
           </div>
-          {deepThinkingAvailable && deepThinkingEnabled ? (
-            <p className="mt-3 text-xs text-indigo-700 dark:text-indigo-400">
+          {webSearchAvailable && webSearchEnabled ? (
+            <p className="mt-3 text-xs text-sky-700 dark:text-sky-400">
               <span className="inline-flex items-center gap-1.5">
                 <Lightbulb className="h-3.5 w-3.5" />
-                {t("chat.deepThinkingOn")}
+                {t("chat.webSearchOn")}
               </span>
             </p>
           ) : null}

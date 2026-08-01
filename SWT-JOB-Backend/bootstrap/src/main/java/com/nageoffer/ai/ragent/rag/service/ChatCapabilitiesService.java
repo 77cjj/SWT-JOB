@@ -17,8 +17,7 @@
 
 package com.nageoffer.ai.ragent.rag.service;
 
-import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
+import com.nageoffer.ai.ragent.rag.core.web.WebSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,19 +25,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ChatCapabilitiesService {
 
-    private final AIModelProperties aiModelProperties;
+    private final WebSearchService webSearchService;
 
+    public boolean isWebSearchAvailable() {
+        return webSearchService.isAvailable();
+    }
+
+    /** @deprecated 深度思考已替换为联网搜索 */
+    @Deprecated
     public boolean isDeepThinkingAvailable() {
-        AIModelProperties.ModelGroup chat = aiModelProperties.getChat();
-        if (chat == null || StrUtil.isBlank(chat.getDeepThinkingModel())) {
-            return false;
-        }
-        if (chat.getCandidates() == null || chat.getCandidates().isEmpty()) {
-            return false;
-        }
-        return chat.getCandidates().stream()
-                .anyMatch(c -> c != null
-                        && !Boolean.FALSE.equals(c.getEnabled())
-                        && Boolean.TRUE.equals(c.getSupportsThinking()));
+        return false;
     }
 }

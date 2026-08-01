@@ -46,6 +46,7 @@ public class RAGPromptService {
 
     private static final String MCP_CONTEXT_HEADER = "## 动态数据片段";
     private static final String KB_CONTEXT_HEADER = "## 文档内容";
+    private static final String WEB_CONTEXT_HEADER = "## 联网检索补充";
 
     private final PromptTemplateLoader promptTemplateLoader;
 
@@ -77,6 +78,9 @@ public class RAGPromptService {
         }
         if (StrUtil.isNotBlank(context.getKbContext())) {
             messages.add(ChatMessage.user(formatEvidence(KB_CONTEXT_HEADER, context.getKbContext())));
+        }
+        if (StrUtil.isNotBlank(context.getWebContext())) {
+            messages.add(ChatMessage.user(formatEvidence(WEB_CONTEXT_HEADER, context.getWebContext())));
         }
         if (CollUtil.isNotEmpty(history)) {
             messages.addAll(history);
@@ -134,16 +138,19 @@ public class RAGPromptService {
     }
 
     private PromptBuildPlan plan(PromptContext context) {
-        if (context.hasMcp() && !context.hasKb()) {
+        if (context.hasMcp() && !context.hasKb() && !context.hasWeb()) {
             return planMcpOnly(context);
         }
-        if (!context.hasMcp() && context.hasKb()) {
+        if (!context.hasMcp() && context.hasKb() && !context.hasWeb()) {
             return planKbOnly(context);
         }
-        if (context.hasMcp() && context.hasKb()) {
+        if (context.hasMcp() && (context.hasKb() || context.hasWeb())) {
             return planMixed(context);
         }
-        throw new IllegalStateException("PromptContext requires MCP or KB context.");
+        if (!context.hasMcp() && (context.hasKb() || context.hasWeb())) {
+            return planKbOnly(context);
+        }
+        throw new IllegalStateException("PromptContext requires MCP, KB or Web context.");
     }
 
     private PromptBuildPlan planKbOnly(PromptContext context) {

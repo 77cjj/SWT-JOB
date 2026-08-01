@@ -15,6 +15,7 @@ import {
   Menu,
   MessageSquare,
   Gift,
+  Globe2,
   KeyRound,
   Moon,
   Search,
@@ -65,6 +66,11 @@ const menuGroups: MenuGroup[] = [
         path: "/admin/dashboard",
         label: "Dashboard",
         icon: LayoutDashboard
+      },
+      {
+        path: "/admin/swt-participation",
+        label: "SWT 参与统计",
+        icon: Globe2
       },
       {
         path: "/admin/knowledge",
@@ -155,6 +161,7 @@ const menuGroups: MenuGroup[] = [
 
 const breadcrumbMap: Record<string, string> = {
   dashboard: "Dashboard",
+  "swt-participation": "SWT 参与统计",
   knowledge: "知识库管理",
   "intent-tree": "意图树配置",
   "intent-list": "意图列表",

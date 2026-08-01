@@ -12,6 +12,7 @@ export type AdminNavFlatItem = {
 /** 与 `AdminLayout` 侧栏一致的后台入口（扁平列表，用于顶栏用户菜单等） */
 export const ADMIN_NAV_FLAT_ITEMS: AdminNavFlatItem[] = [
   { path: "/admin/dashboard", label: "Dashboard" },
+  { path: "/admin/swt-participation", label: "SWT 参与统计" },
   { path: "/admin/knowledge", label: "知识库管理" },
   { path: "/admin/intent-tree", label: "意图树配置" },
   { path: "/admin/intent-list", label: "意图列表" },

@@ -20,6 +20,7 @@ import { RagTraceDetailPage } from "@/pages/admin/traces/RagTraceDetailPage";
 import { RagTracePage } from "@/pages/admin/traces/RagTracePage";
 import { UserListPage } from "@/pages/admin/users/UserListPage";
 import { UserDetailAdminPage } from "@/pages/admin/users/UserDetailAdminPage";
+import { SwtParticipationPage } from "@/pages/admin/swt-participation/SwtParticipationPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 function resolveAdminPage(segments: string[]): ReactNode {
@@ -80,6 +81,8 @@ function resolveAdminPage(segments: string[]): ReactNode {
         return <UserDetailAdminPage />;
       }
       return <NotFoundPage />;
+    case "swt-participation":
+      return segments.length === 1 ? <SwtParticipationPage /> : <NotFoundPage />;
     default:
       return <NotFoundPage />;
   }

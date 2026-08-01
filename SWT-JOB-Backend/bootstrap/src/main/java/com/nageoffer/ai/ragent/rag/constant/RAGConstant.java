@@ -58,6 +58,21 @@ public class RAGConstant {
     public static final double SCORE_MARGIN_RATIO = 0.75;
 
     /**
+     * Resources 展示：最低相关性分数（低于则丢弃）
+     */
+    public static final float RESOURCE_MIN_SCORE = 0.32F;
+
+    /**
+     * Resources 展示：相对最高分的边际比率
+     */
+    public static final float RESOURCE_SCORE_MARGIN_RATIO = 0.72F;
+
+    /**
+     * Resources 展示：最多条数
+     */
+    public static final int RESOURCE_MAX_COUNT = 5;
+
+    /**
      * 默认返回的 TopK
      */
     public static final int DEFAULT_TOP_K = 10;

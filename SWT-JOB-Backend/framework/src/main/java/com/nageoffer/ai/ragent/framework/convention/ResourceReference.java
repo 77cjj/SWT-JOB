@@ -37,6 +37,11 @@ public class ResourceReference {
 
     private String snippet;
 
+    /**
+     * 较长原文片段，供前端侧栏预览（Markdown 纯文本）
+     */
+    private String content;
+
     private Float score;
 
     private String kbId;

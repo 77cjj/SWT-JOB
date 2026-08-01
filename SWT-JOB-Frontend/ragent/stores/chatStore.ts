@@ -97,21 +97,31 @@ function normalizeResources(payload?: ResourcesPayload | null): MessageResource[
   rawList.forEach((item) => {
     if (!item || typeof item !== "object") return;
     const url = typeof item.url === "string" ? item.url.trim() : "";
+    const snippet = typeof item.snippet === "string" ? item.snippet.trim() : "";
+    const content = typeof item.content === "string" ? item.content.trim() : "";
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    if (!url && !snippet && !content && !title) return;
+
     const key =
+      (item.chunkId != null ? String(item.chunkId) : "") ||
+      (item.docId != null ? String(item.docId) : "") ||
       url ||
-      `${item.docId ?? ""}-${item.chunkId ?? ""}-${item.kbId ?? ""}-${item.title ?? ""}`;
+      title;
     if (!key) return;
     unique.set(key, {
-      title: item.title || undefined,
+      title: title || undefined,
       url: url || undefined,
-      snippet: item.snippet || undefined,
+      snippet: snippet || undefined,
+      content: content || undefined,
       score: typeof item.score === "number" ? item.score : undefined,
       kbId: item.kbId,
       docId: item.docId,
       chunkId: item.chunkId
     });
   });
-  return Array.from(unique.values());
+  return Array.from(unique.values())
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, 5);
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({

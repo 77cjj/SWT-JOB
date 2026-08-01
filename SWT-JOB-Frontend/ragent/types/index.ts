@@ -8,6 +8,7 @@ export interface MessageResource {
   title?: string;
   url?: string;
   snippet?: string;
+  content?: string;
   score?: number;
   kbId?: string | number;
   docId?: string | number;

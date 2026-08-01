@@ -29,17 +29,33 @@ import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.RESOURCE_MAX_COUNT;
+import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.RESOURCE_MIN_SCORE;
+import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.RESOURCE_SCORE_MARGIN_RATIO;
 
 /**
- * 将检索结果解析为可展示资源引用
+ * 将检索结果解析为可展示资源引用（按相关性筛选、去重、映射前台文档路径）
  */
 @Service
 @RequiredArgsConstructor
 public class ResourceReferenceResolver {
+
+    private static final Pattern DOCS_SLUG_PATTERN = Pattern.compile(
+            "(?:/pages/docs/|/docs/|resources/docs/)([\\w./-]+?)\\.(?:mdx?|MDX?)"
+    );
+
+    private static final int SNIPPET_MAX_CHARS = 180;
+    private static final int CONTENT_MAX_CHARS = 2400;
 
     private final KnowledgeChunkMapper knowledgeChunkMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
@@ -49,6 +65,69 @@ public class ResourceReferenceResolver {
             return List.of();
         }
 
+        Map<String, RetrievedChunk> topChunkById = collectBestChunks(retrievalContext);
+        if (topChunkById.isEmpty()) {
+            return List.of();
+        }
+
+        List<RetrievedChunk> ranked = topChunkById.values().stream()
+                .sorted(Comparator.comparing(RetrievedChunk::getScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+
+        ranked = filterByRelevance(ranked);
+        if (ranked.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> chunkIds = ranked.stream().map(RetrievedChunk::getId).filter(StrUtil::isNotBlank).toList();
+        List<KnowledgeChunkDO> chunkRecords = knowledgeChunkMapper.selectBatchIds(chunkIds);
+        if (chunkRecords == null || chunkRecords.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, KnowledgeChunkDO> chunkById = chunkRecords.stream()
+                .filter(each -> each != null && StrUtil.isNotBlank(each.getId()))
+                .collect(java.util.stream.Collectors.toMap(KnowledgeChunkDO::getId, each -> each, (a, b) -> a));
+
+        List<String> docIds = chunkById.values().stream()
+                .map(KnowledgeChunkDO::getDocId)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .toList();
+        Map<String, KnowledgeDocumentDO> docById = loadDocMap(docIds);
+
+        Map<String, ResourceReference> deduplicated = new LinkedHashMap<>();
+        for (RetrievedChunk retrievedChunk : ranked) {
+            if (deduplicated.size() >= RESOURCE_MAX_COUNT) {
+                break;
+            }
+            KnowledgeChunkDO chunk = chunkById.get(retrievedChunk.getId());
+            if (chunk == null) {
+                continue;
+            }
+            KnowledgeDocumentDO doc = docById.get(chunk.getDocId());
+            String docKey = StrUtil.isNotBlank(chunk.getDocId()) ? chunk.getDocId() : chunk.getId();
+            if (deduplicated.containsKey(docKey)) {
+                continue;
+            }
+
+            String chunkText = firstNonBlank(chunk.getContent(), retrievedChunk.getText());
+            ResourceReference resource = ResourceReference.builder()
+                    .title(resolveTitle(doc, chunkText))
+                    .url(resolvePublicUrl(doc))
+                    .snippet(buildSnippet(chunkText))
+                    .content(buildContent(chunkText))
+                    .score(retrievedChunk.getScore())
+                    .kbId(chunk.getKbId())
+                    .docId(chunk.getDocId())
+                    .chunkId(chunk.getId())
+                    .build();
+            deduplicated.put(docKey, resource);
+        }
+        return new ArrayList<>(deduplicated.values());
+    }
+
+    private Map<String, RetrievedChunk> collectBestChunks(RetrievalContext retrievalContext) {
         Map<String, RetrievedChunk> topChunkById = new LinkedHashMap<>();
         retrievalContext.getIntentChunks().values().stream()
                 .flatMap(List::stream)
@@ -58,51 +137,37 @@ public class ResourceReferenceResolver {
                         return;
                     }
                     RetrievedChunk current = topChunkById.get(chunk.getId());
-                    if (current == null || (chunk.getScore() != null && (current.getScore() == null || chunk.getScore() > current.getScore()))) {
+                    if (current == null || betterScore(chunk, current)) {
                         topChunkById.put(chunk.getId(), chunk);
                     }
                 });
-        if (topChunkById.isEmpty()) {
-            return List.of();
+        return topChunkById;
+    }
+
+    private boolean betterScore(RetrievedChunk candidate, RetrievedChunk current) {
+        if (candidate.getScore() == null) {
+            return current.getScore() == null;
+        }
+        if (current.getScore() == null) {
+            return true;
+        }
+        return candidate.getScore() > current.getScore();
+    }
+
+    private List<RetrievedChunk> filterByRelevance(List<RetrievedChunk> ranked) {
+        List<RetrievedChunk> scored = ranked.stream()
+                .filter(chunk -> chunk.getScore() != null)
+                .toList();
+        if (scored.isEmpty()) {
+            return ranked.stream().limit(RESOURCE_MAX_COUNT).toList();
         }
 
-        List<String> chunkIds = topChunkById.keySet().stream().toList();
-        List<KnowledgeChunkDO> chunkRecords = knowledgeChunkMapper.selectBatchIds(chunkIds);
-        if (chunkRecords == null || chunkRecords.isEmpty()) {
-            return List.of();
-        }
-
-        Map<String, KnowledgeChunkDO> chunkById = chunkRecords.stream()
-                .filter(each -> each != null && StrUtil.isNotBlank(each.getId()))
-                .collect(java.util.stream.Collectors.toMap(KnowledgeChunkDO::getId, each -> each, (a, b) -> a));
-        List<String> docIds = chunkById.values().stream().map(KnowledgeChunkDO::getDocId).filter(StrUtil::isNotBlank).distinct().toList();
-        Map<String, KnowledgeDocumentDO> docById = loadDocMap(docIds);
-
-        Map<String, ResourceReference> deduplicated = new LinkedHashMap<>();
-        for (String chunkId : chunkIds) {
-            KnowledgeChunkDO chunk = chunkById.get(chunkId);
-            if (chunk == null) {
-                continue;
-            }
-            KnowledgeDocumentDO doc = docById.get(chunk.getDocId());
-            String url = resolveUrl(doc);
-            if (StrUtil.isBlank(url)) {
-                continue;
-            }
-            RetrievedChunk retrievedChunk = topChunkById.get(chunkId);
-            ResourceReference resource = ResourceReference.builder()
-                    .title(doc != null ? doc.getDocName() : null)
-                    .url(url)
-                    .snippet(buildSnippet(chunk.getContent()))
-                    .score(retrievedChunk != null ? retrievedChunk.getScore() : null)
-                    .kbId(chunk.getKbId())
-                    .docId(chunk.getDocId())
-                    .chunkId(chunk.getId())
-                    .build();
-            String key = StrUtil.isNotBlank(resource.getUrl()) ? resource.getUrl() : resource.getChunkId();
-            deduplicated.putIfAbsent(key, resource);
-        }
-        return deduplicated.values().stream().toList();
+        float topScore = scored.get(0).getScore();
+        float relativeFloor = topScore * RESOURCE_SCORE_MARGIN_RATIO;
+        return scored.stream()
+                .filter(chunk -> chunk.getScore() >= RESOURCE_MIN_SCORE && chunk.getScore() >= relativeFloor)
+                .limit(RESOURCE_MAX_COUNT)
+                .toList();
     }
 
     private Map<String, KnowledgeDocumentDO> loadDocMap(List<String> docIds) {
@@ -122,21 +187,131 @@ public class ResourceReferenceResolver {
                 .collect(java.util.stream.Collectors.toMap(KnowledgeDocumentDO::getId, each -> each, (a, b) -> a));
     }
 
-    private String resolveUrl(KnowledgeDocumentDO documentDO) {
+    /**
+     * 仅返回用户可访问的公开路径；内部存储 URL 不暴露给前端跳转
+     */
+    private String resolvePublicUrl(KnowledgeDocumentDO documentDO) {
         if (documentDO == null) {
             return null;
         }
-        if (StrUtil.isNotBlank(documentDO.getSourceLocation())) {
-            return documentDO.getSourceLocation();
+        String docsPath = resolveDocsPath(documentDO);
+        if (StrUtil.isNotBlank(docsPath)) {
+            return docsPath;
         }
-        return documentDO.getFileUrl();
+        String sourceLocation = StrUtil.trimToNull(documentDO.getSourceLocation());
+        if (sourceLocation != null && sourceLocation.startsWith("/docs/")) {
+            return sourceLocation;
+        }
+        if (sourceLocation != null && isPublicHttpUrl(sourceLocation)) {
+            return sourceLocation;
+        }
+        return null;
+    }
+
+    private String resolveDocsPath(KnowledgeDocumentDO documentDO) {
+        if (documentDO == null) {
+            return null;
+        }
+        for (String candidate : List.of(documentDO.getSourceLocation(), documentDO.getFileUrl(), documentDO.getDocName())) {
+            String docsPath = extractDocsPath(candidate);
+            if (StrUtil.isNotBlank(docsPath)) {
+                return docsPath;
+            }
+        }
+        return null;
+    }
+
+    private String extractDocsPath(String raw) {
+        if (StrUtil.isBlank(raw)) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.startsWith("/docs/")) {
+            return normalizeDocsSlug(trimmed.substring("/docs/".length()));
+        }
+        Matcher matcher = DOCS_SLUG_PATTERN.matcher(trimmed.replace('\\', '/'));
+        if (matcher.find()) {
+            return normalizeDocsSlug(matcher.group(1));
+        }
+        return null;
+    }
+
+    private String normalizeDocsSlug(String slug) {
+        if (StrUtil.isBlank(slug)) {
+            return null;
+        }
+        String normalized = slug.trim()
+                .replace('\\', '/')
+                .replaceAll("/+", "/")
+                .replaceAll("^/+", "")
+                .replaceAll("/+$", "");
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        return "/docs/" + normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isPublicHttpUrl(String url) {
+        String lower = url.toLowerCase(Locale.ROOT);
+        if (lower.contains("localhost") || lower.contains("127.0.0.1") || lower.contains("rustfs")) {
+            return false;
+        }
+        return lower.startsWith("https://") || lower.startsWith("http://");
+    }
+
+    private String resolveTitle(KnowledgeDocumentDO doc, String chunkText) {
+        if (doc != null && StrUtil.isNotBlank(doc.getDocName())) {
+            String name = doc.getDocName().trim();
+            if (name.endsWith(".md") || name.endsWith(".mdx")) {
+                name = name.substring(0, name.lastIndexOf('.'));
+            }
+            int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+            if (slash >= 0 && slash < name.length() - 1) {
+                name = name.substring(slash + 1);
+            }
+            return name;
+        }
+        if (StrUtil.isNotBlank(chunkText)) {
+            String firstLine = chunkText.lines().findFirst().orElse("").trim();
+            firstLine = firstLine.replaceAll("^#+\\s*", "");
+            if (firstLine.length() > 48) {
+                firstLine = firstLine.substring(0, 48) + "…";
+            }
+            if (StrUtil.isNotBlank(firstLine)) {
+                return firstLine;
+            }
+        }
+        return "参考文档";
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StrUtil.isNotBlank(value)) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private String buildSnippet(String content) {
+        return truncate(content, SNIPPET_MAX_CHARS);
+    }
+
+    private String buildContent(String content) {
+        return truncate(content, CONTENT_MAX_CHARS);
+    }
+
+    private String truncate(String content, int maxChars) {
         if (StrUtil.isBlank(content)) {
             return null;
         }
         String trimmed = content.trim();
-        return trimmed.length() > 160 ? trimmed.substring(0, 160) + "..." : trimmed;
+        if (trimmed.length() <= maxChars) {
+            return trimmed;
+        }
+        return trimmed.substring(0, maxChars) + "…";
     }
 }

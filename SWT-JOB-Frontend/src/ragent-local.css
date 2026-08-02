@@ -408,6 +408,138 @@ body[data-app='swt'][data-theme='dark'] .admin-layout .admin-sidebar a.admin-sid
   align-items: center;
 }
 
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-leading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-menu-btn {
+  display: none;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  border: none;
+  background: rgb(15 23 42 / 0.45);
+  cursor: pointer;
+}
+
+:where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar__close {
+  margin-left: auto;
+}
+
+@media (max-width: 1023px) {
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    width: min(18rem, 86vw);
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    box-shadow: none;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar--mobile-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgb(15 23 42 / 0.28);
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-sidebar--collapsed {
+    width: min(18rem, 86vw);
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-menu-btn {
+    display: inline-flex;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-inner {
+    min-height: 3.5rem;
+    gap: 0.5rem;
+    padding: 0 12px;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-search {
+    max-width: none;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-topbar-kbd {
+    display: none;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-content {
+    padding: 16px 12px 24px;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-breadcrumbs {
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-page-title {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-page-subtitle {
+    font-size: 0.8125rem;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-card .ui-table-wrap {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-card-header {
+    padding: 1rem 1rem 0.75rem;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-card-content {
+    padding: 0 1rem 1rem;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head,
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head:first-child,
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell:first-child {
+    padding-left: 1rem;
+  }
+
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-head:last-child,
+  :where(body[data-app='ragent'], body[data-app='swt']) .ui-table-cell:last-child {
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  :where(body[data-app='ragent'], body[data-app='swt']) .admin-content {
+    padding: 20px 16px 28px;
+  }
+}
+
 /* 表格内知识库名称等文案链（对齐 Backend globals .admin-link；Next 未引入 ragent/styles/globals.css） */
 :where(body[data-app='ragent'], body[data-app='swt']) .admin-layout .admin-link {
   display: inline-flex;

@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
@@ -14,6 +22,7 @@ import {
   Lightbulb,
   Menu,
   MessageSquare,
+  X,
   Gift,
   Globe2,
   KeyRound,
@@ -184,6 +193,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     void router.push(url);
   };
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ ingestion: true, intent: true });
   const [kbQuery, setKbQuery] = useState("");
   const [kbOptions, setKbOptions] = useState<KnowledgeBase[]>([]);
@@ -193,6 +204,39 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const blurTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const isDashboardRoute = pathname.startsWith("/admin/dashboard");
+
+  const closeMobileNav = useCallback(() => {
+    setMobileNavOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const syncMobile = () => setIsMobile(mediaQuery.matches);
+    syncMobile();
+    mediaQuery.addEventListener("change", syncMobile);
+    return () => mediaQuery.removeEventListener("change", syncMobile);
+  }, []);
+
+  useEffect(() => {
+    closeMobileNav();
+  }, [pathname, closeMobileNav]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      closeMobileNav();
+    }
+  }, [isMobile, closeMobileNav]);
+
+  useEffect(() => {
+    if (!isMobile || !mobileNavOpen) {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobile, mobileNavOpen]);
 
   useEffect(() => {
     if (!searchFocused) return;
@@ -379,27 +423,57 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const hasQuery = kbQuery.trim().length > 0;
   const showSuggest = searchFocused && hasQuery;
 
+  const sidebarExpanded = !collapsed || isMobile;
+
   return (
     <div className="admin-layout flex h-screen">
-      <aside className={cn("admin-sidebar", collapsed && "admin-sidebar--collapsed")}>
+      {isMobile && mobileNavOpen ? (
+        <button
+          type="button"
+          className="admin-sidebar-backdrop"
+          aria-label="关闭菜单"
+          onClick={closeMobileNav}
+        />
+      ) : null}
+
+      <aside
+        className={cn(
+          "admin-sidebar",
+          collapsed && !isMobile && "admin-sidebar--collapsed",
+          isMobile && "admin-sidebar--mobile",
+          isMobile && mobileNavOpen && "admin-sidebar--mobile-open",
+        )}
+      >
         <div className="admin-sidebar__brand">
-          <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+          <div className={cn("flex items-center gap-3", !sidebarExpanded && "justify-center")}>
             <div className="admin-sidebar__logo">R</div>
-            {!collapsed && (
-              <div className="min-w-0">
+            {sidebarExpanded ? (
+              <div className="min-w-0 flex-1">
                 <h1 className="admin-sidebar__title">SWT Rag 管理后台</h1>
                 <p className="admin-sidebar__subtitle">Knowledge Console</p>
               </div>
-            )}
+            ) : null}
+            {isMobile ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="admin-sidebar__close shrink-0 text-white/80 hover:bg-white/10 hover:text-white"
+                onClick={closeMobileNav}
+                aria-label="关闭菜单"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            ) : null}
           </div>
         </div>
 
         <nav className="flex-1 space-y-4 px-2 pb-4">
           {menuGroups.map((group) => (
             <div key={group.title} className="space-y-2">
-              {!collapsed && (
+              {sidebarExpanded ? (
                 <p className="admin-sidebar__group-title">{group.title}</p>
-              )}
+              ) : null}
               <div className="space-y-1">
                 {group.items.flatMap((item) => {
                   if (!item.children || item.children.length === 0) {
@@ -409,11 +483,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                       <Link
                         key={item.path}
                         href={item.path}
-                        title={collapsed ? item.label : undefined}
+                        title={!sidebarExpanded ? item.label : undefined}
+                        onClick={isMobile ? closeMobileNav : undefined}
                         className={cn(
                           "admin-sidebar__item",
                           isActive && "admin-sidebar__item--active",
-                          collapsed && "justify-center"
+                          !sidebarExpanded && "justify-center"
                         )}
                       >
                         <span
@@ -423,7 +498,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                           )}
                         />
                         <Icon className="admin-sidebar__item-icon" />
-                        {collapsed ? <span className="sr-only">{item.label}</span> : <span>{item.label}</span>}
+                        {!sidebarExpanded ? (
+                          <span className="sr-only">{item.label}</span>
+                        ) : (
+                          <span>{item.label}</span>
+                        )}
                       </Link>
                     );
                   }
@@ -432,7 +511,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                   const groupId = item.id as string;
                   const isOpen = openGroups[groupId];
 
-                  if (collapsed) {
+                  if (!sidebarExpanded) {
                     return item.children.map((child) => {
                       const ChildIcon = child.icon;
                       const isActive = isLeafActive(child.path, child.search);
@@ -441,6 +520,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                           key={child.label}
                           href={`${child.path}${child.search || ""}`}
                           title={child.label}
+                          onClick={isMobile ? closeMobileNav : undefined}
                           className={cn(
                             "admin-sidebar__item",
                             isActive && "admin-sidebar__item--active",
@@ -493,6 +573,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                               <Link
                                 key={child.label}
                                 href={`${child.path}${child.search || ""}`}
+                                onClick={isMobile ? closeMobileNav : undefined}
                                 className={cn(
                                   "admin-sidebar__item text-[13px]",
                                   isActive && "admin-sidebar__item--active"
@@ -519,16 +600,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="admin-sidebar__footer space-y-2">
-          <button
-            type="button"
-            className="admin-sidebar__collapse"
-            onClick={() => setCollapsed((prev) => !prev)}
-          >
-            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-            {!collapsed && <span>收起侧边栏</span>}
-          </button>
-        </div>
+        {!isMobile ? (
+          <div className="admin-sidebar__footer space-y-2">
+            <button
+              type="button"
+              className="admin-sidebar__collapse"
+              onClick={() => setCollapsed((prev) => !prev)}
+            >
+              {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+              {!collapsed ? <span>收起侧边栏</span> : null}
+            </button>
+          </div>
+        ) : null}
       </aside>
 
       <div
@@ -539,13 +622,20 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       >
         <header className="admin-topbar">
           <div className="admin-topbar-inner">
-            <div className="flex items-center gap-3">
+            <div className="admin-topbar-leading">
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
-                onClick={() => setCollapsed((prev) => !prev)}
-                aria-label="切换侧边栏"
+                className="admin-topbar-menu-btn shrink-0"
+                onClick={() => {
+                  if (isMobile) {
+                    setMobileNavOpen((prev) => !prev);
+                    return;
+                  }
+                  setCollapsed((prev) => !prev);
+                }}
+                aria-label={isMobile ? "打开菜单" : "切换侧边栏"}
+                aria-expanded={isMobile ? mobileNavOpen : undefined}
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -626,15 +716,24 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 ) : null}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="admin-topbar-actions">
               <Button
                 variant="outline"
                 size="icon"
-                className="admin-topbar-theme-btn"
+                className="admin-topbar-theme-btn shrink-0"
                 onClick={toggleMode}
                 aria-label={mode === "dark" ? "切换到亮色模式" : "切换到暗色模式"}
               >
                 {mode === "dark" ? <SunMedium className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="admin-topbar-chat-btn shrink-0 sm:hidden"
+                onClick={() => navigate("/chat")}
+                aria-label="返回聊天"
+              >
+                <MessageSquare className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"

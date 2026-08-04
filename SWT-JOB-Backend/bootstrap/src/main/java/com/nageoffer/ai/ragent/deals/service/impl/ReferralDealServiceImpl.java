@@ -53,6 +53,18 @@ public class ReferralDealServiceImpl implements ReferralDealService {
     }
 
     @Override
+    public List<String> listExcludedIds() {
+        return referralDealMapper.selectList(
+                        Wrappers.lambdaQuery(ReferralDealDO.class)
+                                .eq(ReferralDealDO::getDeleted, 0)
+                                .eq(ReferralDealDO::getPublished, 0)
+                                .select(ReferralDealDO::getId)
+                ).stream()
+                .map(ReferralDealDO::getId)
+                .toList();
+    }
+
+    @Override
     public ReferralDealVO getPublic(String id) {
         ReferralDealDO record = loadPublished(id);
         return toVo(record);

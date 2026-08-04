@@ -27,6 +27,8 @@ public interface ReferralDealService {
 
     List<ReferralDealVO> listPublic();
 
+    List<String> listExcludedIds();
+
     ReferralDealVO getPublic(String id);
 
     List<ReferralDealVO> listAllForAdmin();

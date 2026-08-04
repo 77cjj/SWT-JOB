@@ -46,6 +46,11 @@ public class ReferralDealController {
         return Results.success(referralDealService.listPublic());
     }
 
+    @GetMapping("/referral-deals/public/excluded-ids")
+    public Result<List<String>> listExcludedIds() {
+        return Results.success(referralDealService.listExcludedIds());
+    }
+
     @GetMapping("/referral-deals/public/{id}")
     public Result<ReferralDealVO> getPublic(@PathVariable String id) {
         return Results.success(referralDealService.getPublic(id));

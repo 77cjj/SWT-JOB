@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 
 import type { ReferralProgram } from '../../data/referralDeals';
 import { referralPrograms as staticPrograms } from '../../data/referralDeals';
-import { fetchPublicReferralDeals, mergeReferralPrograms } from './referral-deal-api';
+import {
+  fetchExcludedDealIds,
+  fetchPublicReferralDeals,
+  mergeReferralPrograms,
+} from './referral-deal-api';
 
 export function useReferralPrograms() {
   const [programs, setPrograms] = useState<ReferralProgram[]>(staticPrograms);
@@ -10,10 +14,10 @@ export function useReferralPrograms() {
 
   useEffect(() => {
     let active = true;
-    fetchPublicReferralDeals()
-      .then((records) => {
-        if (!active || !records?.length) return;
-        setPrograms(mergeReferralPrograms(records));
+    Promise.all([fetchPublicReferralDeals(), fetchExcludedDealIds()])
+      .then(([records, excludedIds]) => {
+        if (!active) return;
+        setPrograms(mergeReferralPrograms(records, excludedIds));
       })
       .catch(() => {
         // 保持静态数据

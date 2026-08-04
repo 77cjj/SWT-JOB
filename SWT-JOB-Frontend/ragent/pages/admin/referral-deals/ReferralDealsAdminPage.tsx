@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { EyeOff, Pencil, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -31,22 +31,24 @@ import {
 } from '@/components/ui/table';
 import { referralPrograms as staticPrograms } from '../../../../src/data/referralDeals';
 import type { ReferralProgram } from '../../../../src/data/referralDeals';
+import { notionRemittancePrograms, NOTION_REMITTANCE_ROWS } from '../../../../src/data/notionDealsSeed';
 import {
   adminFormToProgram,
   emptyDealAdminForm,
   NOTION_COLUMN_MAP,
-  notionRowToAdminForm,
+  notionRowsToPrograms,
   programToAdminForm,
   type DealAdminForm,
-  type NotionDealRow,
 } from '../../../../src/lib/deals/deal-admin-form';
 import {
+  buildAdminDealRows,
   bulkUpsertReferralDeals,
   deleteReferralDeal,
   fetchAdminReferralDeals,
-  mergeReferralPrograms,
+  hideReferralDeal,
   programToSavePayload,
   saveReferralDeal,
+  type AdminDealRow,
   type ReferralDealRecord,
 } from '../../../../src/lib/deals/referral-deal-api';
 import { getErrorMessage } from '@/utils/error';
@@ -72,29 +74,21 @@ function slugifyId(title: string) {
     .slice(0, 48);
 }
 
+function statusLabel(row: AdminDealRow) {
+  if (row.published === 0) return '已隐藏';
+  if (row.inDatabase) return '已上架';
+  return '仅静态';
+}
+
 export function ReferralDealsAdminPage() {
   const [apiRecords, setApiRecords] = useState<ReferralDealRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<ReferralProgram | null>(null);
+  const [editingRow, setEditingRow] = useState<AdminDealRow | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [form, setForm] = useState<DealAdminForm>(emptyDealAdminForm());
 
-  const recordMeta = useMemo(() => {
-    const map = new Map<string, { published: number; sortOrder: number }>();
-    for (const record of apiRecords) {
-      map.set(record.id, {
-        published: record.published ?? 1,
-        sortOrder: record.sortOrder ?? 0,
-      });
-    }
-    return map;
-  }, [apiRecords]);
-
-  const mergedPrograms = useMemo(
-    () => mergeReferralPrograms(apiRecords),
-    [apiRecords],
-  );
+  const adminRows = useMemo(() => buildAdminDealRows(apiRecords), [apiRecords]);
 
   const load = async () => {
     try {
@@ -116,17 +110,21 @@ export function ReferralDealsAdminPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const openEdit = (program: ReferralProgram) => {
-    const inDb = apiRecords.some((r) => r.id === program.id);
-    setIsNew(!inDb);
-    setEditing(program);
-    setForm(programToAdminForm(program, recordMeta.get(program.id)));
+  const openEdit = (row: AdminDealRow) => {
+    setIsNew(!row.inDatabase);
+    setEditingRow(row);
+    setForm(
+      programToAdminForm(row.program, {
+        published: row.published,
+        sortOrder: row.sortOrder,
+      }),
+    );
     setDialogOpen(true);
   };
 
   const openCreate = () => {
     setIsNew(true);
-    setEditing(null);
+    setEditingRow(null);
     setForm(emptyDealAdminForm());
     setDialogOpen(true);
   };
@@ -144,23 +142,13 @@ export function ReferralDealsAdminPage() {
     }
 
     const base =
-      editing ||
+      editingRow?.program ||
       staticPrograms.find((p) => p.id === id) ||
       undefined;
 
-    const program = adminFormToProgram(
-      {
-        ...form,
-        id,
-        published: form.siteReady === '1' ? form.published : '0',
-      },
-      base,
-    );
-    const payload = programToSavePayload(
-      program,
-      Number(form.siteReady === '1' ? form.published : 0) || 0,
-      Number(form.sortOrder) || 0,
-    );
+    const published = Number(form.published) || 0;
+    const program = adminFormToProgram({ ...form, id }, base);
+    const payload = programToSavePayload(program, published, Number(form.sortOrder) || 0);
 
     try {
       await saveReferralDeal(id, payload, isNew);
@@ -169,6 +157,18 @@ export function ReferralDealsAdminPage() {
       await load();
     } catch (error) {
       toast.error(getErrorMessage(error, '保存失败'));
+    }
+  };
+
+  const importNotionRemittance = async () => {
+    try {
+      const programs = notionRowsToPrograms(NOTION_REMITTANCE_ROWS);
+      const items = programs.map((p, index) => programToSavePayload(p, 1, 100 + index));
+      await bulkUpsertReferralDeals(items);
+      toast.success(`已导入 ${items.length} 个 Notion 换汇项目到数据库`);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Notion 换汇导入失败'));
     }
   };
 
@@ -186,46 +186,35 @@ export function ReferralDealsAdminPage() {
         ),
       );
       await bulkUpsertReferralDeals(items);
-      toast.success('已从静态数据导入/更新到数据库');
+      toast.success('已将全部静态项目写入数据库');
       await load();
     } catch (error) {
       toast.error(getErrorMessage(error, '导入失败'));
     }
   };
 
-  /** 粘贴 Notion 导出的 JSON 行批量导入（字段名与 Notion 数据库列一致） */
-  const importNotionJson = async () => {
-    const raw = window.prompt(
-      '粘贴 Notion 数据库导出的 JSON 数组（含「标题」「列 3」等字段）',
-    );
-    if (!raw?.trim()) return;
+  const handleHide = async (row: AdminDealRow) => {
+    const title = row.program.brandName.zh;
+    if (!window.confirm(`确定从前台隐藏「${title}」？`)) return;
     try {
-      const rows = JSON.parse(raw) as NotionDealRow[];
-      if (!Array.isArray(rows)) throw new Error('需要 JSON 数组');
-      const forms = rows
-        .map((row) => notionRowToAdminForm(row))
-        .filter((f): f is DealAdminForm => f != null);
-      if (!forms.length) {
-        toast.error('未解析到有效项目行');
-        return;
-      }
-      const items = forms.map((f, index) =>
-        programToSavePayload(adminFormToProgram(f), Number(f.published) || 1, index),
-      );
-      await bulkUpsertReferralDeals(items);
-      toast.success(`已从 Notion 格式导入 ${items.length} 个项目`);
+      await hideReferralDeal(row.program.id, title, !row.inDatabase);
+      toast.success('已隐藏');
       await load();
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Notion JSON 导入失败'));
+      toast.error(getErrorMessage(error, '隐藏失败'));
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(`确定删除项目「${id}」？仅删除数据库覆盖项，静态列表仍会保留。`)) {
+  const handleDelete = async (row: AdminDealRow) => {
+    if (!row.inDatabase) {
+      await handleHide(row);
+      return;
+    }
+    if (!window.confirm(`确定从数据库删除「${row.program.brandName.zh}」？静态默认数据将恢复显示。`)) {
       return;
     }
     try {
-      await deleteReferralDeal(id);
+      await deleteReferralDeal(row.program.id);
       toast.success('已删除');
       await load();
     } catch (error) {
@@ -239,7 +228,7 @@ export function ReferralDealsAdminPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold">薅羊毛项目管理</h1>
           <p className="text-sm text-muted-foreground">
-            字段与 Notion「薅羊毛页面」数据库列对齐。前台：/deals/[项目ID]
+            与 Notion「薅羊毛页面」字段对齐。隐藏=写入数据库并下架；删除=移除数据库记录。
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -247,13 +236,13 @@ export function ReferralDealsAdminPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             刷新
           </Button>
-          <Button variant="outline" size="sm" onClick={() => void importNotionJson()}>
+          <Button variant="outline" size="sm" onClick={() => void importNotionRemittance()}>
             <Upload className="mr-2 h-4 w-4" />
-            导入 Notion JSON
+            导入 Notion 换汇
           </Button>
           <Button variant="outline" size="sm" onClick={() => void importStatic()}>
             <Upload className="mr-2 h-4 w-4" />
-            导入静态数据
+            全部入库
           </Button>
           <Button size="sm" onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
@@ -271,18 +260,17 @@ export function ReferralDealsAdminPage() {
                 <TableHead>{NOTION_COLUMN_MAP.title}</TableHead>
                 <TableHead>{NOTION_COLUMN_MAP.userBenefit}</TableHead>
                 <TableHead>{NOTION_COLUMN_MAP.siteRebate}</TableHead>
-                <TableHead>{NOTION_COLUMN_MAP.dateRange}</TableHead>
+                <TableHead>来源</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mergedPrograms.map((program) => {
+              {adminRows.map((row) => {
+                const { program } = row;
                 const edition = activeEditionSummary(program);
-                const meta = recordMeta.get(program.id);
-                const inDb = apiRecords.some((r) => r.id === program.id);
                 return (
-                  <TableRow key={program.id}>
+                  <TableRow key={program.id} className={row.published === 0 ? 'opacity-50' : undefined}>
                     <TableCell className="font-mono text-xs">{program.id}</TableCell>
                     <TableCell>{program.brandName.zh}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{edition?.reward.zh || '—'}</TableCell>
@@ -290,21 +278,27 @@ export function ReferralDealsAdminPage() {
                       {program.siteRebateLabel?.zh ||
                         (program.siteRebateUsd != null ? `$${program.siteRebateUsd}` : '—')}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatPeriod(program)}</TableCell>
-                    <TableCell>
-                      {inDb ? (meta?.published === 1 ? '已上架' : '已下架') : '仅静态'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(program)}>
+                    <TableCell>{row.source === 'database' ? '数据库' : '静态'}</TableCell>
+                    <TableCell>{statusLabel(row)}</TableCell>
+                    <TableCell className="space-x-1 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
                         <Pencil className="mr-1 h-4 w-4" />
                         编辑
                       </Button>
-                      {inDb ? (
-                        <Button variant="ghost" size="sm" onClick={() => void handleDelete(program.id)}>
-                          <Trash2 className="mr-1 h-4 w-4 text-destructive" />
-                          删除
+                      {row.published === 0 ? (
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
+                          恢复上架
                         </Button>
-                      ) : null}
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={() => void handleHide(row)}>
+                          <EyeOff className="mr-1 h-4 w-4" />
+                          隐藏
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => void handleDelete(row)}>
+                        <Trash2 className="mr-1 h-4 w-4 text-destructive" />
+                        {row.inDatabase ? '删除' : '隐藏'}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -314,6 +308,11 @@ export function ReferralDealsAdminPage() {
         </CardContent>
       </Card>
 
+      <p className="text-xs text-muted-foreground">
+        内置 Notion 换汇项目（{notionRemittancePrograms.length} 个）已写入前台静态数据：lemfi、熊猫速汇、
+        taptap、remitly、wise、instarem 等。点击「导入 Notion 换汇」可同步到数据库以便在线编辑。
+      </p>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
@@ -321,10 +320,10 @@ export function ReferralDealsAdminPage() {
           </DialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="deal-id">项目 ID（URL 路径，如 lemfi）</Label>
+              <Label htmlFor="deal-id">项目 ID（URL 路径）</Label>
               <Input
                 id="deal-id"
-                placeholder="留空则根据标题自动生成"
+                placeholder="如 lemfi、revolut"
                 value={form.id}
                 disabled={!isNew}
                 onChange={(e) => setField('id', e.target.value)}
@@ -333,12 +332,7 @@ export function ReferralDealsAdminPage() {
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="title">{NOTION_COLUMN_MAP.title}</Label>
-              <Input
-                id="title"
-                placeholder="如 lemfi、Revolut"
-                value={form.title}
-                onChange={(e) => setField('title', e.target.value)}
-              />
+              <Input id="title" value={form.title} onChange={(e) => setField('title', e.target.value)} />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
@@ -346,7 +340,6 @@ export function ReferralDealsAdminPage() {
               <Textarea
                 id="referral-link"
                 rows={2}
-                placeholder="可粘贴带说明的 refer 文案 + 链接"
                 value={form.referralLink}
                 onChange={(e) => setField('referralLink', e.target.value)}
               />
@@ -354,175 +347,64 @@ export function ReferralDealsAdminPage() {
 
             <div className="space-y-2">
               <Label htmlFor="referral-code">{NOTION_COLUMN_MAP.referralCode}</Label>
-              <Input
-                id="referral-code"
-                value={form.referralCode}
-                onChange={(e) => setField('referralCode', e.target.value)}
-              />
+              <Input id="referral-code" value={form.referralCode} onChange={(e) => setField('referralCode', e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="site-rebate">{NOTION_COLUMN_MAP.siteRebate}</Label>
-              <Input
-                id="site-rebate"
-                placeholder="如 10刀、40"
-                value={form.siteRebate}
-                onChange={(e) => setField('siteRebate', e.target.value)}
-              />
+              <Input id="site-rebate" value={form.siteRebate} onChange={(e) => setField('siteRebate', e.target.value)} />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="user-benefit">{NOTION_COLUMN_MAP.userBenefit}</Label>
-              <Input
-                id="user-benefit"
-                placeholder="用户总共能得到什么"
-                value={form.userBenefit}
-                onChange={(e) => setField('userBenefit', e.target.value)}
-              />
+              <Input id="user-benefit" value={form.userBenefit} onChange={(e) => setField('userBenefit', e.target.value)} />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="trigger">{NOTION_COLUMN_MAP.triggerCondition}</Label>
-              <Textarea
-                id="trigger"
-                rows={2}
-                placeholder="如：汇款100刀；完成三笔10刀以上消费"
-                value={form.triggerCondition}
-                onChange={(e) => setField('triggerCondition', e.target.value)}
-              />
+              <Textarea id="trigger" rows={2} value={form.triggerCondition} onChange={(e) => setField('triggerCondition', e.target.value)} />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="cashback-condition">{NOTION_COLUMN_MAP.cashbackCondition}</Label>
-              <Textarea
-                id="cashback-condition"
-                rows={2}
-                placeholder="如：使用 refer 码并成功汇款，等待一天可获得"
-                value={form.cashbackCondition}
-                onChange={(e) => setField('cashbackCondition', e.target.value)}
-              />
+              <Textarea id="cashback-condition" rows={2} value={form.cashbackCondition} onChange={(e) => setField('cashbackCondition', e.target.value)} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="valid-from">活动开始</Label>
-              <Input
-                id="valid-from"
-                type="date"
-                value={form.validFrom}
-                onChange={(e) => setField('validFrom', e.target.value)}
-              />
+              <Input id="valid-from" type="date" value={form.validFrom} onChange={(e) => setField('validFrom', e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="valid-until">活动结束（留空=长期）</Label>
-              <Input
-                id="valid-until"
-                type="date"
-                value={form.validUntil}
-                onChange={(e) => setField('validUntil', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="date-note">{NOTION_COLUMN_MAP.dateRange}（原文，可选）</Label>
-              <Input
-                id="date-note"
-                placeholder="如 2026 年 8 月 1 日到 2026 年 9 月 30 日"
-                value={form.dateRangeNote}
-                onChange={(e) => setField('dateRangeNote', e.target.value)}
-              />
+              <Label htmlFor="valid-until">活动结束</Label>
+              <Input id="valid-until" type="date" value={form.validUntil} onChange={(e) => setField('validUntil', e.target.value)} />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="notes">{NOTION_COLUMN_MAP.notes}</Label>
-              <Textarea
-                id="notes"
-                rows={2}
-                placeholder="避坑、实操提醒"
-                value={form.notes}
-                onChange={(e) => setField('notes', e.target.value)}
-              />
+              <Textarea id="notes" rows={2} value={form.notes} onChange={(e) => setField('notes', e.target.value)} />
             </div>
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="rate-note">{NOTION_COLUMN_MAP.exchangeRateNote}</Label>
-              <Input
-                id="rate-note"
-                placeholder="换汇类项目可填实际汇率"
-                value={form.exchangeRateNote}
-                onChange={(e) => setField('exchangeRateNote', e.target.value)}
-              />
+              <Input id="rate-note" value={form.exchangeRateNote} onChange={(e) => setField('exchangeRateNote', e.target.value)} />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="referrer-net">{NOTION_COLUMN_MAP.referrerNetReward}</Label>
-              <Input
-                id="referrer-net"
-                placeholder="邀请人净收益（可选）"
-                value={form.referrerNetReward}
-                onChange={(e) => setField('referrerNetReward', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{NOTION_COLUMN_MAP.siteReady}</Label>
-              <Select value={form.siteReady} onValueChange={(v) => setField('siteReady', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">已完成 ✅</SelectItem>
-                  <SelectItem value="0">未完成</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>分类</Label>
-              <Select value={form.category} onValueChange={(v) => setField('category', v as DealAdminForm['category'])}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bank">银行</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-2">
               <Label>上架状态</Label>
               <Select value={form.published} onValueChange={(v) => setField('published', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">上架</SelectItem>
-                  <SelectItem value="0">下架</SelectItem>
+                  <SelectItem value="1">上架（前台可见）</SelectItem>
+                  <SelectItem value="0">下架（前台隐藏）</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="sort-order">排序</Label>
-              <Input
-                id="sort-order"
-                type="number"
-                value={form.sortOrder}
-                onChange={(e) => setField('sortOrder', e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="pinned"
-                type="checkbox"
-                checked={form.pinned}
-                onChange={(e) => setField('pinned', e.target.checked)}
-                className="h-4 w-4 rounded border-input"
-              />
-              <Label htmlFor="pinned">置顶展示</Label>
+              <Input id="sort-order" type="number" value={form.sortOrder} onChange={(e) => setField('sortOrder', e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
             <Button onClick={() => void handleSave()}>保存</Button>
           </DialogFooter>
         </DialogContent>

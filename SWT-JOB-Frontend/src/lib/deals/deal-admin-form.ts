@@ -67,6 +67,8 @@ export interface NotionDealRow {
   '列 2'?: string | null;
   '列 3'?: string | null;
   '列 4'?: string | null;
+  '列 5'?: string | null;
+  '列 6'?: string | null;
   文本?: string | null;
   '文本 1'?: string | null;
   '文本 2'?: string | null;

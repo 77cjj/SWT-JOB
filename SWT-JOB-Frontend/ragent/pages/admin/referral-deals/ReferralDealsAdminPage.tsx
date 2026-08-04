@@ -34,8 +34,11 @@ import type { ReferralProgram } from '../../../../src/data/referralDeals';
 import {
   adminFormToProgram,
   emptyDealAdminForm,
+  NOTION_COLUMN_MAP,
+  notionRowToAdminForm,
   programToAdminForm,
   type DealAdminForm,
+  type NotionDealRow,
 } from '../../../../src/lib/deals/deal-admin-form';
 import {
   bulkUpsertReferralDeals,
@@ -58,6 +61,15 @@ function formatPeriod(program: ReferralProgram) {
   if (!edition) return '—';
   const end = edition.validUntil ?? '长期';
   return `${edition.validFrom} → ${end}`;
+}
+
+function slugifyId(title: string) {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fff]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
 }
 
 export function ReferralDealsAdminPage() {
@@ -120,13 +132,14 @@ export function ReferralDealsAdminPage() {
   };
 
   const handleSave = async () => {
-    const id = form.id.trim().toLowerCase();
-    if (!id) {
-      toast.error('请填写项目 ID（如 revolut）');
+    const title = form.title.trim();
+    if (!title) {
+      toast.error('请填写标题（品牌名）');
       return;
     }
-    if (!form.brandNameZh.trim()) {
-      toast.error('请填写品牌名称');
+    const id = form.id.trim().toLowerCase() || slugifyId(title);
+    if (!id) {
+      toast.error('无法生成项目 ID，请手动填写');
       return;
     }
 
@@ -135,10 +148,17 @@ export function ReferralDealsAdminPage() {
       staticPrograms.find((p) => p.id === id) ||
       undefined;
 
-    const program = adminFormToProgram({ ...form, id }, base);
+    const program = adminFormToProgram(
+      {
+        ...form,
+        id,
+        published: form.siteReady === '1' ? form.published : '0',
+      },
+      base,
+    );
     const payload = programToSavePayload(
       program,
-      Number(form.published) || 0,
+      Number(form.siteReady === '1' ? form.published : 0) || 0,
       Number(form.sortOrder) || 0,
     );
 
@@ -173,6 +193,33 @@ export function ReferralDealsAdminPage() {
     }
   };
 
+  /** 粘贴 Notion 导出的 JSON 行批量导入（字段名与 Notion 数据库列一致） */
+  const importNotionJson = async () => {
+    const raw = window.prompt(
+      '粘贴 Notion 数据库导出的 JSON 数组（含「标题」「列 3」等字段）',
+    );
+    if (!raw?.trim()) return;
+    try {
+      const rows = JSON.parse(raw) as NotionDealRow[];
+      if (!Array.isArray(rows)) throw new Error('需要 JSON 数组');
+      const forms = rows
+        .map((row) => notionRowToAdminForm(row))
+        .filter((f): f is DealAdminForm => f != null);
+      if (!forms.length) {
+        toast.error('未解析到有效项目行');
+        return;
+      }
+      const items = forms.map((f, index) =>
+        programToSavePayload(adminFormToProgram(f), Number(f.published) || 1, index),
+      );
+      await bulkUpsertReferralDeals(items);
+      toast.success(`已从 Notion 格式导入 ${items.length} 个项目`);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Notion JSON 导入失败'));
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm(`确定删除项目「${id}」？仅删除数据库覆盖项，静态列表仍会保留。`)) {
       return;
@@ -192,13 +239,17 @@ export function ReferralDealsAdminPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold">薅羊毛项目管理</h1>
           <p className="text-sm text-muted-foreground">
-            通用字段管理：品牌、奖励、活动时间、邀请链接、本站返现与步骤。前台：/deals/[项目ID]
+            字段与 Notion「薅羊毛页面」数据库列对齐。前台：/deals/[项目ID]
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             <RefreshCw className="mr-2 h-4 w-4" />
             刷新
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void importNotionJson()}>
+            <Upload className="mr-2 h-4 w-4" />
+            导入 Notion JSON
           </Button>
           <Button variant="outline" size="sm" onClick={() => void importStatic()}>
             <Upload className="mr-2 h-4 w-4" />
@@ -217,10 +268,10 @@ export function ReferralDealsAdminPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>品牌</TableHead>
-                <TableHead>官方奖励</TableHead>
-                <TableHead>本站返现</TableHead>
-                <TableHead>活动时间</TableHead>
+                <TableHead>{NOTION_COLUMN_MAP.title}</TableHead>
+                <TableHead>{NOTION_COLUMN_MAP.userBenefit}</TableHead>
+                <TableHead>{NOTION_COLUMN_MAP.siteRebate}</TableHead>
+                <TableHead>{NOTION_COLUMN_MAP.dateRange}</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
@@ -234,11 +285,10 @@ export function ReferralDealsAdminPage() {
                   <TableRow key={program.id}>
                     <TableCell className="font-mono text-xs">{program.id}</TableCell>
                     <TableCell>{program.brandName.zh}</TableCell>
-                    <TableCell className="max-w-[140px] truncate">{edition?.reward.zh || '—'}</TableCell>
+                    <TableCell className="max-w-[180px] truncate">{edition?.reward.zh || '—'}</TableCell>
                     <TableCell>
-                      {program.siteRebateUsd != null
-                        ? `$${program.siteRebateUsd}`
-                        : program.siteRebateLabel?.zh || '—'}
+                      {program.siteRebateLabel?.zh ||
+                        (program.siteRebateUsd != null ? `$${program.siteRebateUsd}` : '—')}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatPeriod(program)}</TableCell>
                     <TableCell>
@@ -271,31 +321,157 @@ export function ReferralDealsAdminPage() {
           </DialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="deal-id">项目 ID</Label>
+              <Label htmlFor="deal-id">项目 ID（URL 路径，如 lemfi）</Label>
               <Input
                 id="deal-id"
-                placeholder="如 revolut、chime"
+                placeholder="留空则根据标题自动生成"
                 value={form.id}
                 disabled={!isNew}
                 onChange={(e) => setField('id', e.target.value)}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="brand-zh">品牌名称（中文）</Label>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="title">{NOTION_COLUMN_MAP.title}</Label>
               <Input
-                id="brand-zh"
-                value={form.brandNameZh}
-                onChange={(e) => setField('brandNameZh', e.target.value)}
+                id="title"
+                placeholder="如 lemfi、Revolut"
+                value={form.title}
+                onChange={(e) => setField('title', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="referral-link">{NOTION_COLUMN_MAP.referralLink}</Label>
+              <Textarea
+                id="referral-link"
+                rows={2}
+                placeholder="可粘贴带说明的 refer 文案 + 链接"
+                value={form.referralLink}
+                onChange={(e) => setField('referralLink', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="referral-code">{NOTION_COLUMN_MAP.referralCode}</Label>
+              <Input
+                id="referral-code"
+                value={form.referralCode}
+                onChange={(e) => setField('referralCode', e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="brand-en">品牌名称（英文，可选）</Label>
+              <Label htmlFor="site-rebate">{NOTION_COLUMN_MAP.siteRebate}</Label>
               <Input
-                id="brand-en"
-                value={form.brandNameEn}
-                onChange={(e) => setField('brandNameEn', e.target.value)}
+                id="site-rebate"
+                placeholder="如 10刀、40"
+                value={form.siteRebate}
+                onChange={(e) => setField('siteRebate', e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="user-benefit">{NOTION_COLUMN_MAP.userBenefit}</Label>
+              <Input
+                id="user-benefit"
+                placeholder="用户总共能得到什么"
+                value={form.userBenefit}
+                onChange={(e) => setField('userBenefit', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="trigger">{NOTION_COLUMN_MAP.triggerCondition}</Label>
+              <Textarea
+                id="trigger"
+                rows={2}
+                placeholder="如：汇款100刀；完成三笔10刀以上消费"
+                value={form.triggerCondition}
+                onChange={(e) => setField('triggerCondition', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="cashback-condition">{NOTION_COLUMN_MAP.cashbackCondition}</Label>
+              <Textarea
+                id="cashback-condition"
+                rows={2}
+                placeholder="如：使用 refer 码并成功汇款，等待一天可获得"
+                value={form.cashbackCondition}
+                onChange={(e) => setField('cashbackCondition', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="valid-from">活动开始</Label>
+              <Input
+                id="valid-from"
+                type="date"
+                value={form.validFrom}
+                onChange={(e) => setField('validFrom', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="valid-until">活动结束（留空=长期）</Label>
+              <Input
+                id="valid-until"
+                type="date"
+                value={form.validUntil}
+                onChange={(e) => setField('validUntil', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="date-note">{NOTION_COLUMN_MAP.dateRange}（原文，可选）</Label>
+              <Input
+                id="date-note"
+                placeholder="如 2026 年 8 月 1 日到 2026 年 9 月 30 日"
+                value={form.dateRangeNote}
+                onChange={(e) => setField('dateRangeNote', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="notes">{NOTION_COLUMN_MAP.notes}</Label>
+              <Textarea
+                id="notes"
+                rows={2}
+                placeholder="避坑、实操提醒"
+                value={form.notes}
+                onChange={(e) => setField('notes', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="rate-note">{NOTION_COLUMN_MAP.exchangeRateNote}</Label>
+              <Input
+                id="rate-note"
+                placeholder="换汇类项目可填实际汇率"
+                value={form.exchangeRateNote}
+                onChange={(e) => setField('exchangeRateNote', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="referrer-net">{NOTION_COLUMN_MAP.referrerNetReward}</Label>
+              <Input
+                id="referrer-net"
+                placeholder="邀请人净收益（可选）"
+                value={form.referrerNetReward}
+                onChange={(e) => setField('referrerNetReward', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{NOTION_COLUMN_MAP.siteReady}</Label>
+              <Select value={form.siteReady} onValueChange={(v) => setField('siteReady', v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">已完成 ✅</SelectItem>
+                  <SelectItem value="0">未完成</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -311,144 +487,6 @@ export function ReferralDealsAdminPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>类型</Label>
-              <Select value={form.offerKind} onValueChange={(v) => setField('offerKind', v as DealAdminForm['offerKind'])}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="refer">邀请返现</SelectItem>
-                  <SelectItem value="signup_bonus">开户奖励</SelectItem>
-                  <SelectItem value="promo">促销/活动</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reward-zh">官方奖励（中文）</Label>
-              <Input
-                id="reward-zh"
-                placeholder="如 最高 $100、官方邀请奖励"
-                value={form.rewardZh}
-                onChange={(e) => setField('rewardZh', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reward-en">官方奖励（英文，可选）</Label>
-              <Input
-                id="reward-en"
-                value={form.rewardEn}
-                onChange={(e) => setField('rewardEn', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="summary-zh">活动简介（中文）</Label>
-              <Textarea
-                id="summary-zh"
-                rows={2}
-                value={form.summaryZh}
-                onChange={(e) => setField('summaryZh', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="valid-from">开始日期</Label>
-              <Input
-                id="valid-from"
-                type="date"
-                value={form.validFrom}
-                onChange={(e) => setField('validFrom', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="valid-until">结束日期（留空=长期）</Label>
-              <Input
-                id="valid-until"
-                type="date"
-                value={form.validUntil}
-                onChange={(e) => setField('validUntil', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="referral-url">邀请链接</Label>
-              <Input
-                id="referral-url"
-                placeholder="https://..."
-                value={form.referralUrl}
-                onChange={(e) => setField('referralUrl', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="official-url">官方说明页（可选）</Label>
-              <Input
-                id="official-url"
-                placeholder="https://..."
-                value={form.officialUrl}
-                onChange={(e) => setField('officialUrl', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="site-rebate-usd">本站返现金额 (USD)</Label>
-              <Input
-                id="site-rebate-usd"
-                type="number"
-                placeholder="如 40"
-                value={form.siteRebateUsd}
-                onChange={(e) => setField('siteRebateUsd', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="site-rebate-label">本站返现文案（可选）</Label>
-              <Input
-                id="site-rebate-label"
-                placeholder="如 本站返现 $40"
-                value={form.siteRebateLabelZh}
-                onChange={(e) => setField('siteRebateLabelZh', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="requirements">参与条件（每行一条）</Label>
-              <Textarea
-                id="requirements"
-                rows={4}
-                placeholder="须通过邀请链接注册&#10;Residence 选择美国"
-                value={form.requirementsZh}
-                onChange={(e) => setField('requirementsZh', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="how-to-claim">领取步骤（每行一步）</Label>
-              <Textarea
-                id="how-to-claim"
-                rows={5}
-                value={form.howToClaimZh}
-                onChange={(e) => setField('howToClaimZh', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="practical-steps">实操说明 / 避坑（每行一条）</Label>
-              <Textarea
-                id="practical-steps"
-                rows={4}
-                value={form.practicalStepsZh}
-                onChange={(e) => setField('practicalStepsZh', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sort-order">排序（越小越靠前）</Label>
-              <Input
-                id="sort-order"
-                type="number"
-                value={form.sortOrder}
-                onChange={(e) => setField('sortOrder', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
               <Label>上架状态</Label>
               <Select value={form.published} onValueChange={(v) => setField('published', v)}>
                 <SelectTrigger>
@@ -461,7 +499,16 @@ export function ReferralDealsAdminPage() {
               </Select>
             </div>
 
-            <div className="flex items-center gap-2 sm:col-span-2">
+            <div className="space-y-2">
+              <Label htmlFor="sort-order">排序</Label>
+              <Input
+                id="sort-order"
+                type="number"
+                value={form.sortOrder}
+                onChange={(e) => setField('sortOrder', e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
               <input
                 id="pinned"
                 type="checkbox"

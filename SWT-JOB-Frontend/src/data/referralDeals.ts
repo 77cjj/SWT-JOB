@@ -1,3 +1,5 @@
+import { notionRemittancePrograms } from './notionDealsSeed';
+
 export type DealCategory = 'bank' | 'cashback' | 'mobile' | 'other';
 
 /** 官方精选排序分组（相似项目靠近展示） */
@@ -6,6 +8,7 @@ export type DealDisplayGroup =
   | 'bank-national'
   | 'predictions'
   | 'cashback'
+  | 'remittance'
   | 'ny-study'
   | 'promo-other';
 
@@ -916,4 +919,5 @@ export const referralPrograms: ReferralProgram[] = [
       },
     ],
   },
+  ...notionRemittancePrograms,
 ];

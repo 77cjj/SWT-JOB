@@ -103,9 +103,10 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
     'bank-neobank': 0,
     'bank-national': 1,
     predictions: 2,
-    cashback: 3,
-    'ny-study': 4,
-    'promo-other': 5,
+    remittance: 3,
+    cashback: 4,
+    'ny-study': 5,
+    'promo-other': 6,
   };
 
   const resolveGroup = (program: ReferralProgram): string => {

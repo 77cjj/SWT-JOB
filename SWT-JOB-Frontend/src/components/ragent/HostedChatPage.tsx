@@ -33,7 +33,7 @@ export function HostedChatPage() {
 
   /** 主内容区占满顶栏下剩余高度；滚动交给内部 MessageList / WelcomeScreen */
   const hostedMainClass =
-    "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-0 pt-2 sm:px-4";
+    "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-0 pt-0 sm:px-4";
   const hostedRootClass = "h-[100dvh] max-h-[100dvh] overflow-hidden";
 
   return (

@@ -90,8 +90,9 @@ export function WelcomeScreen() {
   const hasContent = value.trim().length > 0;
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col items-stretch justify-start overflow-y-auto overflow-x-hidden overscroll-contain bg-white px-3 py-4 dark:bg-neutral-950 sm:px-5 sm:py-6">
-      <div className="relative mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col">
+    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain bg-white dark:bg-neutral-950">
+      <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col px-3 sm:px-5">
+        <div className="flex flex-1 flex-col justify-center py-6 sm:py-8">
         <div className="animate-fade-up text-center" style={{ animationFillMode: "both" }}>
           <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/90 px-3 py-1 text-xs font-medium text-indigo-600 shadow-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-indigo-400">
             <Bot className="h-3.5 w-3.5" />
@@ -198,8 +199,9 @@ export function WelcomeScreen() {
             </p>
           ) : null}
         </div>
+        </div>
 
-        <div className="mt-8 animate-fade-up pb-8 sm:mt-10" style={{ animationDelay: "160ms", animationFillMode: "both" }}>
+        <div className="mt-auto shrink-0 animate-fade-up pb-6 sm:pb-8" style={{ animationDelay: "160ms", animationFillMode: "both" }}>
           <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.24em] text-neutral-400 dark:text-neutral-500">
             <span className="h-px w-8 bg-neutral-200 dark:bg-neutral-600" />
             {t("chat.startFrom")}

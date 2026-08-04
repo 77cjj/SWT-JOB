@@ -324,6 +324,92 @@ export const referralPrograms: ReferralProgram[] = [
     ],
   },
   {
+    id: 'revolut',
+    category: 'bank',
+    displayGroup: 'bank-neobank',
+    offerKind: 'refer',
+    brandName: { zh: 'Revolut', en: 'Revolut' },
+    siteRebateUsd: 40,
+    siteRebateLabel: {
+      zh: '本站返现 $40',
+      en: '$40 site cashback',
+    },
+    editions: [
+      {
+        id: 'revolut-2026',
+        validFrom: '2026-07-01',
+        validUntil: null,
+        reward: { zh: '官方邀请奖励 + 本站返现 $40', en: 'Official refer bonus + $40 site cashback' },
+        summary: {
+          zh: '通过邀请链接注册，Residence 选美国，充值 $40，订购 $2.99 实体卡并完成 3 笔 ≥$10 消费；官方奖励约 2 天到账，达标后联系本站领取 $40 返现。',
+          en: 'Sign up via referral, select US residence, deposit $40, order the $2.99 card, and complete 3 purchases of $10+ each. Official reward ~2 days; contact us for $40 site cashback after qualifying.',
+        },
+        requirements: {
+          zh: [
+            '须通过本站邀请链接注册',
+            'Residence 选择美国',
+            '充值至少 $40',
+            '订购 $2.99 实体借记卡',
+            '完成 3 笔单笔 ≥ $10 的消费',
+            '官方奖励约 2 个工作日到账',
+            '达标后联系站长领取本站 $40 返现',
+          ],
+          en: [
+            'Sign up via our referral link',
+            'Select United States as residence',
+            'Deposit at least $40',
+            'Order the $2.99 physical debit card',
+            'Complete 3 transactions of $10+ each',
+            'Official reward posts in ~2 business days',
+            'Contact site owner for $40 cashback after qualifying',
+          ],
+        },
+        referralUrl:
+          'https://revolut.com/referral/?referral-code=jiajun_7r_l4pt!JUL2-26-AR-US-H1-REFBLOCK-AE&geo-redirect',
+        officialUrl: 'https://www.revolut.com/',
+        tags: { zh: ['线上', '需消费'], en: ['Online', 'Spending required'] },
+        changeNote: {
+          zh: '新增 Revolut 邀请：充值 $40 + 三笔 $10+ 消费，本站额外返现 $40。',
+          en: 'Added Revolut refer: $40 deposit + three $10+ purchases; $40 site cashback.',
+        },
+      },
+    ],
+    howToClaim: {
+      zh: [
+        '点击本站「打开邀请链接」进入 Revolut 注册（Join me and over 75 million users who love Revolut）。',
+        '注册时 Residence 选择美国（United States），其余信息按真实情况正常填写。',
+        '完成注册后向账户充值 $40。',
+        '在卡片选项中选择 $2.99 的实体借记卡并完成订购。',
+        '使用 Revolut 卡完成 3 笔单笔 ≥ $10 的消费（可分多天完成）。',
+        '官方邀请奖励通常约 2 个工作日到账。',
+        '完成上述条件后联系站长，领取本站承诺的 $40 返现。',
+      ],
+      en: [
+        'Open our referral link to sign up for Revolut (Join over 75 million Revolut users).',
+        'Select United States as your residence during signup; fill in the rest normally.',
+        'Deposit at least $40 into your account.',
+        'Choose and order the $2.99 physical debit card.',
+        'Make 3 separate purchases of $10 or more each with your Revolut card.',
+        'The official referral reward typically posts within about 2 business days.',
+        'After completing all steps, contact the site owner to claim the $40 site cashback.',
+      ],
+    },
+    practicalSteps: {
+      zh: [
+        '务必从本站邀请链接进入，否则 refer 可能不计入。',
+        '充值 $40 后留足余额用于三笔 $10+ 消费及可能的卡费。',
+        '消费可用日常购物、订阅等，确认每笔单笔金额 ≥ $10。',
+        '官方奖励与本站 $40 返现分开发放：先等官方到账，再联系本站登记返现。',
+      ],
+      en: [
+        'Always start from our referral link so the refer is tracked.',
+        'Keep enough balance after the $40 deposit for three $10+ purchases and card fees.',
+        'Everyday purchases count; each transaction must be at least $10.',
+        'Official reward and site cashback are separate—claim site rebate after you qualify.',
+      ],
+    },
+  },
+  {
     id: 'capital-one-360',
     category: 'bank',
     displayGroup: 'bank-national',

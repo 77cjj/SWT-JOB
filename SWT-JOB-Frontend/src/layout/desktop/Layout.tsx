@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import React, { type PropsWithChildren } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import { DarkMode, LightMode } from '@mui/icons-material';
+import { useAuthStore } from '@/stores/authStore';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
 import { cn } from '../../../ragent/lib/utils';
@@ -36,6 +37,7 @@ export default function DesktopLayout({
   const pathname = router.pathname;
   const { mode, toggleMode } = useAppTheme();
   const { t } = useI18n();
+  const authDialogOpen = useAuthStore((s) => s.loginDialogOpen);
 
   const isDark = mode === 'dark';
   const rootClass = isDark
@@ -43,9 +45,11 @@ export default function DesktopLayout({
     : 'bg-white text-neutral-900';
   const rootMinH = rootClassName?.includes('h-') ? '' : 'min-h-screen';
   const headerBorderClass = isDark ? 'border-neutral-800/60' : 'border-neutral-200';
+  // 登录/注册弹窗打开时抬高顶栏，保证可切换语言
+  const headerZ = authDialogOpen ? 'z-[1060]' : 'z-50';
   const headerStickyClass = isDark
-    ? 'sticky top-0 z-50 border-b bg-neutral-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/70'
-    : 'sticky top-0 z-50 border-b bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70';
+    ? `sticky top-0 ${headerZ} border-b bg-neutral-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/70`
+    : `sticky top-0 ${headerZ} border-b bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70`;
   const navTextClass = isDark ? 'text-neutral-400' : 'text-neutral-600';
   const linkHoverClass = isDark ? 'hover:text-neutral-100' : 'hover:text-neutral-900';
   const linkActiveClass = isDark ? 'text-neutral-100 font-semibold' : 'text-neutral-900 font-semibold';
@@ -149,7 +153,7 @@ export default function DesktopLayout({
                   {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
                 </IconButton>
               </Tooltip>
-              {pathname !== '/login' && pathname !== '/register' ? <RagentChatUserMenu /> : null}
+              <RagentChatUserMenu />
             </div>
           </div>
         </div>

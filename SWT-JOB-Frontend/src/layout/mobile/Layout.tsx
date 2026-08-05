@@ -12,6 +12,7 @@ import {
   SmartToyRounded,
   LocalOfferRounded,
 } from '@mui/icons-material';
+import { useAuthStore } from '@/stores/authStore';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
 import { cn } from '../../../ragent/lib/utils';
@@ -45,6 +46,8 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
   const router = useRouter();
   const pathname = router.pathname;
   const isDark = mode === 'dark';
+  const authDialogOpen = useAuthStore((s) => s.loginDialogOpen);
+  const headerZ = authDialogOpen ? 'z-[1060]' : 'z-50';
 
   const navLabel = (key: NavKey) => {
     const full = t(`nav.${key}`);
@@ -64,7 +67,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
       )}
     >
       <header
-        className={`sticky top-0 z-50 flex shrink-0 items-center justify-between border-b px-4 py-3 backdrop-blur-md ${
+        className={`sticky top-0 ${headerZ} flex shrink-0 items-center justify-between border-b px-4 py-3 backdrop-blur-md ${
           isDark
             ? 'border-neutral-800/60 bg-neutral-950/85 supports-[backdrop-filter]:bg-neutral-950/70'
             : 'border-neutral-200 bg-white/85 supports-[backdrop-filter]:bg-white/70'
@@ -83,7 +86,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
               {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
             </IconButton>
           </Tooltip>
-          {pathname !== '/login' && pathname !== '/register' ? <RagentChatUserMenu /> : null}
+          <RagentChatUserMenu />
         </div>
       </header>
       <main

@@ -103,7 +103,7 @@ export default function FloatingSupportWidget() {
 
     const prefill = `想联系用户 ${member.displayName}（${member.id}）：\n`;
     if (!isAuthenticated) {
-      openLoginDialog('登录后可留言，站长会协助转发联系');
+      openLoginDialog(t('auth.loginReasonDefault'));
       return;
     }
     setOpen(true);
@@ -111,7 +111,7 @@ export default function FloatingSupportWidget() {
     setHumanMessage(prefill);
     const { contact: _c, ...rest } = router.query;
     void router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true });
-  }, [router.isReady, router.query.contact, router.pathname, isAuthenticated, openLoginDialog, router]);
+  }, [router.isReady, router.query.contact, router.pathname, isAuthenticated, openLoginDialog, router, t]);
 
   useEffect(() => {
     return () => abortRef.current?.();
@@ -189,7 +189,7 @@ export default function FloatingSupportWidget() {
     const message = humanMessage.trim();
     if (message.length < 4 || humanSending) return;
     if (!isAuthenticated) {
-      openLoginDialog('登录后即可给站长留言');
+      openLoginDialog(t('auth.loginReasonDefault'));
       return;
     }
     setHumanSending(true);

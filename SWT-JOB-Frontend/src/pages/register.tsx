@@ -1,7 +1,69 @@
 "use client";
 
-import { HostedRegisterPage } from "../components/ragent/HostedRegisterPage";
+import { useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { Box, Button, Typography } from "@mui/material";
 
-export default function RegisterRoutePage() {
-  return <HostedRegisterPage />;
+import DesktopLayout from "../layout/desktop/Layout";
+import MobileLayout from "../layout/mobile/Layout";
+import useDevice from "../hooks/useDevice";
+import { useAuthStore } from "@/stores/authStore";
+import { useI18n } from "../context/I18nContext";
+
+/**
+ * /register：打开全局注册弹窗并回到目标页；点叉后留在原页面。
+ */
+export default function RegisterRedirectPage() {
+  const router = useRouter();
+  const isMobile = useDevice();
+  const { t } = useI18n();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  useEffect(() => {
+    if (!router.isReady || isAuthenticated) return;
+    const redirect =
+      typeof router.query.redirect === "string" && router.query.redirect.startsWith("/")
+        ? router.query.redirect
+        : typeof document !== "undefined" && document.referrer
+          ? (() => {
+              try {
+                const url = new URL(document.referrer);
+                return url.origin === window.location.origin && url.pathname.startsWith("/")
+                  ? `${url.pathname}${url.search}`
+                  : "/chat";
+              } catch {
+                return "/chat";
+              }
+            })()
+          : "/chat";
+    useAuthStore.getState().openRegisterDialog();
+    void router.replace(redirect);
+  }, [router.isReady, router.query.redirect, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirect =
+        typeof router.query.redirect === "string" && router.query.redirect.startsWith("/")
+          ? router.query.redirect
+          : "/chat";
+      void router.replace(redirect);
+    }
+  }, [isAuthenticated, router]);
+
+  const content = (
+    <Box sx={{ py: 8, textAlign: "center" }}>
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        {t("auth.openingRegister")}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {t("auth.openDialogHint")}
+      </Typography>
+      <Button component={Link} href="/" variant="outlined" size="small">
+        {t("auth.backHome")}
+      </Button>
+    </Box>
+  );
+
+  return isMobile ? <MobileLayout>{content}</MobileLayout> : <DesktopLayout>{content}</DesktopLayout>;
 }

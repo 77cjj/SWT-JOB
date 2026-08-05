@@ -4,8 +4,15 @@ import { useRouter } from "next/router";
 import { useEffect, type ReactNode } from "react";
 import { RAGENT_ALLOW_LOGIN_PAGE } from "@/config/runtimeEnv";
 import { useAuthStore } from "@/stores/authStore";
+import { getTranslation } from "../../i18n";
+import { readUiLanguage } from "../../i18n/readUiLanguage";
 
 const allowLoginPageWhileAuthed = RAGENT_ALLOW_LOGIN_PAGE;
+
+function authReasonRequired() {
+  const tr = getTranslation(readUiLanguage());
+  return tr.auth.loginReasonRequired;
+}
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -14,7 +21,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!router.isReady) return;
     if (!isAuthenticated) {
-      useAuthStore.getState().openLoginDialog("请先登录");
+      useAuthStore.getState().openLoginDialog(authReasonRequired());
       void router.replace("/chat");
     }
   }, [router, isAuthenticated]);
@@ -33,7 +40,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!router.isReady) return;
     if (!isAuthenticated) {
-      useAuthStore.getState().openLoginDialog("请先登录");
+      useAuthStore.getState().openLoginDialog(authReasonRequired());
       void router.replace("/chat");
       return;
     }

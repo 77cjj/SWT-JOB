@@ -15,6 +15,10 @@ import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
 import { storage } from "@/utils/storage";
+import { getTranslation } from "../../../src/i18n";
+import { readUiLanguage } from "../../../src/i18n/readUiLanguage";
+
+export type AuthDialogMode = "login" | "register";
 
 interface AuthState {
   user: User | null;
@@ -23,6 +27,7 @@ interface AuthState {
   isLoading: boolean;
   loginDialogOpen: boolean;
   loginDialogReason: string | null;
+  authDialogMode: AuthDialogMode;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   googleLogin: (idToken: string) => Promise<void>;
@@ -30,7 +35,23 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
   openLoginDialog: (reason?: string) => void;
+  openRegisterDialog: (reason?: string) => void;
+  setAuthDialogMode: (mode: AuthDialogMode) => void;
   closeLoginDialog: () => void;
+}
+
+function authT(key: string): string {
+  const translation = getTranslation(readUiLanguage());
+  const keys = key.split(".");
+  let value: unknown = translation;
+  for (const k of keys) {
+    if (value && typeof value === "object" && k in value) {
+      value = (value as Record<string, unknown>)[k];
+    } else {
+      return key;
+    }
+  }
+  return typeof value === "string" ? value : key;
 }
 
 function applyAuthSession(
@@ -86,11 +107,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   loginDialogOpen: false,
   loginDialogReason: null,
+  authDialogMode: "login",
   openLoginDialog: (reason) => {
-    set({ loginDialogOpen: true, loginDialogReason: reason?.trim() || null });
+    set({
+      loginDialogOpen: true,
+      authDialogMode: "login",
+      loginDialogReason: reason?.trim() || null,
+    });
+  },
+  openRegisterDialog: (reason) => {
+    set({
+      loginDialogOpen: true,
+      authDialogMode: "register",
+      loginDialogReason: reason?.trim() || null,
+    });
+  },
+  setAuthDialogMode: (mode) => {
+    set({ authDialogMode: mode });
   },
   closeLoginDialog: () => {
-    set({ loginDialogOpen: false, loginDialogReason: null });
+    set({ loginDialogOpen: false, loginDialogReason: null, authDialogMode: "login" });
   },
   login: async (username, password) => {
     set({ isLoading: true });
@@ -98,9 +134,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await loginRequest(username, password);
       applyAuthSession(set, data, username);
       get().fetchCurrentUser().catch(() => null);
-      toast.success("登录成功", { position: "top-center" });
+      toast.success(authT("auth.loginSuccess"), { position: "top-center" });
     } catch (error) {
-      toast.error((error as Error).message || "登录失败");
+      toast.error((error as Error).message || authT("auth.loginFailed"));
       throw error;
     } finally {
       set({ isLoading: false });
@@ -112,9 +148,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await registerRequest(username, password);
       applyAuthSession(set, data, username);
       get().fetchCurrentUser().catch(() => null);
-      toast.success("注册成功", { position: "top-center" });
+      toast.success(authT("auth.registerSuccess"), { position: "top-center" });
     } catch (error) {
-      toast.error((error as Error).message || "注册失败");
+      toast.error((error as Error).message || authT("auth.registerFailed"));
       throw error;
     } finally {
       set({ isLoading: false });
@@ -134,13 +170,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         data?: { userId?: string; role?: string; token?: string; avatar?: string; username?: string };
       };
       if (!res.ok || !payload.ok || !payload.data?.token) {
-        throw new Error(payload.message || "Google 登录失败");
+        throw new Error(payload.message || "Google login failed");
       }
       applyAuthSession(set, payload.data, payload.data.userId || "user");
       get().fetchCurrentUser().catch(() => null);
-      toast.success("Google 登录成功", { position: "top-center" });
+      toast.success(authT("auth.loginSuccess"), { position: "top-center" });
     } catch (error) {
-      toast.error((error as Error).message || "Google 登录失败");
+      toast.error((error as Error).message || authT("auth.loginFailed"));
       throw error;
     } finally {
       set({ isLoading: false });
@@ -165,18 +201,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       streamTaskId: null,
       streamAbort: null,
       streamingMessageId: null,
-      cancelRequested: false
+      cancelRequested: false,
     });
     storage.clearAuth();
     setAuthToken(null);
     set({ user: null, token: null, isAuthenticated: false });
-    toast.success("已退出登录", { position: "top-center" });
+    toast.success(authT("common.logout"), { position: "top-center" });
   },
   checkAuth: async () => {
     if (BYPASS_AUTH) {
       const persistedToken = storage.getToken();
       const persistedUser = storage.getUser();
-      // 开启 bypass 时，若已有真实登录态，不要再用本地假 token 覆盖，避免登录后立即掉线。
       if (persistedToken && persistedToken !== DEV_BYPASS_TOKEN) {
         setAuthToken(persistedToken);
         set({ token: persistedToken, user: persistedUser, isAuthenticated: true });

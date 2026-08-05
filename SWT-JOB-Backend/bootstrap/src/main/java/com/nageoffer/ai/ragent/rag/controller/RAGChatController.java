@@ -49,10 +49,11 @@ public class RAGChatController {
     public SseEmitter chat(@RequestParam String question,
                            @RequestParam(required = false) String conversationId,
                            @RequestParam(required = false, defaultValue = "false") Boolean webSearch,
-                           @RequestParam(required = false, defaultValue = "false") Boolean deepThinking) {
+                           @RequestParam(required = false, defaultValue = "false") Boolean deepThinking,
+                           @RequestParam(required = false) String language) {
         SseEmitter emitter = new SseEmitter(0L);
         boolean searchEnabled = Boolean.TRUE.equals(webSearch);
-        ragChatService.streamChat(question, conversationId, searchEnabled, emitter);
+        ragChatService.streamChat(question, conversationId, searchEnabled, language, emitter);
         return emitter;
     }
 

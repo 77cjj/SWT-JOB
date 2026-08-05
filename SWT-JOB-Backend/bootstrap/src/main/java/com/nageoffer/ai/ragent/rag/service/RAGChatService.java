@@ -31,9 +31,10 @@ public interface RAGChatService {
      * @param question       用户问题
      * @param conversationId 会话 ID（可选，空时创建新会话）
      * @param webSearch      是否开启联网搜索补充
+     * @param language       网站 UI 语言代码（如 zh / en），用于约束模型回答语言
      * @param emitter        SSE 发射器
      */
-    void streamChat(String question, String conversationId, Boolean webSearch, SseEmitter emitter);
+    void streamChat(String question, String conversationId, Boolean webSearch, String language, SseEmitter emitter);
 
     /**
      * 停止指定任务 ID 的流式会话

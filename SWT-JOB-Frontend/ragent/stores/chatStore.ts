@@ -22,6 +22,7 @@ import { buildQuery } from "@/utils/helpers";
 import { createStreamResponse } from "@/hooks/useStreamResponse";
 import { storage } from "@/utils/storage";
 import { useAuthStore } from "@/stores/authStore";
+import { readUiLanguage } from "../../src/i18n/readUiLanguage";
 import {
   demoConversationToMessages,
   getDemoConversationBySessionId,
@@ -394,7 +395,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const query = buildQuery({
       question: trimmed,
       conversationId: conversationId || undefined,
-      webSearch: webSearchEnabled ? true : undefined
+      webSearch: webSearchEnabled ? true : undefined,
+      // 与网站语言切换联动，后端据此约束模型回答语言
+      language: readUiLanguage()
     });
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${query}`;
 

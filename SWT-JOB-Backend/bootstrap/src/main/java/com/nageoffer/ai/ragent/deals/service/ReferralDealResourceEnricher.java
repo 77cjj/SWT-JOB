@@ -48,7 +48,10 @@ public class ReferralDealResourceEnricher {
     private static final Pattern DEALS_PATH = Pattern.compile("^/deals(?:/([a-z0-9-]+))?$", Pattern.CASE_INSENSITIVE);
     private static final List<String> DEAL_KEYWORDS = List.of(
             "羊毛", "薅", "refer", "referral", "开户", "奖励", "返现", "bonus",
-            "chime", "kalshi", "revolut", "sofi", "rakuten", "moomoo", "weee", "capital one", "wells fargo"
+            "换汇", "汇款", "remittance", "remit", "汇率",
+            "chime", "kalshi", "revolut", "sofi", "rakuten", "moomoo", "weee",
+            "remitly", "wise", "lemfi", "instarem", "panda", "taptap", "wirebarley",
+            "capital one", "wells fargo", "western union"
     );
 
     private final ReferralDealMapper referralDealMapper;
@@ -108,7 +111,7 @@ public class ReferralDealResourceEnricher {
         List<ReferralDealDO> deals = referralDealMapper.selectList(
                 Wrappers.lambdaQuery(ReferralDealDO.class)
                         .eq(ReferralDealDO::getDeleted, 0)
-                        .eq(ReferralDealDO::getPublished, 1)
+                        .eq(ReferralDealDO::getAiEnabled, 1)
                         .orderByAsc(ReferralDealDO::getSortOrder)
                         .orderByAsc(ReferralDealDO::getId)
         );
@@ -237,7 +240,7 @@ public class ReferralDealResourceEnricher {
                 Wrappers.lambdaQuery(ReferralDealDO.class)
                         .eq(ReferralDealDO::getId, dealId)
                         .eq(ReferralDealDO::getDeleted, 0)
-                        .eq(ReferralDealDO::getPublished, 1)
+                        .eq(ReferralDealDO::getAiEnabled, 1)
         );
     }
 

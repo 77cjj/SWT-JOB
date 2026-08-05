@@ -20,6 +20,8 @@ package com.nageoffer.ai.ragent.deals.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.google.gson.JsonParser;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkAiEnabledRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkUpsertRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealSaveRequest;
 import com.nageoffer.ai.ragent.deals.controller.vo.ReferralDealVO;
@@ -109,6 +111,9 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         ReferralDealDO existing = loadAny(id);
         ReferralDealDO record = toEntity(id, request);
         record.setCreateTime(existing.getCreateTime());
+        if (request.getAiEnabled() == null) {
+            record.setAiEnabled(existing.getAiEnabled() != null ? existing.getAiEnabled() : 1);
+        }
         referralDealMapper.updateById(record);
         knowledgeSyncService.syncAsync();
     }
@@ -137,6 +142,9 @@ public class ReferralDealServiceImpl implements ReferralDealService {
                 referralDealMapper.insert(record);
             } else {
                 record.setCreateTime(existing.getCreateTime());
+                if (item.getAiEnabled() == null) {
+                    record.setAiEnabled(existing.getAiEnabled());
+                }
                 referralDealMapper.updateById(record);
             }
             changed = true;
@@ -144,6 +152,41 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         if (changed) {
             knowledgeSyncService.syncAsync();
         }
+    }
+
+    @Override
+    public void setAiEnabled(String id, int aiEnabled) {
+        ReferralDealDO existing = loadAny(id);
+        ReferralDealDO update = ReferralDealDO.builder()
+                .id(existing.getId())
+                .aiEnabled(aiEnabled)
+                .build();
+        referralDealMapper.updateById(update);
+        knowledgeSyncService.syncAsync();
+    }
+
+    @Override
+    public int bulkSetAiEnabled(ReferralDealBulkAiEnabledRequest request) {
+        if (request == null || request.getAiEnabled() == null) {
+            throw new ClientException("aiEnabled 不能为空");
+        }
+        int enabled = request.getAiEnabled();
+        LambdaUpdateWrapper<ReferralDealDO> wrapper = Wrappers.lambdaUpdate(ReferralDealDO.class)
+                .set(ReferralDealDO::getAiEnabled, enabled)
+                .eq(ReferralDealDO::getDeleted, 0);
+        if (request.getIds() != null && !request.getIds().isEmpty()) {
+            List<String> ids = request.getIds().stream()
+                    .filter(StrUtil::isNotBlank)
+                    .map(id -> id.trim().toLowerCase())
+                    .toList();
+            if (ids.isEmpty()) {
+                return 0;
+            }
+            wrapper.in(ReferralDealDO::getId, ids);
+        }
+        int updated = referralDealMapper.update(null, wrapper);
+        knowledgeSyncService.syncAsync();
+        return updated;
     }
 
     private ReferralDealDO loadPublished(String id) {
@@ -198,6 +241,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
                 .programJson(request.getProgramJson().trim())
                 .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
                 .published(request.getPublished() != null ? request.getPublished() : 1)
+                .aiEnabled(request.getAiEnabled() != null ? request.getAiEnabled() : 1)
                 .build();
     }
 
@@ -216,6 +260,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
                 .program(program)
                 .sortOrder(record.getSortOrder())
                 .published(record.getPublished())
+                .aiEnabled(record.getAiEnabled())
                 .build();
     }
 }

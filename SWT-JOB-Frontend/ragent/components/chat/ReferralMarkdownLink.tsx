@@ -29,7 +29,13 @@ function looksLikeReferralExternal(href?: string): boolean {
     lower.includes("chime.com") ||
     lower.includes("rakuten.com") ||
     lower.includes("sayweee.com") ||
-    lower.includes("utest.com")
+    lower.includes("utest.com") ||
+    lower.includes("remitly.com") ||
+    lower.includes("wise.com") ||
+    lower.includes("lemfi.com") ||
+    lower.includes("instarem.com") ||
+    lower.includes("wirebarley.com") ||
+    lower.includes("westernunion.com")
   );
 }
 

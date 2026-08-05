@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.deals.service;
 
+import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkAiEnabledRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkUpsertRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealSaveRequest;
 import com.nageoffer.ai.ragent.deals.controller.vo.ReferralDealVO;
@@ -42,4 +43,8 @@ public interface ReferralDealService {
     void delete(String id);
 
     void bulkUpsert(ReferralDealBulkUpsertRequest request);
+
+    void setAiEnabled(String id, int aiEnabled);
+
+    int bulkSetAiEnabled(ReferralDealBulkAiEnabledRequest request);
 }

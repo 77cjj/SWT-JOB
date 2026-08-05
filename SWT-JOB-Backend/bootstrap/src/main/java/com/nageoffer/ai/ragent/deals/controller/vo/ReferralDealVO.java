@@ -42,4 +42,6 @@ public class ReferralDealVO {
     private Integer sortOrder;
 
     private Integer published;
+
+    private Integer aiEnabled;
 }

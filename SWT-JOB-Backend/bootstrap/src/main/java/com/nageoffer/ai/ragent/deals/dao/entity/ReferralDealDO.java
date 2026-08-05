@@ -59,6 +59,11 @@ public class ReferralDealDO {
      */
     private Integer published;
 
+    /**
+     * 1 纳入 AI 问答知识库 0 否
+     */
+    private Integer aiEnabled;
+
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 

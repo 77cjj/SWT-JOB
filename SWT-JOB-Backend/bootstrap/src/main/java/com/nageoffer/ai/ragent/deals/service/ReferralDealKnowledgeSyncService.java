@@ -40,7 +40,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 将上架薅羊毛项目同步为知识库 Markdown 文档，供 RAG 检索
@@ -79,10 +82,11 @@ public class ReferralDealKnowledgeSyncService {
             List<ReferralDealDO> deals = referralDealMapper.selectList(
                     Wrappers.lambdaQuery(ReferralDealDO.class)
                             .eq(ReferralDealDO::getDeleted, 0)
-                            .eq(ReferralDealDO::getPublished, 1)
+                            .eq(ReferralDealDO::getAiEnabled, 1)
                             .orderByAsc(ReferralDealDO::getSortOrder)
                             .orderByAsc(ReferralDealDO::getId)
             );
+            cleanupDisabledDealDocuments(kbId, deals);
             upsertMarkdownDocument(
                     kbId,
                     INDEX_DOC_NAME,
@@ -99,11 +103,36 @@ public class ReferralDealKnowledgeSyncService {
                         ReferralDealMarkdownGenerator.generateDealDocument(deal)
                 );
             }
-            log.info("薅羊毛知识库同步完成，kbId={} deals={}", kbId, deals.size());
+            log.info("薅羊毛知识库同步完成，kbId={} aiEnabledDeals={}", kbId, deals.size());
         } catch (Exception ex) {
             log.error("薅羊毛知识库同步失败", ex);
         } finally {
             UserContext.clear();
+        }
+    }
+
+    private void cleanupDisabledDealDocuments(String kbId, List<ReferralDealDO> activeDeals) {
+        Set<String> activeSources = activeDeals.stream()
+                .map(deal -> ReferralDealMarkdownGenerator.dealsSourceLocation(deal.getId()))
+                .collect(Collectors.toCollection(HashSet::new));
+        activeSources.add(INDEX_SOURCE);
+
+        List<KnowledgeDocumentDO> existingDocs = knowledgeDocumentMapper.selectList(
+                Wrappers.lambdaQuery(KnowledgeDocumentDO.class)
+                        .eq(KnowledgeDocumentDO::getKbId, kbId)
+                        .eq(KnowledgeDocumentDO::getDeleted, 0)
+                        .and(wrapper -> wrapper.eq(KnowledgeDocumentDO::getSourceLocation, INDEX_SOURCE)
+                                .or()
+                                .likeRight(KnowledgeDocumentDO::getSourceLocation, "/deals/"))
+        );
+        if (existingDocs == null || existingDocs.isEmpty()) {
+            return;
+        }
+        for (KnowledgeDocumentDO doc : existingDocs) {
+            String source = StrUtil.trimToNull(doc.getSourceLocation());
+            if (source != null && !activeSources.contains(source)) {
+                knowledgeDocumentService.delete(doc.getId());
+            }
         }
     }
 

@@ -19,27 +19,18 @@ package com.nageoffer.ai.ragent.deals.controller.request;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 @Data
-public class ReferralDealSaveRequest {
-
-    private String id;
-
-    private BigDecimal siteRebateUsd;
-
-    private String siteRebateLabelZh;
-
-    private String siteRebateLabelEn;
+public class ReferralDealBulkAiEnabledRequest {
 
     /**
-     * ReferralProgram 结构 JSON 字符串
+     * 1 纳入 AI 问答；0 移出
      */
-    private String programJson;
-
-    private Integer sortOrder;
-
-    private Integer published;
-
     private Integer aiEnabled;
+
+    /**
+     * 指定项目 ID；为空表示全部已入库项目
+     */
+    private List<String> ids;
 }

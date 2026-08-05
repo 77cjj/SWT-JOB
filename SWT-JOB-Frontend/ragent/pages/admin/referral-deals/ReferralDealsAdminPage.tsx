@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { EyeOff, Pencil, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { EyeOff, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -31,7 +32,7 @@ import {
 } from '@/components/ui/table';
 import { referralPrograms as staticPrograms } from '../../../../src/data/referralDeals';
 import type { ReferralProgram } from '../../../../src/data/referralDeals';
-import { notionRemittancePrograms, NOTION_REMITTANCE_ROWS } from '../../../../src/data/notionDealsSeed';
+import { NOTION_REMITTANCE_ROWS } from '../../../../src/data/notionDealsSeed';
 import {
   adminFormToProgram,
   emptyDealAdminForm,
@@ -42,12 +43,15 @@ import {
 } from '../../../../src/lib/deals/deal-admin-form';
 import {
   buildAdminDealRows,
+  bulkSetReferralDealAiEnabled,
   bulkUpsertReferralDeals,
   deleteReferralDeal,
   fetchAdminReferralDeals,
   hideReferralDeal,
   programToSavePayload,
   saveReferralDeal,
+  seedMissingReferralDeals,
+  setReferralDealAiEnabled,
   type AdminDealRow,
   type ReferralDealRecord,
 } from '../../../../src/lib/deals/referral-deal-api';
@@ -117,6 +121,7 @@ export function ReferralDealsAdminPage() {
       programToAdminForm(row.program, {
         published: row.published,
         sortOrder: row.sortOrder,
+        aiEnabled: row.aiEnabled,
       }),
     );
     setDialogOpen(true);
@@ -147,8 +152,9 @@ export function ReferralDealsAdminPage() {
       undefined;
 
     const published = Number(form.published) || 0;
+    const aiEnabled = Number(form.aiEnabled) || 0;
     const program = adminFormToProgram({ ...form, id }, base);
-    const payload = programToSavePayload(program, published, Number(form.sortOrder) || 0);
+    const payload = programToSavePayload(program, published, Number(form.sortOrder) || 0, aiEnabled);
 
     try {
       await saveReferralDeal(id, payload, isNew);
@@ -163,7 +169,7 @@ export function ReferralDealsAdminPage() {
   const importNotionRemittance = async () => {
     try {
       const programs = notionRowsToPrograms(NOTION_REMITTANCE_ROWS);
-      const items = programs.map((p, index) => programToSavePayload(p, 1, 100 + index));
+      const items = programs.map((p, index) => programToSavePayload(p, 1, 100 + index, 1));
       await bulkUpsertReferralDeals(items);
       toast.success(`已导入 ${items.length} 个 Notion 换汇项目到数据库`);
       await load();
@@ -183,6 +189,7 @@ export function ReferralDealsAdminPage() {
           },
           1,
           index,
+          1,
         ),
       );
       await bulkUpsertReferralDeals(items);
@@ -202,6 +209,44 @@ export function ReferralDealsAdminPage() {
       await load();
     } catch (error) {
       toast.error(getErrorMessage(error, '隐藏失败'));
+    }
+  };
+
+  const handleToggleAi = async (row: AdminDealRow, checked: boolean) => {
+    const enabled = checked ? 1 : 0;
+    try {
+      if (!row.inDatabase) {
+        const payload = programToSavePayload(row.program, row.published, row.sortOrder, enabled);
+        await saveReferralDeal(row.program.id, payload, true);
+      } else {
+        await setReferralDealAiEnabled(row.program.id, enabled);
+      }
+      toast.success(enabled ? '已加入 AI 问答' : '已从 AI 问答移除');
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, '更新 AI 开关失败'));
+    }
+  };
+
+  const handleEnableAllAi = async () => {
+    try {
+      const seeded = await seedMissingReferralDeals();
+      const updated = await bulkSetReferralDealAiEnabled(1);
+      toast.success(`已补缺 ${seeded} 条并开启 ${updated} 个项目的 AI 问答`);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, '一键开启 AI 失败'));
+    }
+  };
+
+  const handleDisableAllAi = async () => {
+    if (!window.confirm('确定将全部已入库项目移出 AI 问答？')) return;
+    try {
+      const updated = await bulkSetReferralDealAiEnabled(0);
+      toast.success(`已关闭 ${updated} 个项目的 AI 问答`);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, '一键关闭 AI 失败'));
     }
   };
 
@@ -228,13 +273,20 @@ export function ReferralDealsAdminPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold">薅羊毛项目管理</h1>
           <p className="text-sm text-muted-foreground">
-            与 Notion「薅羊毛页面」字段对齐。隐藏=写入数据库并下架；删除=移除数据库记录。
+            与 Notion「薅羊毛页面」字段对齐。隐藏=前台下架；AI 问答=写入 RAG 知识库（仿文档 enabled）。
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             <RefreshCw className="mr-2 h-4 w-4" />
             刷新
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void handleEnableAllAi()}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            全部加入 AI
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void handleDisableAllAi()}>
+            全部移出 AI
           </Button>
           <Button variant="outline" size="sm" onClick={() => void importNotionRemittance()}>
             <Upload className="mr-2 h-4 w-4" />
@@ -262,6 +314,7 @@ export function ReferralDealsAdminPage() {
                 <TableHead>{NOTION_COLUMN_MAP.siteRebate}</TableHead>
                 <TableHead>来源</TableHead>
                 <TableHead>状态</TableHead>
+                <TableHead className="text-center">AI 问答</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -280,6 +333,13 @@ export function ReferralDealsAdminPage() {
                     </TableCell>
                     <TableCell>{row.source === 'database' ? '数据库' : '静态'}</TableCell>
                     <TableCell>{statusLabel(row)}</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={row.aiEnabled === 1}
+                        onCheckedChange={(value) => void handleToggleAi(row, value === true)}
+                        aria-label={`${program.brandName.zh} AI 问答`}
+                      />
+                    </TableCell>
                     <TableCell className="space-x-1 text-right">
                       <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
                         <Pencil className="mr-1 h-4 w-4" />
@@ -309,8 +369,8 @@ export function ReferralDealsAdminPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        内置 Notion 换汇项目（{notionRemittancePrograms.length} 个）已写入前台静态数据：lemfi、熊猫速汇、
-        taptap、remitly、wise、instarem 等。点击「导入 Notion 换汇」可同步到数据库以便在线编辑。
+        内置换汇项目（Remitly、Wise、LemFi 等）在启动时会自动补缺入库并同步到 AI 知识库。勾选「AI 问答」后请等待向量化完成（后台日志可见 sync 进度）。
+        也可点击「全部加入 AI」一键开启。
       </p>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -395,6 +455,16 @@ export function ReferralDealsAdminPage() {
                 <SelectContent>
                   <SelectItem value="1">上架（前台可见）</SelectItem>
                   <SelectItem value="0">下架（前台隐藏）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>AI 问答</Label>
+              <Select value={form.aiEnabled} onValueChange={(v) => setField('aiEnabled', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">纳入 AI 知识库</SelectItem>
+                  <SelectItem value="0">不纳入 AI</SelectItem>
                 </SelectContent>
               </Select>
             </div>

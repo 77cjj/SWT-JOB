@@ -18,9 +18,11 @@
 package com.nageoffer.ai.ragent.deals.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkAiEnabledRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkUpsertRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealSaveRequest;
 import com.nageoffer.ai.ragent.deals.controller.vo.ReferralDealVO;
+import com.nageoffer.ai.ragent.deals.service.ReferralDealSeedService;
 import com.nageoffer.ai.ragent.deals.service.ReferralDealService;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
@@ -28,9 +30,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -40,6 +44,7 @@ import java.util.List;
 public class ReferralDealController {
 
     private final ReferralDealService referralDealService;
+    private final ReferralDealSeedService seedService;
 
     @GetMapping("/referral-deals/public")
     public Result<List<ReferralDealVO>> listPublic() {
@@ -93,5 +98,24 @@ public class ReferralDealController {
         StpUtil.checkRole("admin");
         referralDealService.bulkUpsert(request);
         return Results.success();
+    }
+
+    @PatchMapping("/referral-deals/{id}/ai-enabled")
+    public Result<Void> setAiEnabled(@PathVariable String id, @RequestParam("enabled") int enabled) {
+        StpUtil.checkRole("admin");
+        referralDealService.setAiEnabled(id, enabled);
+        return Results.success();
+    }
+
+    @PostMapping("/referral-deals/bulk-ai-enabled")
+    public Result<Integer> bulkSetAiEnabled(@RequestBody ReferralDealBulkAiEnabledRequest request) {
+        StpUtil.checkRole("admin");
+        return Results.success(referralDealService.bulkSetAiEnabled(request));
+    }
+
+    @PostMapping("/referral-deals/seed-missing")
+    public Result<Integer> seedMissing() {
+        StpUtil.checkRole("admin");
+        return Results.success(seedService.seedMissingFromClasspath());
     }
 }

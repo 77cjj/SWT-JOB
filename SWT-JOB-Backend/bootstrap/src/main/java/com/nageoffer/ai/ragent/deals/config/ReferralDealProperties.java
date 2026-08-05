@@ -47,6 +47,11 @@ public class ReferralDealProperties {
     private String collectionName = "swt_referral_deals_store";
 
     /**
+     * 是否在应用启动后自动补缺静态种子到数据库
+     */
+    private boolean autoSeedMissing = true;
+
+    /**
      * 是否在应用启动后异步同步
      */
     private boolean syncOnStartup = true;

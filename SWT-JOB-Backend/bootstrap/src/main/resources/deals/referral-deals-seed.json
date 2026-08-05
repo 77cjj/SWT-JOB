@@ -1,0 +1,244 @@
+{
+  "items": [
+    {
+      "id": "kalshi",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "保底返现 $7.5（预测）+ 最高 $12.5（加密）",
+      "siteRebateLabelEn": "From $7.5 (predictions) + up to $12.5 (crypto)",
+      "programJson": "{\"id\":\"kalshi\",\"category\":\"other\",\"displayGroup\":\"predictions\",\"offerKind\":\"refer\",\"pinned\":true,\"brandName\":{\"zh\":\"Kalshi 预测市场\",\"en\":\"Kalshi\"},\"editions\":[{\"id\":\"kalshi-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"最高约 $20 奖励\",\"en\":\"Up to ~$20 bonus\"},\"summary\":{\"zh\":\"用邀请链接注册 → 下载 App → 护照 KYC → 预测市场成交 $25 + 加密市场成交 $50 领取奖励（条款以 Kalshi 为准）。\",\"en\":\"Sign up via referral, verify with passport, trade $25 on predictions and $50 on crypto markets (verify official terms).\"},\"requirements\":{\"zh\":[\"美国境外可用护照注册\",\"需完成 KYC\",\"预测市场累计成交 $25\",\"加密货币市场累计成交 $50\"],\"en\":[\"Passport signup\",\"KYC\",\"$25 prediction volume\",\"$50 crypto volume\"]},\"referralUrl\":\"https://kalshi.com/sign-up/?referral=bc97e675-c6f7-4911-9de8-5dde19652db1&m=true&utm_source=mobile_app&utm_medium=copy&utm_campaign=referral&utm_content=referral_qr_sheet\",\"officialUrl\":\"https://kalshi.com/\",\"tags\":{\"zh\":[\"置顶\",\"预测市场\"],\"en\":[\"Pinned\",\"Predictions\"]}}],\"howToClaim\":{\"zh\":[\"点击本站「打开邀请链接」进入 Kalshi 注册页（务必用本链接，否则不计 refer）。\",\"下载 Kalshi 手机 App 并用同一账号登录。\",\"使用护照完成身份验证（非美国居民可用护照，具体以 Kalshi 审核为准）。\",\"在「预测市场」累计成交至少 $25（按平台规则计入的有效成交）。\",\"在「加密货币相关市场」累计成交至少 $50。\",\"奖励发放时间与形式以 Kalshi 官方通知为准；本站另承诺预测方向保底返现 $7.5、加密方向最高 $12.5（由管理员人工确认发放）。\"],\"en\":[\"Open the referral link and create an account.\",\"Install the app and sign in.\",\"Complete KYC with passport if eligible.\",\"Reach $25 traded volume on prediction markets.\",\"Reach $50 on crypto markets per program rules.\"]},\"practicalSteps\":{\"zh\":[\"先用小金额熟悉下单与结算规则，再加仓满足 $25 / $50 门槛。\",\"预测与加密可能是不同账户模块，确认成交量分别统计。\",\"奖励、税务与合规风险自负；勿用超出承受能力的资金投机。\"],\"en\":[\"Start small\",\"Confirm volume buckets\",\"Only risk what you can afford\"]},\"officialDetail\":{\"zh\":\"本站置顶推荐；官方奖励 + 本站额外返现文案可在管理后台调整。\",\"en\":\"Pinned on SWT; site rebate configurable in admin.\"}}",
+      "sortOrder": 0,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "moomoo",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "平台奖励发放后返现一半（约 $5–75）",
+      "siteRebateLabelEn": "50% cashback after platform payout (~$5–75)",
+      "programJson": "{\"id\":\"moomoo\",\"category\":\"other\",\"displayGroup\":\"promo-other\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Moomoo 富途\",\"en\":\"Moomoo\"},\"editions\":[{\"id\":\"moomoo-2026-07\",\"validFrom\":\"2026-07-01\",\"validUntil\":\"2026-07-31\",\"reward\":{\"zh\":\"开户/邀请奖励 + 本站返现\",\"en\":\"Signup/refer bonus + site cashback\"},\"summary\":{\"zh\":\"7 月 31 日前通过邀请链接或 Refer Code M69D3EMM 开户；平台奖励发放后本站承诺返现一半（约 $5–75 浮动，以实际发放为准）。\",\"en\":\"Sign up via link or code M69D3EMM by Jul 31; site rebates 50% after platform pays (~$5–75, varies).\"},\"requirements\":{\"zh\":[\"邀请链接：https://j.moomoo.com/0ER7nH\",\"Refer Code：M69D3EMM（7/31 前有效）\",\"完成 Moomoo 官方开户/邀请任务并领取平台奖励\",\"本站于平台奖励到账后返现一半（约 $5–75，浮动）\"],\"en\":[\"Referral: https://j.moomoo.com/0ER7nH\",\"Code M69D3EMM (valid through Jul 31)\",\"Complete official Moomoo offer and receive platform reward\",\"Site pays 50% cashback after platform payout (~$5–75)\"]},\"referralUrl\":\"https://j.moomoo.com/0ER7nH\",\"officialUrl\":\"https://www.moomoo.com/\",\"tags\":{\"zh\":[\"Refer M69D3EMM\",\"7/31 截止\"],\"en\":[\"Code M69D3EMM\",\"Until Jul 31\"]}}],\"howToClaim\":{\"zh\":[\"点击本站「打开邀请链接」或手动输入 Refer Code M69D3EMM 完成注册。\",\"按 Moomoo 官方规则完成开户/邀请任务并等待平台奖励发放。\",\"平台奖励到账后联系站长或按市集说明领取本站返现一半（约 $5–75）。\"],\"en\":[\"Open the referral link or enter code M69D3EMM at signup.\",\"Complete Moomoo requirements and receive the platform bonus.\",\"After platform payout, claim 50% site cashback (~$5–75).\"]}}",
+      "sortOrder": 1,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "chime",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "本站返现待公布",
+      "siteRebateLabelEn": "Site rebate TBD",
+      "programJson": "{\"id\":\"chime\",\"category\":\"bank\",\"displayGroup\":\"bank-neobank\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Chime\",\"en\":\"Chime\"},\"editions\":[{\"id\":\"chime-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"最高 $100\",\"en\":\"Up to $100\"},\"summary\":{\"zh\":\"45 天内收到单笔 ≥$200 合规 Direct Deposit，14 天内激活实体借记卡。\",\"en\":\"Qualifying direct deposit of $200+ within 45 days; activate physical debit card within 14 days after.\"},\"requirements\":{\"zh\":[\"线上开户\",\"需 SSN\",\"Direct Deposit 达标\",\"激活实体卡\"],\"en\":[\"Online opening\",\"SSN required\",\"Qualifying DD\",\"Activate physical card\"]},\"referralUrl\":\"https://chime.com/r/your-referral-code\",\"officialUrl\":\"https://help.chime.com/how-does-my-friends-chime-referral-link-work-5bb2ea50\",\"tags\":{\"zh\":[\"线上\",\"新手友好\"],\"en\":[\"Online\",\"Beginner-friendly\"]},\"changeNote\":{\"zh\":\"2026 年 refer 奖励维持 $100，DD 门槛仍为 $200。\",\"en\":\"2026 referral bonus remains $100; DD threshold still $200.\"}},{\"id\":\"chime-2025\",\"validFrom\":\"2025-01-01\",\"validUntil\":\"2025-12-31\",\"reward\":{\"zh\":\"最高 $100\",\"en\":\"Up to $100\"},\"summary\":{\"zh\":\"与 2026 版条件相同：45 天内 DD ≥$200，激活实体卡。\",\"en\":\"Same as 2026: $200+ DD within 45 days; activate physical card.\"},\"requirements\":{\"zh\":[\"线上开户\",\"需 SSN\",\"Direct Deposit 达标\",\"激活实体卡\"],\"en\":[\"Online opening\",\"SSN required\",\"Qualifying DD\",\"Activate physical card\"]},\"referralUrl\":\"https://chime.com/r/your-referral-code\",\"officialUrl\":\"https://help.chime.com/how-does-my-friends-chime-referral-link-work-5bb2ea50\",\"changeNote\":{\"zh\":\"奖励金额与 2024 持平，条款无重大变化。\",\"en\":\"Bonus unchanged from 2024; terms largely the same.\"}},{\"id\":\"chime-2024\",\"validFrom\":\"2024-01-01\",\"validUntil\":\"2024-12-31\",\"reward\":{\"zh\":\"最高 $100\",\"en\":\"Up to $100\"},\"summary\":{\"zh\":\"早期版本：DD 门槛 $200，需激活实体卡。\",\"en\":\"Earlier version: $200 DD threshold; physical card activation required.\"},\"requirements\":{\"zh\":[\"线上开户\",\"需 SSN\",\"Direct Deposit ≥$200\"],\"en\":[\"Online opening\",\"SSN required\",\"Direct deposit ≥$200\"]},\"referralUrl\":\"https://chime.com/r/your-referral-code\",\"changeNote\":{\"zh\":\"首年收录：Chime refer 成为 SWT 群体热门开户选项。\",\"en\":\"First tracked edition: Chime refer popular among SWT participants.\"}}],\"howToClaim\":{\"zh\":[\"通过本站或邀请链接打开 Chime 官网并完成注册\",\"在 45 天内设置 Direct Deposit，单笔到账 ≥ $200\",\"收到实体借记卡后 14 天内激活\",\"等待官方 refer 奖励入账（通常数周内，以 App 通知为准）\",\"达标后联系本站客服登记，领取本站额外返现\"],\"en\":[\"Open Chime via our referral link and complete signup\",\"Set up direct deposit of $200+ within 45 days\",\"Activate your physical debit card within 14 days\",\"Wait for the official referral bonus to post\",\"Contact us after qualifying to claim our site rebate\"]},\"practicalSteps\":{\"zh\":[\"提前准备 SSN 与美国手机号\",\"DD 可用雇主工资或部分转账服务（需自行确认是否算合规 DD）\",\"奖励条款以 Chime 官网为准\"],\"en\":[\"Have SSN and US phone ready\",\"Confirm what counts as qualifying direct deposit\",\"Official terms always prevail\"]}}",
+      "sortOrder": 2,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "sofi",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"sofi\",\"category\":\"bank\",\"displayGroup\":\"bank-neobank\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"SoFi\",\"en\":\"SoFi\"},\"editions\":[{\"id\":\"sofi-2026-s1\",\"validFrom\":\"2026-01-01\",\"validUntil\":\"2026-06-30\",\"reward\":{\"zh\":\"最高 $400\",\"en\":\"Up to $400\"},\"summary\":{\"zh\":\"25 天内 DD $1,000 得 $50；DD $5,000 得 $400。奖励约 7 天内到账。\",\"en\":\"$1,000 DD within 25 days → $50; $5,000 → $400. Bonus ~7 days.\"},\"requirements\":{\"zh\":[\"25 天内完成 Direct Deposit\",\"金额分档累进\",\"以官网条款为准\"],\"en\":[\"DD within 25 days\",\"Tiered amounts\",\"Official terms apply\"]},\"referralUrl\":\"https://www.sofi.com/invite/your-code\",\"officialUrl\":\"https://www.sofi.com/legal/banking/referral-program-terms/\",\"tags\":{\"zh\":[\"线上\",\"高奖励\"],\"en\":[\"Online\",\"High reward\"]},\"changeNote\":{\"zh\":\"2026 上半年维持 2025 末档奖励结构。\",\"en\":\"H1 2026 kept the same tier structure as late 2025.\"}},{\"id\":\"sofi-2025\",\"validFrom\":\"2025-06-01\",\"validUntil\":\"2025-12-31\",\"reward\":{\"zh\":\"最高 $300\",\"en\":\"Up to $300\"},\"summary\":{\"zh\":\"25 天内 DD $1,000 得 $50；DD $4,000 得 $300。\",\"en\":\"$1,000 DD → $50; $4,000 DD → $300 within 25 days.\"},\"requirements\":{\"zh\":[\"25 天内 DD\",\"分档奖励\",\"需 SSN\"],\"en\":[\"DD within 25 days\",\"Tiered bonus\",\"SSN required\"]},\"referralUrl\":\"https://www.sofi.com/invite/your-code\",\"officialUrl\":\"https://www.sofi.com/legal/banking/referral-program-terms/\",\"changeNote\":{\"zh\":\"最高档从 $300 上调至 2026 年的 $400。\",\"en\":\"Top tier raised from $300 to $400 in 2026.\"}}]}",
+      "sortOrder": 3,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "revolut",
+      "siteRebateUsd": 40,
+      "siteRebateLabelZh": "本站返现 $40",
+      "siteRebateLabelEn": "$40 site cashback",
+      "programJson": "{\"id\":\"revolut\",\"category\":\"bank\",\"displayGroup\":\"bank-neobank\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Revolut\",\"en\":\"Revolut\"},\"editions\":[{\"id\":\"revolut-2026\",\"validFrom\":\"2026-07-01\",\"validUntil\":null,\"reward\":{\"zh\":\"官方邀请奖励 + 本站返现 $40\",\"en\":\"Official refer bonus + $40 site cashback\"},\"summary\":{\"zh\":\"通过邀请链接注册，Residence 选美国，充值 $40，订购 $2.99 实体卡并完成 3 笔 ≥$10 消费；官方奖励约 2 天到账，达标后联系本站领取 $40 返现。\",\"en\":\"Sign up via referral, select US residence, deposit $40, order the $2.99 card, and complete 3 purchases of $10+ each. Official reward ~2 days; contact us for $40 site cashback after qualifying.\"},\"requirements\":{\"zh\":[\"须通过本站邀请链接注册\",\"Residence 选择美国\",\"充值至少 $40\",\"订购 $2.99 实体借记卡\",\"完成 3 笔单笔 ≥ $10 的消费\",\"官方奖励约 2 个工作日到账\",\"达标后联系站长领取本站 $40 返现\"],\"en\":[\"Sign up via our referral link\",\"Select United States as residence\",\"Deposit at least $40\",\"Order the $2.99 physical debit card\",\"Complete 3 transactions of $10+ each\",\"Official reward posts in ~2 business days\",\"Contact site owner for $40 cashback after qualifying\"]},\"referralUrl\":\"https://revolut.com/referral/?referral-code=jiajun_7r_l4pt!JUL2-26-AR-US-H1-REFBLOCK-AE&geo-redirect\",\"officialUrl\":\"https://www.revolut.com/\",\"tags\":{\"zh\":[\"线上\",\"需消费\"],\"en\":[\"Online\",\"Spending required\"]},\"changeNote\":{\"zh\":\"新增 Revolut 邀请：充值 $40 + 三笔 $10+ 消费，本站额外返现 $40。\",\"en\":\"Added Revolut refer: $40 deposit + three $10+ purchases; $40 site cashback.\"}}],\"howToClaim\":{\"zh\":[\"点击本站「打开邀请链接」进入 Revolut 注册（Join me and over 75 million users who love Revolut）。\",\"注册时 Residence 选择美国（United States），其余信息按真实情况正常填写。\",\"完成注册后向账户充值 $40。\",\"在卡片选项中选择 $2.99 的实体借记卡并完成订购。\",\"使用 Revolut 卡完成 3 笔单笔 ≥ $10 的消费（可分多天完成）。\",\"官方邀请奖励通常约 2 个工作日到账。\",\"完成上述条件后联系站长，领取本站承诺的 $40 返现。\"],\"en\":[\"Open our referral link to sign up for Revolut (Join over 75 million Revolut users).\",\"Select United States as your residence during signup; fill in the rest normally.\",\"Deposit at least $40 into your account.\",\"Choose and order the $2.99 physical debit card.\",\"Make 3 separate purchases of $10 or more each with your Revolut card.\",\"The official referral reward typically posts within about 2 business days.\",\"After completing all steps, contact the site owner to claim the $40 site cashback.\"]},\"practicalSteps\":{\"zh\":[\"务必从本站邀请链接进入，否则 refer 可能不计入。\",\"充值 $40 后留足余额用于三笔 $10+ 消费及可能的卡费。\",\"消费可用日常购物、订阅等，确认每笔单笔金额 ≥ $10。\",\"官方奖励与本站 $40 返现分开发放：先等官方到账，再联系本站登记返现。\"],\"en\":[\"Always start from our referral link so the refer is tracked.\",\"Keep enough balance after the $40 deposit for three $10+ purchases and card fees.\",\"Everyday purchases count; each transaction must be at least $10.\",\"Official reward and site cashback are separate—claim site rebate after you qualify.\"]}}",
+      "sortOrder": 4,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "capital-one-360",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"capital-one-360\",\"category\":\"bank\",\"displayGroup\":\"bank-national\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Capital One 360\",\"en\":\"Capital One 360\"},\"editions\":[{\"id\":\"cap1-2026\",\"validFrom\":\"2026-01-15\",\"validUntil\":\"2026-12-31\",\"reward\":{\"zh\":\"$300\",\"en\":\"$300\"},\"summary\":{\"zh\":\"75 天内完成两笔 ≥$500 的 Direct Deposit（ACH 可能计入，以条款为准）。\",\"en\":\"Two $500+ direct deposits within 75 days (ACH may qualify).\"},\"requirements\":{\"zh\":[\"建议先申信用卡再开 checking\",\"到账周期 45–67 天\",\"需 SSN\"],\"en\":[\"Some open card first\",\"Bonus posts in 45–67 days\",\"SSN required\"]},\"referralUrl\":\"https://capitalone.com/refer/your-code\",\"officialUrl\":\"https://www.capitalone.com/digital/tools/refer-a-friend/\",\"tags\":{\"zh\":[\"线上\",\"需耐心\"],\"en\":[\"Online\",\"Longer wait\"]},\"changeNote\":{\"zh\":\"2026 新版活动上线，奖励从 $250 恢复至 $300。\",\"en\":\"2026 campaign restored bonus from $250 to $300.\"}},{\"id\":\"cap1-2025\",\"validFrom\":\"2025-01-01\",\"validUntil\":\"2025-12-31\",\"reward\":{\"zh\":\"$250\",\"en\":\"$250\"},\"summary\":{\"zh\":\"75 天内两笔 ≥$500 DD，奖励略低于 2026 版。\",\"en\":\"Two $500+ DD within 75 days; lower bonus than 2026.\"},\"requirements\":{\"zh\":[\"两笔 DD 各 ≥$500\",\"75 天窗口\",\"需 SSN\"],\"en\":[\"Two $500+ DD\",\"75-day window\",\"SSN required\"]},\"officialUrl\":\"https://www.capitalone.com/digital/tools/refer-a-friend/\",\"changeNote\":{\"zh\":\"2025 全年奖励下调，2026 已更新回 $300。\",\"en\":\"2025 bonus was reduced; updated to $300 in 2026.\"}}]}",
+      "sortOrder": 5,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "bofa",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"bofa\",\"category\":\"bank\",\"offerKind\":\"signup_bonus\",\"brandName\":{\"zh\":\"Bank of America\",\"en\":\"Bank of America\"},\"editions\":[{\"id\":\"bofa-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":\"2026-05-31\",\"reward\":{\"zh\":\"最高 $500\",\"en\":\"Up to $500\"},\"summary\":{\"zh\":\"新 checking 客户：90 天内 Qualifying Direct Deposit 达标，分 $100 / $300 / $500 三档。无公开 refer 邀请计划。\",\"en\":\"New checking customers: tiered bonus with qualifying direct deposits within 90 days. No public refer-a-friend for checking.\"},\"requirements\":{\"zh\":[\"须为 12 个月内未持有过 BofA checking 的新客户\",\"通过官网活动页开户\",\"90 天内 DD 达标\",\"线下/线上视活动页说明\"],\"en\":[\"New checking customer (no personal checking in past 12 months)\",\"Open via official promo page\",\"Qualifying DD within 90 days\",\"Branch or online per offer\"]},\"officialUrl\":\"https://promotions.bankofamerica.com/\",\"requiresInPerson\":false,\"tags\":{\"zh\":[\"开户奖励\",\"无 refer\"],\"en\":[\"Sign-up bonus\",\"No refer\"]},\"changeNote\":{\"zh\":\"2026 年维持三档 DD 奖励；信用卡 refer 仅限受邀持卡客户，本站不收录。\",\"en\":\"2026 tiered DD bonus continues; card refer is invite-only—not listed here.\"}},{\"id\":\"bofa-2025\",\"validFrom\":\"2025-01-01\",\"validUntil\":\"2025-12-31\",\"reward\":{\"zh\":\"最高 $500\",\"en\":\"Up to $500\"},\"summary\":{\"zh\":\"2025 版：新 checking 客户 DD 分档奖励，最高 $500。\",\"en\":\"2025: tiered DD bonus for new checking, up to $500.\"},\"requirements\":{\"zh\":[\"新 checking 客户\",\"90 天内 DD 达标\"],\"en\":[\"New checking customer\",\"Qualifying DD within 90 days\"]},\"officialUrl\":\"https://promotions.bankofamerica.com/\",\"changeNote\":{\"zh\":\"奖励结构与 2026 版基本一致。\",\"en\":\"Bonus structure largely unchanged from 2026 edition.\"}}]}",
+      "sortOrder": 6,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "chase-secure",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"chase-secure\",\"category\":\"bank\",\"offerKind\":\"signup_bonus\",\"brandName\":{\"zh\":\"Chase Secure Checking\",\"en\":\"Chase Secure Checking\"},\"editions\":[{\"id\":\"chase-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":\"2026-07-15\",\"reward\":{\"zh\":\"$400\",\"en\":\"$400\"},\"summary\":{\"zh\":\"90 天内 DD $1,000，奖励约 15 天内发放。\",\"en\":\"$1,000 DD within 90 days; bonus ~15 days.\"},\"requirements\":{\"zh\":[\"线下开户\",\"DS-2019 + 护照 + SSN\",\"24 岁以下免月费\"],\"en\":[\"In-branch\",\"DS-2019 + passport + SSN\",\"Fee waiver under 24\"]},\"officialUrl\":\"https://account.chase.com/consumer/banking/checking-offers\",\"requiresInPerson\":true,\"tags\":{\"zh\":[\"线下\",\"热门\"],\"en\":[\"In-person\",\"Popular\"]},\"changeNote\":{\"zh\":\"2026 春季档维持 $400，7/15 截止。\",\"en\":\"Spring 2026 $400 offer; ends 7/15.\"}},{\"id\":\"chase-2025\",\"validFrom\":\"2025-01-01\",\"validUntil\":\"2025-07-15\",\"reward\":{\"zh\":\"$300\",\"en\":\"$300\"},\"summary\":{\"zh\":\"2025 版：90 天内 DD $1,000 得 $300。\",\"en\":\"2025: $1,000 DD within 90 days → $300.\"},\"requirements\":{\"zh\":[\"线下开户\",\"DS-2019 + 护照 + SSN\"],\"en\":[\"In-branch\",\"DS-2019 + passport + SSN\"]},\"officialUrl\":\"https://account.chase.com/consumer/banking/checking-offers\",\"requiresInPerson\":true,\"changeNote\":{\"zh\":\"2026 年奖励从 $300 上调至 $400。\",\"en\":\"2026 bonus raised from $300 to $400.\"}}]}",
+      "sortOrder": 7,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "citi",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"citi\",\"category\":\"bank\",\"offerKind\":\"signup_bonus\",\"brandName\":{\"zh\":\"Citi Bank Checking\",\"en\":\"Citi Bank Checking\"},\"editions\":[{\"id\":\"citi-2025-winter\",\"validFrom\":\"2025-10-01\",\"validUntil\":\"2026-03-31\",\"reward\":{\"zh\":\"$325\",\"en\":\"$325\"},\"summary\":{\"zh\":\"60 天内完成 qualifying activities；需国内地址证明等材料。\",\"en\":\"Qualifying activities within 60 days; proof of address may be required.\"},\"requirements\":{\"zh\":[\"线下/线上视活动而定\",\"国内驾照等地址证明\",\"带实体 SSN\"],\"en\":[\"Branch or online per offer\",\"Address proof\",\"Physical SSN\"]},\"officialUrl\":\"https://www.citi.com/usc/p/checking/checking-offers\",\"requiresInPerson\":true,\"tags\":{\"zh\":[\"线下\",\"需材料\"],\"en\":[\"In-person\",\"Documents needed\"]},\"changeNote\":{\"zh\":\"2026 春季活动已结束，新一季条款尚未更新至本站。\",\"en\":\"Spring 2026 offer ended; next season not yet updated on this site.\"}},{\"id\":\"citi-2025-summer\",\"validFrom\":\"2025-04-01\",\"validUntil\":\"2025-09-30\",\"reward\":{\"zh\":\"$300\",\"en\":\"$300\"},\"summary\":{\"zh\":\"2025 夏季档：DD 达标得 $300，月费可通过入账 $250 免除。\",\"en\":\"Summer 2025: $300 with qualifying DD; fee waiver with $250 deposit.\"},\"requirements\":{\"zh\":[\"Zelle 可能计入\",\"需 SSN\",\"以柜台条款为准\"],\"en\":[\"Zelle may count\",\"SSN required\",\"Branch terms apply\"]},\"officialUrl\":\"https://www.citi.com/usc/p/checking/checking-offers\",\"changeNote\":{\"zh\":\"秋季档奖励上调至 $325。\",\"en\":\"Fall tier raised bonus to $325.\"}}]}",
+      "sortOrder": 8,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "wells-fargo",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"wells-fargo\",\"category\":\"bank\",\"offerKind\":\"signup_bonus\",\"brandName\":{\"zh\":\"Wells Fargo Checking\",\"en\":\"Wells Fargo Checking\"},\"editions\":[{\"id\":\"wf-2026\",\"validFrom\":\"2026-04-01\",\"validUntil\":null,\"reward\":{\"zh\":\"$325\",\"en\":\"$325\"},\"summary\":{\"zh\":\"90 天内 DD $1,000，奖励约 30 天内到账。24 岁以下免月费。官方活动页可查阅条款，但须线下开户。\",\"en\":\"$1,000 DD within 90 days; bonus ~30 days. Fee waiver under 24. Official offer page for terms; in-branch opening required.\"},\"requirements\":{\"zh\":[\"线下开户（官方活动页线上无法办理）\",\"DS-2019 + 护照 + SSN\",\"90 天内 DD $1,000\"],\"en\":[\"In-branch only (online opening not available on official offer page)\",\"DS-2019 + passport + SSN\",\"$1,000 DD within 90 days\"]},\"officialUrl\":\"https://accountoffers.wellsfargo.com/checkingoffer/\",\"requiresInPerson\":true,\"tags\":{\"zh\":[\"线下\",\"亲测\"],\"en\":[\"In-person\",\"Community-tested\"]},\"changeNote\":{\"zh\":\"2026 春季重新开放 $325 档；社区亲测 BofA ACH + Payroll 约 4 天到账。\",\"en\":\"Spring 2026 $325 offer reopened; community report: BofA ACH + Payroll, bonus in ~4 days.\"}},{\"id\":\"wf-2025\",\"validFrom\":\"2025-01-01\",\"validUntil\":\"2026-03-31\",\"reward\":{\"zh\":\"$325\",\"en\":\"$325\"},\"summary\":{\"zh\":\"与现行版条件相同，已于 2026-03-31 结束。\",\"en\":\"Same terms as current; ended 2026-03-31.\"},\"requirements\":{\"zh\":[\"90 天内 DD $1,000\",\"线下开户\"],\"en\":[\"$1,000 DD in 90 days\",\"In-branch\"]},\"officialUrl\":\"https://accountoffers.wellsfargo.com/checkingoffer/\",\"requiresInPerson\":true}]}",
+      "sortOrder": 9,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "rakuten",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"rakuten\",\"category\":\"other\",\"displayGroup\":\"cashback\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Rakuten\",\"en\":\"Rakuten\"},\"editions\":[{\"id\":\"rakuten-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"新人约 $30 + 日常 2–15% 返现\",\"en\":\"~$30 welcome + 2–15% cash back\"},\"summary\":{\"zh\":\"网购跳转 Rakuten 再下单，Nike、Adidas 等品牌常有高返现。\",\"en\":\"Shop via Rakuten for 2–15% back at Nike, Adidas, and more.\"},\"requirements\":{\"zh\":[\"注册账号\",\"通过 Rakuten 链接跳转下单\",\"按商家条款结算\"],\"en\":[\"Sign up\",\"Shop via Rakuten links\",\"Per-merchant terms\"]},\"referralUrl\":\"https://www.rakuten.com/r/your-code\",\"officialUrl\":\"https://www.rakuten.com/help/article/terms-conditions\",\"tags\":{\"zh\":[\"网购\",\"长期有效\"],\"en\":[\"Online shopping\",\"Ongoing\"]},\"changeNote\":{\"zh\":\"新人奖励维持约 $30，日常返现比例随商家变动。\",\"en\":\"Welcome bonus ~$30; cash-back rates vary by merchant.\"}},{\"id\":\"rakuten-2024\",\"validFrom\":\"2024-01-01\",\"validUntil\":\"2025-12-31\",\"reward\":{\"zh\":\"新人 $40 + 返现\",\"en\":\"$40 welcome + cash back\"},\"summary\":{\"zh\":\"2024–2025 新人奖励曾短暂提高至 $40。\",\"en\":\"2024–2025 welcome bonus was briefly $40.\"},\"requirements\":{\"zh\":[\"首单通过 Rakuten\",\"满足最低消费门槛\"],\"en\":[\"First order via Rakuten\",\"Minimum spend may apply\"]},\"referralUrl\":\"https://www.rakuten.com/r/your-code\",\"officialUrl\":\"https://www.rakuten.com/help/article/terms-conditions\",\"changeNote\":{\"zh\":\"2026 年新人奖回调至约 $30。\",\"en\":\"2026 welcome bonus reduced to ~$30.\"}}]}",
+      "sortOrder": 10,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "weee",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"weee\",\"category\":\"other\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Weee!\",\"en\":\"Weee!\"},\"editions\":[{\"id\":\"weee-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"新人共减 $20；邀请人最高 $20 积分\",\"en\":\"New user $20 off; referrer up to $20 credit\"},\"summary\":{\"zh\":\"华人亚超生鲜配送。新人前两单各减 $10；被邀请人 14 天 / 30 天内各完成一单 >$10 配送，邀请人各得 $10 积分。细则见饮食指南。\",\"en\":\"Asian grocery delivery. New users get $10 off first two orders; referrer earns $10 credit after invitee’s qualifying orders within 14 and 30 days. See food guide for full terms.\"},\"requirements\":{\"zh\":[\"被邀请人须为新用户，且通过专属链接注册\",\"新人券：前两单各减 $10（共 $20）\",\"邀请人：被邀请人 14 天内首单配送 >$10 → $10 积分\",\"邀请人：被邀请人 30 天内再次配送 >$10 → 再 $10 积分\",\"同一配送地址不可有两个以上被邀请账号\",\"每账户最多 100 个成功推荐\"],\"en\":[\"Invitee must be a new user who registers via referral link\",\"New user: $10 off each of first two orders ($20 total)\",\"Referrer: $10 credit after invitee’s first $10+ delivery within 14 days\",\"Referrer: another $10 credit after second $10+ delivery within 30 days\",\"No more than two referred accounts per delivery address\",\"Max 100 successful referrals per account\"]},\"referralUrl\":\"https://www.sayweee.com/zh/account/referral/landing?t=1&referral_id=17824662&lang=zh&utm_source=copyLink\",\"officialUrl\":\"https://www.sayweee.com/zh/help/article/referral-program-terms-and-conditions\",\"tags\":{\"zh\":[\"亚超\",\"生鲜配送\",\"新人友好\"],\"en\":[\"Asian grocery\",\"Delivery\",\"New-user friendly\"]},\"changeNote\":{\"zh\":\"新增 Weee! 邀请：新人 $20 券 + 邀请人最高 $20 积分；完整细则见 /docs/living/food。\",\"en\":\"Added Weee! referral: $20 new-user coupons + up to $20 referrer credit; full terms in /docs/living/food.\"}}]}",
+      "sortOrder": 11,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "total-wireless",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"total-wireless\",\"category\":\"other\",\"displayGroup\":\"promo-other\",\"offerKind\":\"promo\",\"brandName\":{\"zh\":\"Total Wireless\",\"en\":\"Total Wireless\"},\"editions\":[{\"id\":\"tw-iphone13-2025\",\"validFrom\":\"2025-06-01\",\"validUntil\":\"2026-02-28\",\"reward\":{\"zh\":\"iPhone 13 128GB 约 $49.99\",\"en\":\"iPhone 13 128GB ~$49.99\"},\"summary\":{\"zh\":\"转网 + $50/月套餐，首月总成本约 $100。激活约 60 天后可能解锁。\",\"en\":\"Port-in + $50/mo plan; ~$100 first month. May unlock after ~60 days.\"},\"requirements\":{\"zh\":[\"转入新号码\",\"购买指定套餐\",\"解锁政策以官网为准\"],\"en\":[\"Port in\",\"Eligible plan\",\"Unlock per carrier terms\"]},\"officialUrl\":\"https://www.totalwireless.com/shop/phones\",\"tags\":{\"zh\":[\"转网\",\"硬件\"],\"en\":[\"Port-in\",\"Hardware\"]},\"changeNote\":{\"zh\":\"2026 春季该转网送机活动已结束，新活动尚未更新。\",\"en\":\"Spring 2026 port-in deal ended; next promo not yet posted.\"}},{\"id\":\"tw-iphone13-2024\",\"validFrom\":\"2024-03-01\",\"validUntil\":\"2025-05-31\",\"reward\":{\"zh\":\"iPhone 13 约 $49.99\",\"en\":\"iPhone 13 ~$49.99\"},\"summary\":{\"zh\":\"2024 夏季档：相同转网条件，套餐要求略有不同。\",\"en\":\"Summer 2024: similar port-in; plan requirements differed slightly.\"},\"requirements\":{\"zh\":[\"转网\",\"$45/月套餐（当时）\"],\"en\":[\"Port-in\",\"$45/mo plan (at the time)\"]},\"officialUrl\":\"https://www.totalwireless.com/shop/phones\",\"changeNote\":{\"zh\":\"2025 年套餐涨至 $50/月。\",\"en\":\"2025 plan increased to $50/mo.\"}}]}",
+      "sortOrder": 12,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "utest-wearable-150",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"utest-wearable-150\",\"category\":\"other\",\"displayGroup\":\"ny-study\",\"offerKind\":\"refer\",\"brandName\":{\"zh\":\"Utest 智能手环测试 ①\",\"en\":\"Utest Wearable Band Study 1\"},\"editions\":[{\"id\":\"utest-wearable-150-2026\",\"validFrom\":\"2026-07-07\",\"validUntil\":null,\"reward\":{\"zh\":\"$150\",\"en\":\"$150\"},\"summary\":{\"zh\":\"佩戴智能手环完成指定动作，约 3 小时；无需口语能力，操作较简单。建议先用注册链接创建 Utest 账号并拿到 Utest ID。\",\"en\":\"Wear a smart band and complete assigned movements for about 3 hours. Minimal speaking required. Create a Utest account first to get a Utest ID.\"},\"requirements\":{\"zh\":[\"先注册 Utest 账号，完成后获得 Utest ID\",\"建议提前 10-15 天提交申请\",\"申请来源建议填写“朋友介绍”\",\"Refer 信息可联系 Email: jiajunchi@ucsb.edu 或微信: cjj20040608\",\"奖励通常以 VISA 电子卡发放，约 48 小时到账\"],\"en\":[\"Create a Utest account first and get a Utest ID\",\"Apply about 10-15 days in advance\",\"Use \\\"friend referral\\\" as the source when asked\",\"For referral details, contact Email: jiajunchi@ucsb.edu or WeChat: cjj20040608\",\"Reward is usually paid as a Visa e-gift card in about 48 hours\"]},\"referralUrl\":\"https://www.utest.com/ref2494414\",\"officialUrl\":\"https://docs.google.com/forms/d/e/1FAIpQLSc7LKEUSmHQVlXFj-tjbiIjl9GmhiCigclgH5-Fx1Q17Ec_xw/viewform\",\"tags\":{\"zh\":[\"纽约\",\"约 3 小时\",\"无需口语\"],\"en\":[\"New York\",\"~3 hours\",\"Low speaking\"]},\"changeNote\":{\"zh\":\"新增 Utest 智能手环测试，注册链接用于先获取 Utest ID，报名表用于提交测试申请。\",\"en\":\"Added Utest wearable band study: sign up first for a Utest ID, then submit the study form.\"}}]}",
+      "sortOrder": 13,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "wearable-study-225",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"wearable-study-225\",\"category\":\"other\",\"displayGroup\":\"ny-study\",\"offerKind\":\"promo\",\"brandName\":{\"zh\":\"手环测试 ②\",\"en\":\"Wearable Band Study 2\"},\"editions\":[{\"id\":\"wearable-study-225-2026\",\"validFrom\":\"2026-07-07\",\"validUntil\":null,\"reward\":{\"zh\":\"$225\",\"en\":\"$225\"},\"summary\":{\"zh\":\"智能手环相关线下测试，约 3 小时；报名后可能需要用美国电话确认预约。\",\"en\":\"In-person wearable band study, about 3 hours. A US phone verification call may be required after applying.\"},\"requirements\":{\"zh\":[\"建议提前 10-15 天提交申请\",\"申请来源建议填写“朋友介绍”\",\"Refer 信息可联系 Email: jiajunchi@ucsb.edu 或微信: cjj20040608\",\"“是否参加过其他手环测试”即使报过 $150 项目也选 No，因为不是同一家公司\",\"留意陌生来电；未接到确认电话可主动联系项目方确认预约\"],\"en\":[\"Apply about 10-15 days in advance\",\"Use \\\"friend referral\\\" as the source when asked\",\"For referral details, contact Email: jiajunchi@ucsb.edu or WeChat: cjj20040608\",\"For prior wearable-study participation, choose No even if you applied for the $150 study because this is a different company\",\"Watch for unknown calls; contact the study team if the confirmation call does not arrive\"]},\"officialUrl\":\"https://schlesinger.focusvision.com/survey/selfserve/5c0/240600#?\",\"requiresInPerson\":true,\"tags\":{\"zh\":[\"纽约\",\"约 3 小时\",\"需电话确认\"],\"en\":[\"New York\",\"~3 hours\",\"Phone confirmation\"]},\"changeNote\":{\"zh\":\"新增 $225 手环测试，报名后重点关注电话确认环节。\",\"en\":\"Added the $225 wearable band study; phone confirmation is the key follow-up step.\"}}]}",
+      "sortOrder": 14,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "ny-test",
+      "siteRebateUsd": 5,
+      "siteRebateLabelZh": "约 $5 演示返现",
+      "siteRebateLabelEn": "About $5 demo rebate",
+      "programJson": "{\"id\":\"ny-test\",\"category\":\"other\",\"displayGroup\":\"ny-study\",\"offerKind\":\"promo\",\"brandName\":{\"zh\":\"纽约测试（站内演示）\",\"en\":\"NYC Test (demo)\"},\"howToClaim\":{\"zh\":[\"仅用于站内卡片与分类排序演示\",\"无需真实开户\"],\"en\":[\"Demo card for layout testing only\",\"No real signup required\"]},\"practicalSteps\":{\"zh\":[\"在管理后台可替换为真实纽约线下测试项目\"],\"en\":[\"Replace with a real NYC study in admin when ready\"]},\"editions\":[{\"id\":\"ny-test-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"$50（演示）\",\"en\":\"$50 (demo)\"},\"summary\":{\"zh\":\"纽约地区线下测试占位项目，与 Utest / 手环测试等同组展示。\",\"en\":\"Placeholder NYC in-person study; grouped with Utest / wearable studies.\"},\"requirements\":{\"zh\":[\"演示数据\",\"联系站长获取真实测试档期\"],\"en\":[\"Demo data\",\"Contact site owner for real study slots\"]},\"tags\":{\"zh\":[\"纽约\",\"演示\"],\"en\":[\"New York\",\"Demo\"]}}]}",
+      "sortOrder": 15,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "instarem",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"instarem\",\"brandName\":{\"zh\":\"Instarem\",\"en\":\"Instarem\"},\"editions\":[{\"id\":\"instarem-2026\",\"validFrom\":\"2026-08-01\",\"validUntil\":\"2026-09-30\",\"reward\":{\"zh\":\"首笔3000刀内更优汇率 + $25 Prezzee 礼品卡\",\"en\":\"Better rate on first $3k + $25 Prezzee gift card\"},\"summary\":{\"zh\":\"8/1–9/30 活动；首笔汇款3000刀内汇率更优（约千分之六）。\",\"en\":\"Promo through Sep 30, 2026; better rate on first $3k transfer.\"},\"requirements\":{\"zh\":[\"通过官方活动页注册\",\"完成首笔汇款\"],\"en\":[\"Sign up via promo\",\"Complete first transfer\"]},\"tags\":{\"zh\":[\"换汇\",\"限时\"],\"en\":[\"Remittance\",\"Limited time\"]}}],\"practicalSteps\":{\"zh\":[\"汇率备注：6.7059，优惠后约 6.7431\"],\"en\":[\"Rate note: ~6.7059, ~6.7431 after promo\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 16,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "lemfi",
+      "siteRebateUsd": 10,
+      "siteRebateLabelZh": "本站返现 10刀",
+      "siteRebateLabelEn": "$10 site cashback",
+      "programJson": "{\"id\":\"lemfi\",\"brandName\":{\"zh\":\"LemFi\",\"en\":\"LemFi\"},\"editions\":[{\"id\":\"lemfi-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"$20 官方奖励 + 本站返现 $10\",\"en\":\"$20 official + $10 site cashback\"},\"summary\":{\"zh\":\"验证账户并汇款 ≥$100；官方 $20，本站另返 $10。\",\"en\":\"Verify and send $100+; $20 official bonus + $10 from site.\"},\"requirements\":{\"zh\":[\"汇款 $100\",\"使用 Refer 码 JIAJCETW\",\"等待约 1 天到账\"],\"en\":[\"Send $100+\",\"Code JIAJCETW\",\"~1 day to post\"]},\"referralUrl\":\"https://referral.lemfi.com/spBv1MpHk5b\",\"tags\":{\"zh\":[\"换汇\",\"Refer JIAJCETW\"],\"en\":[\"Remittance\",\"Code JIAJCETW\"]}}],\"howToClaim\":{\"zh\":[\"打开邀请链接注册 LemFi\",\"验证账户并完成 ≥$100 汇款\",\"Refer 码：JIAJCETW\",\"达标后联系站长领取本站 $10 返现\"],\"en\":[\"Sign up via referral link\",\"Verify and send $100+\",\"Code: JIAJCETW\",\"Contact site owner for $10 cashback\"]},\"practicalSteps\":{\"zh\":[\"汇率备注：6.702\"],\"en\":[\"Rate note: 6.702\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 17,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "panda-remit",
+      "siteRebateUsd": 7,
+      "siteRebateLabelZh": "本站返现 7刀",
+      "siteRebateLabelEn": "$7 site cashback",
+      "programJson": "{\"id\":\"panda-remit\",\"brandName\":{\"zh\":\"熊猫速汇 Panda Remit\",\"en\":\"Panda Remit\"},\"editions\":[{\"id\":\"panda-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"免手续费/汇率提升 + 本站返现 $7\",\"en\":\"Fee waiver/rate boost + $7 site cashback\"},\"summary\":{\"zh\":\"使用 Refer 码 RS46GM 成功汇款；首次汇款免手续费。\",\"en\":\"Use code RS46GM; first transfer fee waiver.\"},\"requirements\":{\"zh\":[\"Refer 码 RS46GM\",\"成功汇款\"],\"en\":[\"Code RS46GM\",\"Complete transfer\"]},\"referralUrl\":\"https://p.pandaremit.com/h5activity/launchInvitationCode?countryCode=USA&shareCode=UlM0NkdN&lang=zh-hans\",\"tags\":{\"zh\":[\"换汇\",\"Refer RS46GM\"],\"en\":[\"Remittance\",\"Code RS46GM\"]}}],\"howToClaim\":{\"zh\":[\"打开邀请链接或输入 Refer 码 RS46GM\",\"完成汇款\",\"达标后联系站长领取 $7 返现\"],\"en\":[\"Open link or enter RS46GM\",\"Complete transfer\",\"Claim $7 site cashback after qualifying\"]},\"practicalSteps\":{\"zh\":[\"汇率备注：6.722（含手续费实际约 6.68）\"],\"en\":[\"Rate note: ~6.722 (~6.68 after fees)\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 18,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "taptap",
+      "siteRebateUsd": 10,
+      "siteRebateLabelZh": "本站返现 10刀",
+      "siteRebateLabelEn": "$10 site cashback",
+      "programJson": "{\"id\":\"taptap\",\"brandName\":{\"zh\":\"Taptap Send\",\"en\":\"Taptap Send\"},\"editions\":[{\"id\":\"taptap-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"$10 官方奖励 + 本站返现 $10\",\"en\":\"$10 official + $10 site cashback\"},\"summary\":{\"zh\":\"汇款 ≥$51 成功到账；兑换码 JIAJUN9。\",\"en\":\"Send $51+; promo code JIAJUN9.\"},\"requirements\":{\"zh\":[\"汇款 ≥$51\",\"Refer 码 JIAJUN9\",\"成功到账\"],\"en\":[\"Send $51+\",\"Code JIAJUN9\",\"Transfer completes\"]},\"referralUrl\":\"https://taptapsend.onelink.me/Lrab/appreferral\",\"tags\":{\"zh\":[\"换汇\",\"Refer JIAJUN9\"],\"en\":[\"Remittance\",\"Code JIAJUN9\"]}}],\"howToClaim\":{\"zh\":[\"打开邀请链接下载 App\",\"注册时输入兑换码 JIAJUN9\",\"汇款 ≥$51\",\"达标后联系站长领取 $10 返现\"],\"en\":[\"Open referral link\",\"Enter JIAJUN9 at signup\",\"Send $51+\",\"Claim $10 site cashback\"]},\"practicalSteps\":{\"zh\":[\"汇率备注：6.58（拿了奖励可考虑换平台）\"],\"en\":[\"Rate note: 6.58\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 19,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "remitly",
+      "siteRebateUsd": 10,
+      "siteRebateLabelZh": "本站返现 10刀",
+      "siteRebateLabelEn": "$10 site cashback",
+      "programJson": "{\"id\":\"remitly\",\"brandName\":{\"zh\":\"Remitly\",\"en\":\"Remitly\"},\"editions\":[{\"id\":\"remitly-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"首笔 $100+ 减 $5 + 本站返现 $10\",\"en\":\"$5 off first $100+ transfer + $10 site cashback\"},\"summary\":{\"zh\":\"仅限 20 人；首笔转账 $100 以上。\",\"en\":\"Limited to 20 people; first transfer $100+.\"},\"requirements\":{\"zh\":[\"首笔转账 ≥$100\",\"名额有限（约 20 人）\"],\"en\":[\"First transfer $100+\",\"Limited slots (~20)\"]},\"referralUrl\":\"https://www.remitly.com/r/2phnuadt\",\"tags\":{\"zh\":[\"换汇\",\"名额有限\"],\"en\":[\"Remittance\",\"Limited slots\"]}}],\"practicalSteps\":{\"zh\":[\"汇率备注：6.689（3–6 天到账）；实际约 6.60，汇率一般\"],\"en\":[\"Rate note: ~6.689; settles in 3–6 days\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 20,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "wirebarley",
+      "siteRebateUsd": null,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"wirebarley\",\"brandName\":{\"zh\":\"WireBarley\",\"en\":\"WireBarley\"},\"editions\":[{\"id\":\"wirebarley-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"$10 转账优惠券\",\"en\":\"$10 transfer coupon\"},\"summary\":{\"zh\":\"注册后赠送 $10 优惠券；汇率偏低，谨慎选择。\",\"en\":\"Register for $10 coupon; rate not competitive.\"},\"requirements\":{\"zh\":[\"注册账户\"],\"en\":[\"Sign up\"]},\"tags\":{\"zh\":[\"换汇\",\"不推荐\"],\"en\":[\"Remittance\",\"Low priority\"]}}],\"practicalSteps\":{\"zh\":[\"避坑：转 $100 只送 $10 优惠券，汇率也偏低\",\"汇率备注：6.69\"],\"en\":[\"Coupon-only bonus; weak rate\",\"Rate note: 6.69\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 21,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "wise",
+      "siteRebateUsd": 10,
+      "siteRebateLabelZh": "本站返现 10刀",
+      "siteRebateLabelEn": "$10 site cashback",
+      "programJson": "{\"id\":\"wise\",\"brandName\":{\"zh\":\"Wise\",\"en\":\"Wise\"},\"editions\":[{\"id\":\"wise-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":null,\"reward\":{\"zh\":\"$600 免手续费额度 + 本站返现 $10\",\"en\":\"$600 fee-free limit + $10 site cashback\"},\"summary\":{\"zh\":\"注册并转账超过 $300；获 $600 免手续费额度。\",\"en\":\"Register and transfer $300+ for fee-free allowance.\"},\"requirements\":{\"zh\":[\"注册 Wise\",\"转账超过 $300\"],\"en\":[\"Sign up\",\"Transfer $300+\"]},\"referralUrl\":\"https://wise.com/invite/ilpc/jiajunc191\",\"tags\":{\"zh\":[\"换汇\",\"大额友好\"],\"en\":[\"Remittance\",\"Higher limits\"]}}],\"howToClaim\":{\"zh\":[\"打开邀请链接注册\",\"完成 ≥$300 转账\",\"达标后联系站长领取 $10 返现\"],\"en\":[\"Sign up via link\",\"Transfer $300+\",\"Claim $10 site cashback\"]},\"practicalSteps\":{\"zh\":[\"汇率备注：6.74（实际约 6.62，手续费偏高）\"],\"en\":[\"Rate note: ~6.74 (~6.62 effective)\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 22,
+      "published": 1,
+      "aiEnabled": 1
+    },
+    {
+      "id": "western-union",
+      "siteRebateUsd": 0,
+      "siteRebateLabelZh": "",
+      "siteRebateLabelEn": "",
+      "programJson": "{\"id\":\"western-union\",\"brandName\":{\"zh\":\"Western Union\",\"en\":\"Western Union\"},\"editions\":[{\"id\":\"wu-2026\",\"validFrom\":\"2026-01-01\",\"validUntil\":\"2026-06-30\",\"reward\":{\"zh\":\"$10 礼品卡（已失效）\",\"en\":\"$10 gift card (expired)\"},\"summary\":{\"zh\":\"活动已于 2026/6/30 前结束，仅作历史参考。\",\"en\":\"Offer ended before Jun 30, 2026; kept for reference.\"},\"requirements\":{\"zh\":[\"30 天内转账 ≥$101\",\"活动已结束\"],\"en\":[\"$101+ within 30 days\",\"Offer ended\"]},\"referralUrl\":\"https://ssqt.co/mQVLhFT\",\"tags\":{\"zh\":[\"换汇\",\"已过期\"],\"en\":[\"Remittance\",\"Expired\"]}}],\"practicalSteps\":{\"zh\":[\"汇率备注：6.636（$1.99 手续费）\"],\"en\":[\"Rate note: 6.636 ($1.99 fee)\"]},\"category\":\"other\",\"offerKind\":\"refer\",\"displayGroup\":\"remittance\"}",
+      "sortOrder": 23,
+      "published": 1,
+      "aiEnabled": 1
+    }
+  ]
+}

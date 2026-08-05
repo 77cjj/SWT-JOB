@@ -46,7 +46,9 @@ public final class ReferralDealMarkdownGenerator {
         sb.append("- [薅羊毛首页](/deals)：当前活动、邀请链接、领取攻略\n");
         sb.append("- [副业与羊毛攻略](/docs/return/side-hustles)：原理与深度说明\n");
         sb.append("- [低存款门槛银行开户奖励](/docs/return/low-deposit-bank-bonuses)\n\n");
-        sb.append("## 当前上架项目\n\n");
+        sb.append("## 换汇 / 汇款类（Remitly、Wise、LemFi 等）\n\n");
+        sb.append("关键词：换汇、汇款、remittance、refer 链接、汇率、首笔转账\n\n");
+        sb.append("## 当前纳入 AI 问答的项目\n\n");
         if (deals == null || deals.isEmpty()) {
             sb.append("（暂无已上架项目）\n");
             return sb.toString();

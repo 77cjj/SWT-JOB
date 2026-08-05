@@ -113,6 +113,7 @@ rag:
   referral-deals:
     sync-enabled: true
     sync-on-startup: true
+    auto-seed-missing: true
     inject-resources: true
     max-inject-count: 3
     knowledge-base-name: SWT薅羊毛

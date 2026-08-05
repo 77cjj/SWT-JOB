@@ -10,6 +10,7 @@ export interface ReferralDealRecord {
   program: ReferralProgram;
   sortOrder?: number;
   published?: number;
+  aiEnabled?: number;
 }
 
 export interface ReferralDealSavePayload {
@@ -20,6 +21,7 @@ export interface ReferralDealSavePayload {
   programJson: string;
   sortOrder?: number;
   published?: number;
+  aiEnabled?: number;
 }
 
 export type DealRecordSource = 'static' | 'database';
@@ -30,6 +32,7 @@ export interface AdminDealRow {
   inDatabase: boolean;
   published: number;
   sortOrder: number;
+  aiEnabled: number;
 }
 
 function applyRecord(base: ReferralProgram, record: ReferralDealRecord): ReferralProgram {
@@ -91,6 +94,7 @@ export function buildAdminDealRows(records: ReferralDealRecord[]): AdminDealRow[
       inDatabase: Boolean(record),
       published: record?.published ?? 1,
       sortOrder: record?.sortOrder ?? 9999,
+      aiEnabled: record != null ? (record.aiEnabled ?? 1) : 0,
     });
   }
 
@@ -102,6 +106,7 @@ export function buildAdminDealRows(records: ReferralDealRecord[]): AdminDealRow[
       inDatabase: true,
       published: record.published ?? 1,
       sortOrder: record.sortOrder ?? 9999,
+      aiEnabled: record.aiEnabled ?? 1,
     });
   }
 
@@ -170,7 +175,24 @@ export async function bulkUpsertReferralDeals(items: ReferralDealSavePayload[]) 
   await api.post('/referral-deals/bulk-upsert', { items });
 }
 
-export function programToSavePayload(program: ReferralProgram, published = 1, sortOrder = 0): ReferralDealSavePayload {
+export async function setReferralDealAiEnabled(id: string, enabled: number) {
+  await api.patch(`/referral-deals/${id}/ai-enabled?enabled=${enabled}`);
+}
+
+export async function bulkSetReferralDealAiEnabled(enabled: number, ids?: string[]) {
+  return api.post<number>('/referral-deals/bulk-ai-enabled', { aiEnabled: enabled, ids });
+}
+
+export async function seedMissingReferralDeals() {
+  return api.post<number>('/referral-deals/seed-missing');
+}
+
+export function programToSavePayload(
+  program: ReferralProgram,
+  published = 1,
+  sortOrder = 0,
+  aiEnabled = 1,
+): ReferralDealSavePayload {
   const { siteRebateUsd, siteRebateLabel, ...jsonProgram } = program;
   return {
     id: program.id,
@@ -180,5 +202,6 @@ export function programToSavePayload(program: ReferralProgram, published = 1, so
     programJson: JSON.stringify(jsonProgram, null, 2),
     sortOrder,
     published,
+    aiEnabled,
   };
 }

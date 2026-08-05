@@ -38,6 +38,8 @@ export interface DealAdminForm {
   offerKind: OfferKind;
   published: string;
   sortOrder: string;
+  /** 1=纳入 AI 问答知识库 */
+  aiEnabled: string;
   pinned: boolean;
 }
 
@@ -96,6 +98,7 @@ export const emptyDealAdminForm = (): DealAdminForm => ({
   offerKind: 'refer',
   published: '1',
   sortOrder: '0',
+  aiEnabled: '1',
   pinned: false,
 });
 
@@ -195,13 +198,14 @@ export function notionRowToAdminForm(row: NotionDealRow, fallbackId?: string): D
     offerKind: 'refer',
     published: row['列 1']?.trim() === '1' ? '1' : '0',
     sortOrder: '0',
+    aiEnabled: '1',
     pinned: false,
   };
 }
 
 export function programToAdminForm(
   program: ReferralProgram,
-  meta?: { published?: number; sortOrder?: number },
+  meta?: { published?: number; sortOrder?: number; aiEnabled?: number },
 ): DealAdminForm {
   const edition = activeEdition(program);
   const referralUrl = edition?.referralUrl ?? '';
@@ -241,6 +245,7 @@ export function programToAdminForm(
     offerKind: program.offerKind,
     published: String(meta?.published ?? 1),
     sortOrder: String(meta?.sortOrder ?? 0),
+    aiEnabled: String(meta?.aiEnabled ?? 1),
     pinned: Boolean(program.pinned),
   };
 }

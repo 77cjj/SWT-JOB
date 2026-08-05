@@ -15,8 +15,8 @@ import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
 import { storage } from "@/utils/storage";
-import { getTranslation } from "../../../src/i18n";
-import { readUiLanguage } from "../../../src/i18n/readUiLanguage";
+import { getTranslation } from "../../src/i18n";
+import { readUiLanguage } from "../../src/i18n/readUiLanguage";
 
 export type AuthDialogMode = "login" | "register";
 

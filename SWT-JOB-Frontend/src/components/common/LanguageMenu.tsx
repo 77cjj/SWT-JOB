@@ -39,6 +39,8 @@ export function LanguageMenu({ iconButtonSx }: LanguageMenuProps) {
         anchorEl={anchor}
         open={Boolean(anchor)}
         onClose={() => setAnchor(null)}
+        // 高于登录/注册弹窗与抬高后的顶栏，避免语言列表被挡住
+        sx={{ zIndex: 1400 }}
         slotProps={{
           paper: {
             sx: { maxHeight: 360, minWidth: 220 },

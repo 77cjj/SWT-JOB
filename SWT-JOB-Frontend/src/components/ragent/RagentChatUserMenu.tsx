@@ -58,9 +58,9 @@ export function RagentChatUserMenu() {
       <Button
         variant="outlined"
         size="small"
-        onClick={() => openLoginDialog('登录后可保存对话与使用完整 AI 功能')}
+        onClick={() => openLoginDialog(t('auth.loginReasonChat'))}
       >
-        请登录
+        {t('auth.pleaseLogin')}
       </Button>
     );
   }

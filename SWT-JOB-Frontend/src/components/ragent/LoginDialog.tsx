@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,18 +15,42 @@ import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 import { WeChatSignInButton } from '@/components/auth/WeChatSignInButton';
 import { useAuthStore } from '@/stores/authStore';
+import { useI18n } from '../../context/I18nContext';
 import { useSupportWidgetStore } from '../../stores/supportWidgetStore';
 
 export function LoginDialog() {
+  const { t, tWithParams } = useI18n();
   const open = useAuthStore((s) => s.loginDialogOpen);
+  const mode = useAuthStore((s) => s.authDialogMode);
   const reason = useAuthStore((s) => s.loginDialogReason);
   const closeLoginDialog = useAuthStore((s) => s.closeLoginDialog);
+  const setAuthDialogMode = useAuthStore((s) => s.setAuthDialogMode);
   const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const requestSupportOpen = useSupportWidgetStore((s) => s.requestOpen);
 
   const [showPassword, setShowPassword] = React.useState(false);
-  const [form, setForm] = React.useState({ username: '', password: '' });
+  const [form, setForm] = React.useState({
+    username: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [localError, setLocalError] = React.useState<string | null>(null);
+
+  const isRegister = mode === 'register';
+
+  React.useEffect(() => {
+    if (!open) {
+      setForm({ username: '', password: '', confirmPassword: '' });
+      setLocalError(null);
+      setShowPassword(false);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    setLocalError(null);
+  }, [mode]);
 
   const handleClose = () => {
     if (isLoading) return;
@@ -36,8 +59,9 @@ export function LoginDialog() {
 
   const handlePasswordLogin = async (event: React.FormEvent) => {
     event.preventDefault();
+    setLocalError(null);
     if (!form.username.trim() || !form.password.trim()) {
-      toast.error('请输入用户名和密码');
+      setLocalError(t('auth.needUsernamePassword'));
       return;
     }
     try {
@@ -48,45 +72,95 @@ export function LoginDialog() {
     }
   };
 
+  const handleRegister = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLocalError(null);
+    const username = form.username.trim();
+    const password = form.password.trim();
+    const confirmPassword = form.confirmPassword.trim();
+    if (!username || !password) {
+      setLocalError(t('auth.needUsernamePassword'));
+      return;
+    }
+    if (password.length < 6) {
+      setLocalError(t('auth.passwordTooShort'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setLocalError(t('auth.passwordMismatch'));
+      return;
+    }
+    try {
+      await register(username, password);
+      closeLoginDialog();
+    } catch {
+      // toast handled in store
+    }
+  };
+
   const handleForgotPassword = () => {
-    const name = form.username.trim() || '（未填写）';
+    const name = form.username.trim() || t('auth.usernameUnset');
     closeLoginDialog();
-    requestSupportOpen(
-      'human',
-      `【忘记密码】\n用户名：${name}\n请协助重置密码，我会用微信/邮箱接收新密码。\n`,
-    );
-    toast.message('已打开联系站长，说明用户名后即可申请重置密码');
+    requestSupportOpen('human', tWithParams('auth.forgotPasswordDraft', { username: name }));
+    toast.message(t('auth.forgotPasswordToast'));
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (!next ? handleClose() : undefined)}>
+    <Dialog
+      open={open}
+      // 非 modal：顶栏语言切换在弹窗打开时仍可点击；点叉关闭后留在当前页
+      modal={false}
+      onOpenChange={(next) => (!next ? handleClose() : undefined)}
+    >
       <DialogContent
         className="max-w-md rounded-2xl border-border/70 bg-background/95 p-0 shadow-xl backdrop-blur"
         onPointerDownOutside={(event) => {
-          if (!ENABLE_OAUTH_LOGIN) return;
           const target = event.target as HTMLElement | null;
+          if (
+            target?.closest('header') ||
+            target?.closest('.MuiMenu-root') ||
+            target?.closest('.MuiPopover-root') ||
+            target?.closest('.MuiModal-root')
+          ) {
+            event.preventDefault();
+            return;
+          }
+          if (!ENABLE_OAUTH_LOGIN) return;
           if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
             event.preventDefault();
           }
         }}
         onInteractOutside={(event) => {
-          if (!ENABLE_OAUTH_LOGIN) return;
+          // 允许点击顶栏语言菜单等控件，不强制关掉弹窗
           const target = event.target as HTMLElement | null;
+          if (
+            target?.closest('header') ||
+            target?.closest('.MuiMenu-root') ||
+            target?.closest('.MuiPopover-root') ||
+            target?.closest('.MuiModal-root')
+          ) {
+            event.preventDefault();
+            return;
+          }
+          if (!ENABLE_OAUTH_LOGIN) return;
           if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
             event.preventDefault();
           }
         }}
       >
         <DialogHeader className="space-y-2 px-6 pt-6 text-left">
-          <DialogTitle className="font-display text-xl">登录后继续</DialogTitle>
+          <DialogTitle className="font-display text-xl">
+            {isRegister ? t('auth.registerTitle') : t('auth.loginTitle')}
+          </DialogTitle>
           <DialogDescription>
-            {reason ||
-              '使用站点账号密码登录后可使用 AI 问答、保存对话历史。没有账号可先注册。不登录也可以浏览示例问题与站点内容。'}
+            {isRegister
+              ? t('auth.registerDesc')
+              : reason || t('auth.loginDesc')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
-          {ENABLE_OAUTH_LOGIN ? (
+          {!isRegister && ENABLE_OAUTH_LOGIN ? (
             <div className="space-y-2">
               {GOOGLE_CLIENT_ID ? (
                 <div className="flex flex-col items-center gap-1">
@@ -100,80 +174,106 @@ export function LoginDialog() {
               ) : null}
               <AppleSignInButton />
               <WeChatSignInButton />
-              <p className="text-center text-xs text-muted-foreground">
-                Google / Apple 将跳转授权页；微信请用手机扫码
-              </p>
+              <p className="text-center text-xs text-muted-foreground">{t('auth.oauthHint')}</p>
             </div>
           ) : null}
 
-          {ENABLE_OAUTH_LOGIN ? (
+          {!isRegister && ENABLE_OAUTH_LOGIN ? (
             <div className="relative py-1">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">或使用账号密码</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('auth.orPassword')}</span>
               </div>
             </div>
           ) : null}
 
-          <form className="space-y-3" onSubmit={handlePasswordLogin}>
+          <form className="space-y-3" onSubmit={isRegister ? handleRegister : handlePasswordLogin}>
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="用户名"
+                placeholder={
+                  isRegister ? t('auth.usernameHint') : t('auth.usernamePlaceholder')
+                }
                 value={form.username}
                 onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
                 className="pl-10"
                 autoComplete="username"
+                aria-label={t('auth.username')}
               />
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="密码"
+                placeholder={
+                  isRegister ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')
+                }
                 value={form.password}
                 onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
                 className="pl-10 pr-10"
-                autoComplete="current-password"
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                aria-label={t('auth.password')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                aria-label="显示密码"
+                aria-label={t('auth.showPassword')}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                onClick={handleForgotPassword}
-              >
-                忘记密码？
-              </button>
-            </div>
+            {isRegister ? (
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={t('auth.confirmPasswordPlaceholder')}
+                  value={form.confirmPassword}
+                  onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                  className="pl-10"
+                  autoComplete="new-password"
+                  aria-label={t('auth.confirmPassword')}
+                />
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  onClick={handleForgotPassword}
+                >
+                  {t('auth.forgotPassword')}
+                </button>
+              </div>
+            )}
+            {localError ? <p className="text-sm text-destructive">{localError}</p> : null}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? '正在登录…' : '登录'}
+              {isRegister
+                ? isLoading
+                  ? t('auth.registering')
+                  : t('auth.register')
+                : isLoading
+                  ? t('auth.loggingIn')
+                  : t('auth.login')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            没有账号？{' '}
-            <Link
-              href="/register"
+            {isRegister ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
+            <button
+              type="button"
               className="font-medium text-foreground underline-offset-2 hover:underline"
-              onClick={() => closeLoginDialog()}
+              onClick={() => setAuthDialogMode(isRegister ? 'login' : 'register')}
             >
-              去注册
-            </Link>
+              {isRegister ? t('auth.goLogin') : t('auth.goRegister')}
+            </button>
           </p>
 
           <Button type="button" variant="ghost" className="w-full" onClick={handleClose}>
-            暂不登录，继续浏览
+            {t('auth.continueBrowsing')}
           </Button>
         </div>
       </DialogContent>

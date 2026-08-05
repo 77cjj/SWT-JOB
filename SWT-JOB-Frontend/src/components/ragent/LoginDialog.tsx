@@ -1,13 +1,17 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GOOGLE_CLIENT_ID } from '@/config/runtimeEnv';
+import {
+  ENABLE_OAUTH_LOGIN,
+  GOOGLE_CLIENT_ID,
+} from '@/config/runtimeEnv';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 import { WeChatSignInButton } from '@/components/auth/WeChatSignInButton';
@@ -59,12 +63,14 @@ export function LoginDialog() {
       <DialogContent
         className="max-w-md rounded-2xl border-border/70 bg-background/95 p-0 shadow-xl backdrop-blur"
         onPointerDownOutside={(event) => {
+          if (!ENABLE_OAUTH_LOGIN) return;
           const target = event.target as HTMLElement | null;
           if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
             event.preventDefault();
           }
         }}
         onInteractOutside={(event) => {
+          if (!ENABLE_OAUTH_LOGIN) return;
           const target = event.target as HTMLElement | null;
           if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
             event.preventDefault();
@@ -74,37 +80,42 @@ export function LoginDialog() {
         <DialogHeader className="space-y-2 px-6 pt-6 text-left">
           <DialogTitle className="font-display text-xl">登录后继续</DialogTitle>
           <DialogDescription>
-            {reason || '登录后可使用 AI 问答、保存对话历史。不登录也可以浏览示例问题与站点内容。'}
+            {reason ||
+              '使用站点账号密码登录后可使用 AI 问答、保存对话历史。没有账号可先注册。不登录也可以浏览示例问题与站点内容。'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
-          <div className="space-y-2">
-            {GOOGLE_CLIENT_ID ? (
-              <div className="flex flex-col items-center gap-1">
-                <GoogleSignInButton
-                  width={300}
-                  preferRedirect
-                  showSetupHints={false}
-                  className="flex min-h-[44px] w-full max-w-[300px] justify-center [&>div]:!w-full"
-                />
-              </div>
-            ) : null}
-            <AppleSignInButton />
-            <WeChatSignInButton />
-            <p className="text-center text-xs text-muted-foreground">
-              Google / Apple 将跳转授权页；微信请用手机扫码
-            </p>
-          </div>
+          {ENABLE_OAUTH_LOGIN ? (
+            <div className="space-y-2">
+              {GOOGLE_CLIENT_ID ? (
+                <div className="flex flex-col items-center gap-1">
+                  <GoogleSignInButton
+                    width={300}
+                    preferRedirect
+                    showSetupHints={false}
+                    className="flex min-h-[44px] w-full max-w-[300px] justify-center [&>div]:!w-full"
+                  />
+                </div>
+              ) : null}
+              <AppleSignInButton />
+              <WeChatSignInButton />
+              <p className="text-center text-xs text-muted-foreground">
+                Google / Apple 将跳转授权页；微信请用手机扫码
+              </p>
+            </div>
+          ) : null}
 
-          <div className="relative py-1">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
+          {ENABLE_OAUTH_LOGIN ? (
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">或使用账号密码</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">或使用账号密码</span>
-            </div>
-          </div>
+          ) : null}
 
           <form className="space-y-3" onSubmit={handlePasswordLogin}>
             <div className="relative">
@@ -149,6 +160,17 @@ export function LoginDialog() {
               {isLoading ? '正在登录…' : '登录'}
             </Button>
           </form>
+
+          <p className="text-center text-sm text-muted-foreground">
+            没有账号？{' '}
+            <Link
+              href="/register"
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+              onClick={() => closeLoginDialog()}
+            >
+              去注册
+            </Link>
+          </p>
 
           <Button type="button" variant="ghost" className="w-full" onClick={handleClose}>
             暂不登录，继续浏览

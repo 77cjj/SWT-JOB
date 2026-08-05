@@ -29,7 +29,7 @@ function getRect(selector: string): DOMRect | null {
 function shouldHideHelpFab(pathname: string) {
   if (pathname === '/') return true;
   if (pathname.startsWith('/chat')) return true;
-  if (pathname.startsWith('/login')) return true;
+  if (pathname.startsWith('/login') || pathname.startsWith('/register')) return true;
   if (pathname.startsWith('/admin')) return true;
   return false;
 }

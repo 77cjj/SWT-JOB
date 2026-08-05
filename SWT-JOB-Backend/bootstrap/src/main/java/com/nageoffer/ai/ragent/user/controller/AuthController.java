@@ -21,6 +21,7 @@ import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.AppleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.WeChatLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 认证控制器
- * 处理用户登录和登出相关的请求
+ * 处理用户登录、注册和登出相关的请求
  */
 @RestController
 @RequiredArgsConstructor
@@ -46,6 +47,14 @@ public class AuthController {
     @PostMapping("/auth/login")
     public Result<LoginVO> login(@RequestBody LoginRequest requestParam) {
         return Results.success(authService.login(requestParam));
+    }
+
+    /**
+     * 公开自助注册（写入数据库普通用户并自动登录）
+     */
+    @PostMapping("/auth/register")
+    public Result<LoginVO> register(@RequestBody RegisterRequest requestParam) {
+        return Results.success(authService.register(requestParam));
     }
 
     /**

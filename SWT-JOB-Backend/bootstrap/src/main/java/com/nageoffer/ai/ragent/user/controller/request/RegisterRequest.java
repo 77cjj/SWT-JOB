@@ -15,26 +15,14 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service;
+package com.nageoffer.ai.ragent.user.controller.request;
 
-import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
-import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
+import lombok.Data;
 
-public interface AuthService {
+@Data
+public class RegisterRequest {
 
-    LoginVO login(LoginRequest requestParam);
+    private String username;
 
-    /**
-     * 公开自助注册：写入数据库普通用户并自动登录
-     */
-    LoginVO register(RegisterRequest requestParam);
-
-    LoginVO loginWithGoogle(String idToken);
-
-    LoginVO loginWithApple(String idToken);
-
-    LoginVO loginWithWeChat(String code);
-
-    void logout();
+    private String password;
 }

@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Optional;
@@ -151,11 +152,38 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 响应体序列化失败（例如 VO 中混入 Gson JsonObject 导致 Jackson 写失败）
+     */
+    @ExceptionHandler(value = HttpMessageNotWritableException.class)
+    public Result<Void> httpMessageNotWritable(HttpServletRequest request, HttpMessageNotWritableException ex) {
+        log.error("[{}] {} [serialize] {}", request.getMethod(), getUrl(request), ex.getMessage());
+        String msg = ex.getMessage() != null ? ex.getMessage() : "";
+        if (msg.contains("JsonObject") || msg.contains("referral") || msg.contains("program")) {
+            return Results.failure(
+                    BaseErrorCode.SERVICE_ERROR.code(),
+                    "薅羊毛项目数据序列化失败，请更新后端后重试"
+            );
+        }
+        return Results.failure(BaseErrorCode.SERVICE_ERROR.code(), "响应序列化失败");
+    }
+
+    /**
      * 拦截未捕获异常
      */
     @ExceptionHandler(value = Throwable.class)
     public Result<Void> defaultErrorHandler(HttpServletRequest request, Throwable throwable) {
         log.error("[{}] {} ", request.getMethod(), getUrl(request), throwable);
+        Throwable root = throwable;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String rootMsg = root.getMessage() != null ? root.getMessage() : "";
+        if (root instanceof UnsupportedOperationException && rootMsg.contains("JsonObject")) {
+            return Results.failure(
+                    BaseErrorCode.SERVICE_ERROR.code(),
+                    "薅羊毛项目数据序列化失败，请更新后端后重试"
+            );
+        }
         return Results.failure();
     }
 

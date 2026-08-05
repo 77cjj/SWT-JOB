@@ -56,10 +56,16 @@ public class ReferralDealResourceEnricher {
 
     private final ReferralDealMapper referralDealMapper;
     private final ReferralDealProperties properties;
+    private final ReferralDealSchemaService schemaService;
 
     public List<ResourceReference> enrich(String question, List<ResourceReference> resources) {
         if (!properties.isInjectResources()) {
             return resources != null ? resources : List.of();
+        }
+        try {
+            schemaService.ensureAiEnabledColumn();
+        } catch (Exception ex) {
+            // 列未就绪时仍尽量返回原始资源，避免打断问答
         }
         Map<String, ResourceReference> merged = new LinkedHashMap<>();
         if (resources != null) {

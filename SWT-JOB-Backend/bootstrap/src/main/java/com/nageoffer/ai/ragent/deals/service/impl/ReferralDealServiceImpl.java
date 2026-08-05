@@ -19,6 +19,8 @@ package com.nageoffer.ai.ragent.deals.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkAiEnabledRequest;
@@ -36,17 +38,23 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ReferralDealServiceImpl implements ReferralDealService {
 
+    private static final TypeReference<Map<String, Object>> PROGRAM_TYPE = new TypeReference<>() {
+    };
+
     private final ReferralDealMapper referralDealMapper;
     private final ReferralDealKnowledgeSyncService knowledgeSyncService;
     private final ReferralDealSchemaService schemaService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public List<ReferralDealVO> listPublic() {
+        schemaService.ensureAiEnabledColumn();
         return referralDealMapper.selectList(
                         Wrappers.lambdaQuery(ReferralDealDO.class)
                                 .eq(ReferralDealDO::getDeleted, 0)
@@ -60,6 +68,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public List<String> listExcludedIds() {
+        schemaService.ensureAiEnabledColumn();
         return referralDealMapper.selectList(
                         Wrappers.lambdaQuery(ReferralDealDO.class)
                                 .eq(ReferralDealDO::getDeleted, 0)
@@ -72,6 +81,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public ReferralDealVO getPublic(String id) {
+        schemaService.ensureAiEnabledColumn();
         ReferralDealDO record = loadPublished(id);
         return toVo(record);
     }
@@ -92,6 +102,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public ReferralDealVO getForAdmin(String id) {
+        schemaService.ensureAiEnabledColumn();
         return toVo(loadAny(id));
     }
 
@@ -100,8 +111,17 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         schemaService.ensureAiEnabledColumn();
         validateSave(request);
         String id = normalizeId(request.getId());
-        if (referralDealMapper.selectById(id) != null) {
-            throw new ClientException("项目 ID 已存在: " + id);
+        ReferralDealDO existing = referralDealMapper.selectById(id);
+        if (existing != null) {
+            // 管理端「静态项目首次入库 / 加入 AI」可能并发或误判未入库，改为幂等更新
+            ReferralDealDO record = toEntity(id, request);
+            record.setCreateTime(existing.getCreateTime());
+            if (request.getAiEnabled() == null) {
+                record.setAiEnabled(existing.getAiEnabled() != null ? existing.getAiEnabled() : 1);
+            }
+            referralDealMapper.updateById(record);
+            knowledgeSyncService.syncAsync();
+            return id;
         }
         ReferralDealDO record = toEntity(id, request);
         referralDealMapper.insert(record);
@@ -255,12 +275,8 @@ public class ReferralDealServiceImpl implements ReferralDealService {
     }
 
     private ReferralDealVO toVo(ReferralDealDO record) {
-        Object program;
-        try {
-            program = JsonParser.parseString(record.getProgramJson()).getAsJsonObject();
-        } catch (Exception ex) {
-            program = record.getProgramJson();
-        }
+        // 必须用 Jackson Map/JsonNode，不能返回 Gson JsonObject（Jackson 序列化会抛 UnsupportedOperationException）
+        Object program = parseProgramForResponse(record.getProgramJson());
         return ReferralDealVO.builder()
                 .id(record.getId())
                 .siteRebateUsd(record.getSiteRebateUsd())
@@ -271,5 +287,20 @@ public class ReferralDealServiceImpl implements ReferralDealService {
                 .published(record.getPublished())
                 .aiEnabled(record.getAiEnabled())
                 .build();
+    }
+
+    private Object parseProgramForResponse(String programJson) {
+        if (StrUtil.isBlank(programJson)) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(programJson.trim(), PROGRAM_TYPE);
+        } catch (Exception ex) {
+            try {
+                return objectMapper.readTree(programJson.trim());
+            } catch (Exception ignored) {
+                return programJson;
+            }
+        }
     }
 }

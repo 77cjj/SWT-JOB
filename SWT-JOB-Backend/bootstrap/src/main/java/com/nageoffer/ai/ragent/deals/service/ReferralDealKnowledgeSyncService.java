@@ -62,6 +62,7 @@ public class ReferralDealKnowledgeSyncService {
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final KnowledgeBaseService knowledgeBaseService;
     private final KnowledgeDocumentService knowledgeDocumentService;
+    private final ReferralDealSchemaService schemaService;
 
     @Async
     public void syncAsync() {
@@ -74,6 +75,7 @@ public class ReferralDealKnowledgeSyncService {
         }
         UserContext.set(LoginUser.builder().username("system").build());
         try {
+            schemaService.ensureAiEnabledColumn();
             String kbId = resolveKnowledgeBaseId();
             if (StrUtil.isBlank(kbId)) {
                 log.warn("薅羊毛知识库同步跳过：未找到可用知识库");

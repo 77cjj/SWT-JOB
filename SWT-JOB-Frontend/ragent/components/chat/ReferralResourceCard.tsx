@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Gift, OpenInNew, Sparkles } from "lucide-react";
+import { ExternalLink, Gift, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { MessageResource } from "@/types";
@@ -93,7 +93,7 @@ export function ReferralResourceCard({ resource, onPreview, className }: Referra
                 onClick={handleOpenReferral}
                 className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-amber-600 hover:to-orange-600"
               >
-                <OpenInNew className="h-3.5 w-3.5" aria-hidden="true" />
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 {t("chat.referralOpenLink")}
               </button>
             ) : null}

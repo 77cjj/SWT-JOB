@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -80,7 +81,7 @@ export function LoginDialog() {
           <DialogTitle className="font-display text-xl">登录后继续</DialogTitle>
           <DialogDescription>
             {reason ||
-              '使用站点账号登录后可使用 AI 问答、保存对话历史。账号由管理员创建，暂无自助注册。不登录也可以浏览示例问题与站点内容。'}
+              '使用站点账号密码登录后可使用 AI 问答、保存对话历史。没有账号可先注册。不登录也可以浏览示例问题与站点内容。'}
           </DialogDescription>
         </DialogHeader>
 
@@ -159,6 +160,17 @@ export function LoginDialog() {
               {isLoading ? '正在登录…' : '登录'}
             </Button>
           </form>
+
+          <p className="text-center text-sm text-muted-foreground">
+            没有账号？{' '}
+            <Link
+              href="/register"
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+              onClick={() => closeLoginDialog()}
+            >
+              去注册
+            </Link>
+          </p>
 
           <Button type="button" variant="ghost" className="w-full" onClick={handleClose}>
             暂不登录，继续浏览

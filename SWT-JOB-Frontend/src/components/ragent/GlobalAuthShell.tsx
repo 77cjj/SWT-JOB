@@ -21,6 +21,7 @@ export function GlobalAuthShell() {
 
   const skipLoginDialog =
     router.pathname === "/login" ||
+    router.pathname === "/register" ||
     router.pathname.startsWith("/admin") ||
     router.pathname === "/auth/google-complete";
 

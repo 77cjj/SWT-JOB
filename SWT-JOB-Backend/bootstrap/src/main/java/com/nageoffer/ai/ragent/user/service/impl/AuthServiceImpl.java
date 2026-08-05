@@ -21,6 +21,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
 
     private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/583231?v=4";
     private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\u4e00-\\u9fff]{3,32}$");
 
     private final UserMapper userMapper;
     private final GoogleOAuthService googleOAuthService;
@@ -73,6 +76,42 @@ public class AuthServiceImpl implements AuthService {
         StpUtil.login(loginId);
         String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
         return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+    }
+
+    @Override
+    public LoginVO register(RegisterRequest requestParam) {
+        if (requestParam == null) {
+            throw new ClientException("请求不能为空");
+        }
+        String username = StrUtil.trimToNull(requestParam.getUsername());
+        String password = StrUtil.trimToNull(requestParam.getPassword());
+        if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
+            throw new ClientException("用户名或密码不能为空");
+        }
+        if (!USERNAME_PATTERN.matcher(username).matches()) {
+            throw new ClientException("用户名需为 3-32 位字母、数字、下划线或中文");
+        }
+        if (password.length() < 6 || password.length() > 64) {
+            throw new ClientException("密码长度需为 6-64 位");
+        }
+        if ("admin".equalsIgnoreCase(username)) {
+            throw new ClientException("该用户名不可用");
+        }
+        if (findByUsername(username) != null) {
+            throw new ClientException("用户名已存在");
+        }
+        UserDO user = UserDO.builder()
+                .username(username)
+                .password(password)
+                .role("user")
+                .avatar(DEFAULT_AVATAR_URL)
+                .freeChatRemaining(Math.max(0, authProperties.getNewUserFreeChatQuota()))
+                .build();
+        userMapper.insert(user);
+        if (user.getId() == null) {
+            throw new ClientException("注册失败：用户创建异常");
+        }
+        return finishLogin(user);
     }
 
     @Override

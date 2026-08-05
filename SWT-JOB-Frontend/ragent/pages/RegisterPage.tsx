@@ -5,39 +5,42 @@ import { useRouter } from "next/router";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
-import {
-  ENABLE_OAUTH_LOGIN,
-  GOOGLE_CLIENT_ID,
-} from "@/config/runtimeEnv";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { AppleSignInButton } from "@/components/auth/AppleSignInButton";
-import { WeChatSignInButton } from "@/components/auth/WeChatSignInButton";
 
-export function LoginPage() {
+export function RegisterPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuthStore();
+  const { register, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = React.useState(false);
-  const [remember, setRemember] = React.useState(true);
-  const [form, setForm] = React.useState({ username: "", password: "" });
+  const [form, setForm] = React.useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [error, setError] = React.useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!form.username.trim() || !form.password.trim()) {
+    const username = form.username.trim();
+    const password = form.password.trim();
+    const confirmPassword = form.confirmPassword.trim();
+    if (!username || !password) {
       setError("请输入用户名和密码。");
       return;
     }
+    if (password !== confirmPassword) {
+      setError("两次输入的密码不一致。");
+      return;
+    }
+    if (password.length < 6) {
+      setError("密码至少 6 位。");
+      return;
+    }
     try {
-      await login(form.username.trim(), form.password.trim());
-      if (!remember) {
-        // 如需仅在内存中保存登录态，可在此扩展。
-      }
+      await register(username, password);
       void router.push("/chat");
     } catch (err) {
-      setError((err as Error).message || "登录失败，请稍后重试。");
+      setError((err as Error).message || "注册失败，请稍后重试。");
     }
   };
 
@@ -46,9 +49,9 @@ export function LoginPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/50 to-blue-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900" />
       <div className="relative z-10 w-full max-w-md rounded-3xl border border-border/70 bg-background/80 p-8 shadow-soft backdrop-blur">
         <div className="mb-6">
-          <p className="font-display text-2xl font-semibold">欢迎回来</p>
+          <p className="font-display text-2xl font-semibold">创建账号</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            使用站点账号密码登录后继续对话。
+            注册后写入本站数据库，可立即使用账号密码登录。
           </p>
         </div>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -59,7 +62,7 @@ export function LoginPage() {
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="请输入用户名"
+                placeholder="3-32 位字母、数字、下划线或中文"
                 value={form.username}
                 onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
                 className="pl-10"
@@ -75,11 +78,11 @@ export function LoginPage() {
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="请输入密码"
+                placeholder="至少 6 位"
                 value={form.password}
                 onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                 className="pl-10 pr-10"
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
               <button
                 type="button"
@@ -91,27 +94,35 @@ export function LoginPage() {
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-muted-foreground">
-              <Checkbox checked={remember} onCheckedChange={(value) => setRemember(Boolean(value))} />
-              记住我
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              确认密码
             </label>
-            <Link href="/register" className="text-xs font-medium text-foreground underline-offset-2 hover:underline">
-              没有账号？去注册
-            </Link>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="再输入一次密码"
+                value={form.confirmPassword}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
+                }
+                className="pl-10"
+                autoComplete="new-password"
+              />
+            </div>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {ENABLE_OAUTH_LOGIN ? (
-            <div className="space-y-2 py-1">
-              {GOOGLE_CLIENT_ID ? <GoogleSignInButton width={320} /> : null}
-              <AppleSignInButton />
-              <WeChatSignInButton />
-            </div>
-          ) : null}
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "正在登录..." : "登录"}
+            {isLoading ? "正在注册..." : "注册并登录"}
           </Button>
         </form>
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          已有账号？{" "}
+          <Link href="/login" className="font-medium text-foreground underline-offset-2 hover:underline">
+            去登录
+          </Link>
+        </p>
       </div>
     </div>
   );

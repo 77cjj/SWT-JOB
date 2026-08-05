@@ -149,7 +149,7 @@ export default function DesktopLayout({
                   {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
                 </IconButton>
               </Tooltip>
-              {pathname !== '/login' ? <RagentChatUserMenu /> : null}
+              {pathname !== '/login' && pathname !== '/register' ? <RagentChatUserMenu /> : null}
             </div>
           </div>
         </div>

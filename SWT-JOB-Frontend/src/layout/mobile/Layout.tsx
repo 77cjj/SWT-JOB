@@ -83,7 +83,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
               {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
             </IconButton>
           </Tooltip>
-          {pathname !== '/login' ? <RagentChatUserMenu /> : null}
+          {pathname !== '/login' && pathname !== '/register' ? <RagentChatUserMenu /> : null}
         </div>
       </header>
       <main

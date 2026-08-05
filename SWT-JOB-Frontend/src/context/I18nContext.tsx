@@ -3,8 +3,9 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import type { Language } from '../i18n/types';
 import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../i18n/types';
 import { getTranslation } from '../i18n';
+import { UI_LANGUAGE_STORAGE_KEY } from '../i18n/readUiLanguage';
 
-const STORAGE_KEY = 'swt-language';
+const STORAGE_KEY = UI_LANGUAGE_STORAGE_KEY;
 
 interface I18nContextValue {
   language: Language;

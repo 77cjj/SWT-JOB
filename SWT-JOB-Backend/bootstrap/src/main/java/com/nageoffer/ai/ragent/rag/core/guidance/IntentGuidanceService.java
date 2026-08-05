@@ -27,6 +27,7 @@ import com.nageoffer.ai.ragent.rag.core.intent.IntentNode;
 import com.nageoffer.ai.ragent.rag.core.intent.IntentNodeRegistry;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
 import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
+import com.nageoffer.ai.ragent.rag.core.prompt.ResponseLanguage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +50,10 @@ public class IntentGuidanceService {
     private final PromptTemplateLoader promptTemplateLoader;
 
     public GuidanceDecision detectAmbiguity(String question, List<SubQuestionIntent> subIntents) {
+        return detectAmbiguity(question, subIntents, ResponseLanguage.DEFAULT);
+    }
+
+    public GuidanceDecision detectAmbiguity(String question, List<SubQuestionIntent> subIntents, String language) {
         if (!Boolean.TRUE.equals(guidanceProperties.getEnabled())) {
             return GuidanceDecision.none();
         }
@@ -63,7 +68,7 @@ public class IntentGuidanceService {
             return GuidanceDecision.none();
         }
 
-        String prompt = buildPrompt(group.topicName(), group.optionIds());
+        String prompt = buildPrompt(group.topicName(), group.optionIds(), language);
         return GuidanceDecision.prompt(prompt);
     }
 
@@ -235,10 +240,13 @@ public class IntentGuidanceService {
         return optionIds.subList(0, maxOptions);
     }
 
-    private String buildPrompt(String topicName, List<String> optionIds) {
+    private String buildPrompt(String topicName, List<String> optionIds, String language) {
         String options = renderOptions(optionIds);
+        String templatePath = ResponseLanguage.isChinese(language)
+                ? RAGConstant.GUIDANCE_PROMPT_PATH
+                : "prompt/guidance-prompt-en.st";
         return promptTemplateLoader.render(
-                RAGConstant.GUIDANCE_PROMPT_PATH,
+                templatePath,
                 Map.of(
                         "topic_name", StrUtil.blankToDefault(topicName, ""),
                         "options", options

@@ -60,6 +60,11 @@ public class StreamChatContext {
     private final boolean webSearch;
 
     /**
+     * 网站 UI 语言代码（如 zh / en），用于约束模型回答语言
+     */
+    private final String language;
+
+    /**
      * 用户ID
      */
     private final String userId;

@@ -27,6 +27,7 @@ import com.nageoffer.ai.ragent.rag.service.RAGChatService;
 import com.nageoffer.ai.ragent.user.service.UserChatQuotaService;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
+import com.nageoffer.ai.ragent.rag.core.prompt.ResponseLanguage;
 import com.nageoffer.ai.ragent.rag.service.pipeline.StreamChatContext;
 import com.nageoffer.ai.ragent.rag.service.pipeline.StreamChatPipeline;
 import lombok.RequiredArgsConstructor;
@@ -49,13 +50,15 @@ public class RAGChatServiceImpl implements RAGChatService {
 
     @Override
     @ChatRateLimit
-    public void streamChat(String question, String conversationId, Boolean webSearch, SseEmitter emitter) {
+    public void streamChat(String question, String conversationId, Boolean webSearch, String language, SseEmitter emitter) {
         userChatQuotaService.consumeOneChatOrThrow(UserContext.getUserId());
         String actualConversationId = StrUtil.isBlank(conversationId) ? IdUtil.getSnowflakeNextIdStr() : conversationId;
         String taskId = StrUtil.isBlank(RagTraceContext.getTaskId())
                 ? IdUtil.getSnowflakeNextIdStr()
                 : RagTraceContext.getTaskId();
-        log.info("开始流式对话，会话ID：{}，任务ID：{}，联网搜索：{}", actualConversationId, taskId, Boolean.TRUE.equals(webSearch));
+        String responseLanguage = ResponseLanguage.normalize(language);
+        log.info("开始流式对话，会话ID：{}，任务ID：{}，联网搜索：{}，语言：{}",
+                actualConversationId, taskId, Boolean.TRUE.equals(webSearch), responseLanguage);
 
         StreamCallback callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
 
@@ -65,6 +68,7 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .taskId(taskId)
                 .deepThinking(false)
                 .webSearch(Boolean.TRUE.equals(webSearch))
+                .language(responseLanguage)
                 .userId(UserContext.getUserId())
                 .callback(callback)
                 .build();

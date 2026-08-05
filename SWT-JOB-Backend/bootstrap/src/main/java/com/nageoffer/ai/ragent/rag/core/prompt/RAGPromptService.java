@@ -54,11 +54,19 @@ public class RAGPromptService {
      * 生成系统提示词，并对模板格式做清理
      */
     public String buildSystemPrompt(PromptContext context) {
+        return buildSystemPrompt(context, ResponseLanguage.DEFAULT);
+    }
+
+    /**
+     * 生成系统提示词，并按网站 UI 语言追加输出语言约束
+     */
+    public String buildSystemPrompt(PromptContext context, String language) {
         PromptBuildPlan plan = plan(context);
         String template = StrUtil.isNotBlank(plan.getBaseTemplate())
                 ? plan.getBaseTemplate()
                 : defaultTemplate(plan.getScene());
-        return StrUtil.isBlank(template) ? "" : PromptTemplateUtils.cleanupPrompt(template);
+        String cleaned = StrUtil.isBlank(template) ? "" : PromptTemplateUtils.cleanupPrompt(template);
+        return ResponseLanguage.appendInstruction(cleaned, language);
     }
 
     /**
@@ -68,8 +76,19 @@ public class RAGPromptService {
                                                      List<ChatMessage> history,
                                                      String question,
                                                      List<String> subQuestions) {
+        return buildStructuredMessages(context, history, question, subQuestions, ResponseLanguage.DEFAULT);
+    }
+
+    /**
+     * 构造发送给 LLM 的完整消息列表（system + evidence + history + user）
+     */
+    public List<ChatMessage> buildStructuredMessages(PromptContext context,
+                                                     List<ChatMessage> history,
+                                                     String question,
+                                                     List<String> subQuestions,
+                                                     String language) {
         List<ChatMessage> messages = new ArrayList<>();
-        String systemPrompt = buildSystemPrompt(context);
+        String systemPrompt = buildSystemPrompt(context, language);
         if (StrUtil.isNotBlank(systemPrompt)) {
             messages.add(ChatMessage.system(systemPrompt));
         }
@@ -89,7 +108,7 @@ public class RAGPromptService {
         // 多子问题场景下，显式编号以降低模型漏答风险
         if (CollUtil.isNotEmpty(subQuestions) && subQuestions.size() > 1) {
             StringBuilder userMessage = new StringBuilder();
-            userMessage.append("请基于上述文档内容，回答以下问题：\n\n");
+            userMessage.append(ResponseLanguage.multiQuestionLeadIn(language));
             for (int i = 0; i < subQuestions.size(); i++) {
                 userMessage.append(i + 1).append(". ").append(subQuestions.get(i)).append("\n");
             }

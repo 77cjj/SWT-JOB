@@ -31,6 +31,7 @@ import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.prompt.PromptContext;
 import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
+import com.nageoffer.ai.ragent.rag.core.prompt.ResponseLanguage;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
@@ -181,7 +182,8 @@ public class StreamChatPipeline {
     private boolean handleGuidance(StreamChatContext ctx) {
         GuidanceDecision decision = guidanceService.detectAmbiguity(
                 ctx.getRewriteResult().rewrittenQuestion(),
-                ctx.getSubIntents()
+                ctx.getSubIntents(),
+                ctx.getLanguage()
         );
         if (!decision.isPrompt()) {
             return false;
@@ -209,6 +211,7 @@ public class StreamChatPipeline {
                 ctx.getRewriteResult().rewrittenQuestion(),
                 ctx.getHistory(),
                 customPrompt,
+                ctx.getLanguage(),
                 ctx.getCallback()
         );
         taskManager.bindHandle(ctx.getTaskId(), handle);
@@ -227,6 +230,7 @@ public class StreamChatPipeline {
                 rewrittenQuestion,
                 ctx.getHistory(),
                 null,
+                ctx.getLanguage(),
                 ctx.getCallback()
         );
         taskManager.bindHandle(ctx.getTaskId(), handle);
@@ -274,7 +278,7 @@ public class StreamChatPipeline {
             return false;
         }
         StreamCallback callback = ctx.getCallback();
-        callback.onContent("未检索到与问题相关的文档内容。");
+        callback.onContent(ResponseLanguage.emptyRetrievalMessage(ctx.getLanguage()));
         callback.onComplete();
         return true;
     }
@@ -296,6 +300,7 @@ public class StreamChatPipeline {
                 mergedGroup,
                 ctx.getHistory(),
                 false,
+                ctx.getLanguage(),
                 ctx.getCallback()
         );
         taskManager.bindHandle(ctx.getTaskId(), handle);
@@ -304,10 +309,12 @@ public class StreamChatPipeline {
     // ==================== LLM 响应 ====================
 
     private StreamCancellationHandle streamSystemResponse(String question, List<ChatMessage> history,
-                                                          String customPrompt, StreamCallback callback) {
+                                                          String customPrompt, String language,
+                                                          StreamCallback callback) {
         String systemPrompt = StrUtil.isNotBlank(customPrompt)
                 ? customPrompt
                 : promptTemplateLoader.load(CHAT_SYSTEM_PROMPT_PATH);
+        systemPrompt = ResponseLanguage.appendInstruction(systemPrompt, language);
 
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(ChatMessage.system(systemPrompt));
@@ -326,7 +333,8 @@ public class StreamChatPipeline {
 
     private StreamCancellationHandle streamLLMResponse(RewriteResult rewriteResult, RetrievalContext ctx,
                                                        IntentGroup intentGroup, List<ChatMessage> history,
-                                                       boolean deepThinking, StreamCallback callback) {
+                                                       boolean deepThinking, String language,
+                                                       StreamCallback callback) {
         PromptContext promptContext = PromptContext.builder()
                 .question(rewriteResult.rewrittenQuestion())
                 .mcpContext(ctx.getMcpContext())
@@ -341,7 +349,8 @@ public class StreamChatPipeline {
                 promptContext,
                 history,
                 rewriteResult.rewrittenQuestion(),
-                rewriteResult.subQuestions()  // 传入子问题列表
+                rewriteResult.subQuestions(),
+                language
         );
         ChatRequest chatRequest = ChatRequest.builder()
                 .messages(messages)

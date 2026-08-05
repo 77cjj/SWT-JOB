@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
-import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
+import {
+  ENABLE_OAUTH_LOGIN,
+  GOOGLE_CLIENT_ID,
+} from "@/config/runtimeEnv";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AppleSignInButton } from "@/components/auth/AppleSignInButton";
 import { WeChatSignInButton } from "@/components/auth/WeChatSignInButton";
@@ -44,7 +47,7 @@ export function LoginPage() {
         <div className="mb-6">
           <p className="font-display text-2xl font-semibold">欢迎回来</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            登录后继续你的检索增强对话。
+            使用站点账号登录后继续对话。账号由管理员在后台创建。
           </p>
         </div>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -92,14 +95,16 @@ export function LoginPage() {
               <Checkbox checked={remember} onCheckedChange={(value) => setRemember(Boolean(value))} />
               记住我
             </label>
-            <span className="text-xs text-muted-foreground">账号由管理员初始化</span>
+            <span className="text-xs text-muted-foreground">暂无自助注册</span>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <div className="space-y-2 py-1">
-            {GOOGLE_CLIENT_ID ? <GoogleSignInButton width={320} /> : null}
-            <AppleSignInButton />
-            <WeChatSignInButton />
-          </div>
+          {ENABLE_OAUTH_LOGIN ? (
+            <div className="space-y-2 py-1">
+              {GOOGLE_CLIENT_ID ? <GoogleSignInButton width={320} /> : null}
+              <AppleSignInButton />
+              <WeChatSignInButton />
+            </div>
+          ) : null}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "正在登录..." : "登录"}
           </Button>

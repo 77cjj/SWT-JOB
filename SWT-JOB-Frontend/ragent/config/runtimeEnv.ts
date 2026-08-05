@@ -27,6 +27,12 @@ export const APPLE_CLIENT_ID = (process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || "").t
 
 export const WECHAT_APP_ID = (process.env.NEXT_PUBLIC_WECHAT_APP_ID || "").trim();
 
+/**
+ * 第三方登录（Google / Apple / 微信）总开关。
+ * 默认关闭，仅使用数据库账号密码；需要时设置 NEXT_PUBLIC_ENABLE_OAUTH_LOGIN=true。
+ */
+export const ENABLE_OAUTH_LOGIN = process.env.NEXT_PUBLIC_ENABLE_OAUTH_LOGIN === "true";
+
 const rawBypassAuth = process.env.NEXT_PUBLIC_RAGENT_BYPASS_AUTH === "true";
 export const RAGENT_BYPASS_AUTH = rawBypassAuth && !isProduction;
 

@@ -11,8 +11,10 @@ import { Close, Language, MenuBook, OpenInNew } from "@mui/icons-material";
 import Link from "next/link";
 
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
+import { isReferralResource } from "@/components/chat/ReferralResourceCard";
 import { useI18n } from "../../../src/context/I18nContext";
 import type { MessageResource } from "@/types";
+import { openExternalUrl } from "../../../src/lib/openExternalUrl";
 
 type ResourcePreviewDrawerProps = {
   open: boolean;
@@ -24,13 +26,20 @@ function isInternalDocsPath(url?: string): boolean {
   return Boolean(url && url.startsWith("/docs/"));
 }
 
+function isDealsPath(url?: string): boolean {
+  return Boolean(url && url.startsWith("/deals"));
+}
+
 export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePreviewDrawerProps) {
   const { t, tWithParams } = useI18n();
 
   const body = resource?.content || resource?.snippet || "";
   const docsPath = isInternalDocsPath(resource?.url) ? resource!.url! : null;
+  const dealsPath = isDealsPath(resource?.url) ? resource!.url! : null;
   const externalUrl =
-    resource?.url && !isInternalDocsPath(resource.url) ? resource.url : null;
+    resource?.url && !isInternalDocsPath(resource.url) && !isDealsPath(resource.url) ? resource.url : null;
+  const referralUrl = resource?.referralUrl?.trim() || null;
+  const isReferral = resource ? isReferralResource(resource) : false;
   const isWebSource = Boolean(externalUrl && !resource?.docId);
 
   return (
@@ -89,17 +98,44 @@ export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePrevi
         )}
       </Box>
 
-      {(docsPath || externalUrl) && (
+      {(docsPath || dealsPath || externalUrl || referralUrl) && (
         <Stack
           direction="row"
           spacing={1}
-          sx={{ px: 2, py: 1.5, borderTop: 1, borderColor: "divider" }}
+          sx={{ px: 2, py: 1.5, borderTop: 1, borderColor: "divider", flexWrap: "wrap" }}
         >
+          {dealsPath ? (
+            <Button
+              component={Link}
+              href={dealsPath}
+              variant="contained"
+              size="small"
+              color={isReferral ? "warning" : "primary"}
+              startIcon={<MenuBook />}
+              onClick={onClose}
+            >
+              {t("chat.referralViewGuide")}
+            </Button>
+          ) : null}
+          {referralUrl ? (
+            <Button
+              variant="contained"
+              color="warning"
+              size="small"
+              startIcon={<OpenInNew />}
+              onClick={() => {
+                openExternalUrl(referralUrl);
+                onClose();
+              }}
+            >
+              {t("chat.referralOpenLink")}
+            </Button>
+          ) : null}
           {docsPath ? (
             <Button
               component={Link}
               href={docsPath}
-              variant="contained"
+              variant={dealsPath || referralUrl ? "outlined" : "contained"}
               size="small"
               startIcon={<MenuBook />}
               onClick={onClose}
@@ -112,7 +148,7 @@ export function ResourcePreviewDrawer({ open, resource, onClose }: ResourcePrevi
               href={externalUrl}
               target="_blank"
               rel="noreferrer"
-              variant={docsPath ? "outlined" : "contained"}
+              variant={docsPath || dealsPath || referralUrl ? "outlined" : "contained"}
               size="small"
               startIcon={<OpenInNew />}
             >

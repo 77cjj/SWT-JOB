@@ -13,6 +13,12 @@ export interface MessageResource {
   kbId?: string | number;
   docId?: string | number;
   chunkId?: string | number;
+  /** referral = 薅羊毛/refer 资源 */
+  type?: "referral" | "doc" | "web" | string;
+  dealId?: string;
+  referralUrl?: string;
+  rewardLabel?: string;
+  siteRebateLabel?: string;
 }
 
 export interface User {

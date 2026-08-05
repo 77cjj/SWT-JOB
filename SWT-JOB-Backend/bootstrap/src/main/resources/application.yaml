@@ -110,6 +110,14 @@ rag:
     enabled: true
     max-error-length: 1000
 
+  referral-deals:
+    sync-enabled: true
+    sync-on-startup: true
+    inject-resources: true
+    max-inject-count: 3
+    knowledge-base-name: SWT薅羊毛
+    collection-name: swt_referral_deals_store
+
 ai:
   providers:
     ollama:

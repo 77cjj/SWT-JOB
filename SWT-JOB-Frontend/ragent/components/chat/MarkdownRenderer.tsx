@@ -11,6 +11,7 @@ import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/pris
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppTheme } from "../../../src/context/AppThemeContext";
+import { ReferralMarkdownLink } from "@/components/chat/ReferralMarkdownLink";
 
 interface MarkdownRendererProps {
   content: string;
@@ -100,17 +101,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             />
           );
         },
-        a({ children, ...props }) {
-          return (
-            <a
-              className="text-[#0969da] underline-offset-4 hover:underline dark:text-[#58a6ff]"
-              target="_blank"
-              rel="noreferrer"
-              {...props}
-            >
-              {children}
-            </a>
-          );
+        a({ children, href, ...props }) {
+          return <ReferralMarkdownLink href={href} {...props}>{children}</ReferralMarkdownLink>;
         },
         table({ children, ...props }) {
           return (

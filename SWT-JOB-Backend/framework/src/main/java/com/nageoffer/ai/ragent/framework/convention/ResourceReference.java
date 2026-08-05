@@ -49,4 +49,29 @@ public class ResourceReference {
     private String docId;
 
     private String chunkId;
+
+    /**
+     * 资源类型：referral（薅羊毛/refer）、doc（站内文档）、web（联网）
+     */
+    private String type;
+
+    /**
+     * 薅羊毛项目 ID（对应 /deals/{dealId}）
+     */
+    private String dealId;
+
+    /**
+     * 外部邀请/注册链接（referralUrl）
+     */
+    private String referralUrl;
+
+    /**
+     * 官方奖励文案摘要
+     */
+    private String rewardLabel;
+
+    /**
+     * 本站额外返现文案
+     */
+    private String siteRebateLabel;
 }

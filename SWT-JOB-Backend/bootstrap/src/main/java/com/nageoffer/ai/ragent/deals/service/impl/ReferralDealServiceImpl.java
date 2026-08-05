@@ -25,6 +25,7 @@ import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealSaveRequest;
 import com.nageoffer.ai.ragent.deals.controller.vo.ReferralDealVO;
 import com.nageoffer.ai.ragent.deals.dao.entity.ReferralDealDO;
 import com.nageoffer.ai.ragent.deals.dao.mapper.ReferralDealMapper;
+import com.nageoffer.ai.ragent.deals.service.ReferralDealKnowledgeSyncService;
 import com.nageoffer.ai.ragent.deals.service.ReferralDealService;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ import java.util.List;
 public class ReferralDealServiceImpl implements ReferralDealService {
 
     private final ReferralDealMapper referralDealMapper;
+    private final ReferralDealKnowledgeSyncService knowledgeSyncService;
 
     @Override
     public List<ReferralDealVO> listPublic() {
@@ -97,6 +99,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         }
         ReferralDealDO record = toEntity(id, request);
         referralDealMapper.insert(record);
+        knowledgeSyncService.syncAsync();
         return id;
     }
 
@@ -107,11 +110,13 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         ReferralDealDO record = toEntity(id, request);
         record.setCreateTime(existing.getCreateTime());
         referralDealMapper.updateById(record);
+        knowledgeSyncService.syncAsync();
     }
 
     @Override
     public void delete(String id) {
         referralDealMapper.deleteById(loadAny(id).getId());
+        knowledgeSyncService.syncAsync();
     }
 
     @Override
@@ -119,17 +124,25 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         if (request == null || request.getItems() == null) {
             return;
         }
+        boolean changed = false;
         for (ReferralDealSaveRequest item : request.getItems()) {
             if (item == null || StrUtil.isBlank(item.getId())) {
                 continue;
             }
             String id = normalizeId(item.getId());
+            validateSave(item);
             ReferralDealDO existing = referralDealMapper.selectById(id);
+            ReferralDealDO record = toEntity(id, item);
             if (existing == null) {
-                create(item);
+                referralDealMapper.insert(record);
             } else {
-                update(id, item);
+                record.setCreateTime(existing.getCreateTime());
+                referralDealMapper.updateById(record);
             }
+            changed = true;
+        }
+        if (changed) {
+            knowledgeSyncService.syncAsync();
         }
     }
 

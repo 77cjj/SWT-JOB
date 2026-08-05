@@ -39,6 +39,7 @@ import com.nageoffer.ai.ragent.rag.core.web.WebSearchService;
 import com.nageoffer.ai.ragent.framework.convention.ResourceReference;
 import com.nageoffer.ai.ragent.rag.dto.IntentGroup;
 import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
+import com.nageoffer.ai.ragent.deals.service.ReferralDealResourceEnricher;
 import com.nageoffer.ai.ragent.rag.service.ResourceReferenceResolver;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
@@ -85,6 +86,7 @@ public class StreamChatPipeline {
     private final StreamTaskManager taskManager;
     private final ResourceReferenceResolver resourceReferenceResolver;
     private final WebSearchService webSearchService;
+    private final ReferralDealResourceEnricher referralDealResourceEnricher;
 
     /**
      * 执行流式对话管道
@@ -283,7 +285,11 @@ public class StreamChatPipeline {
         List<ResourceReference> kbResources = resourceReferenceResolver.resolve(retrievalCtx);
         List<ResourceReference> webResources = ctx.getWebResources() != null ? ctx.getWebResources() : List.of();
         List<ResourceReference> merged = Stream.concat(kbResources.stream(), webResources.stream()).toList();
-        ctx.getCallback().onResources(merged);
+        String question = ctx.getRewriteResult() != null && StrUtil.isNotBlank(ctx.getRewriteResult().rewrittenQuestion())
+                ? ctx.getRewriteResult().rewrittenQuestion()
+                : ctx.getQuestion();
+        List<ResourceReference> enriched = referralDealResourceEnricher.enrich(question, merged);
+        ctx.getCallback().onResources(enriched);
     }
 
     private void streamRagResponse(StreamChatContext ctx, RetrievalContext retrievalCtx) {

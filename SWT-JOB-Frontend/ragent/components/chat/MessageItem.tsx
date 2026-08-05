@@ -3,6 +3,7 @@ import { Brain, ChevronDown, FileText } from "lucide-react";
 
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
+import { ReferralResourceCard, isReferralResource } from "@/components/chat/ReferralResourceCard";
 import { ResourcePreviewDrawer } from "@/components/chat/ResourcePreviewDrawer";
 import { ThinkingIndicator } from "@/components/chat/ThinkingIndicator";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,10 @@ export const MessageItem = React.memo(function MessageItem({ message }: MessageI
     Boolean(message.id) &&
     hasContent;
   const resources = (message.resources || []).filter(hasPreviewableResource);
-  const hasResources = resources.length > 0;
+  const referralResources = resources.filter(isReferralResource);
+  const docResources = resources.filter((item) => !isReferralResource(item));
+  const hasReferralResources = referralResources.length > 0;
+  const hasDocResources = docResources.length > 0;
   const isWaiting = message.status === "streaming" && !isThinking && !hasContent;
 
   if (isUser) {
@@ -106,14 +110,30 @@ export const MessageItem = React.memo(function MessageItem({ message }: MessageI
               </div>
             ) : null}
             {hasContent ? <MarkdownRenderer content={message.content} /> : null}
-            {hasResources ? (
+            {hasReferralResources ? (
+              <div className="mt-3 space-y-2">
+                <div className="text-xs font-semibold tracking-wide text-amber-700 dark:text-amber-300">
+                  {t("chat.referralResourcesTitle")}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-1">
+                  {referralResources.map((item, index) => (
+                    <ReferralResourceCard
+                      key={`referral-${item.dealId ?? item.url ?? item.title}-${index}`}
+                      resource={item}
+                      onPreview={() => setPreviewResource(item)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {hasDocResources ? (
               <div className="mt-3 space-y-2 rounded-xl border border-neutral-200/70 bg-neutral-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
                 <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                   <FileText className="h-3.5 w-3.5" />
                   <span>{t("chat.resourcesTitle")}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {resources.map((item, index) => (
+                  {docResources.map((item, index) => (
                     <button
                       key={`${item.chunkId ?? item.docId ?? item.url ?? item.title}-${index}`}
                       type="button"

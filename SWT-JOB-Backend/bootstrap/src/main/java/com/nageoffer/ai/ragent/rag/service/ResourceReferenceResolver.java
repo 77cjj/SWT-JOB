@@ -55,6 +55,7 @@ public class ResourceReferenceResolver {
     private static final Pattern DOCS_SLUG_PATTERN = Pattern.compile(
             "(?:/pages/docs/|/docs/|resources/docs/)([\\w./-]+?)\\.(?:mdx?|MDX?)"
     );
+    private static final Pattern DEALS_PATH_PATTERN = Pattern.compile("^/deals(?:/([a-z0-9-]+))?$", Pattern.CASE_INSENSITIVE);
 
     private static final int SNIPPET_MAX_CHARS = 180;
     private static final int CONTENT_MAX_CHARS = 2400;
@@ -148,6 +149,7 @@ public class ResourceReferenceResolver {
                     .docId(chunk.getDocId())
                     .chunkId(chunk.getId())
                     .build();
+            applyReferralMetadata(resource, doc);
             deduplicated.put(docKey, resource);
             if (StrUtil.isNotBlank(titleKey)) {
                 seenTitles.add(titleKey);
@@ -253,6 +255,10 @@ public class ResourceReferenceResolver {
         if (documentDO == null) {
             return null;
         }
+        String dealsPath = resolveDealsPath(documentDO);
+        if (StrUtil.isNotBlank(dealsPath)) {
+            return dealsPath;
+        }
         String docsPath = resolveDocsPath(documentDO);
         if (StrUtil.isNotBlank(docsPath)) {
             return docsPath;
@@ -261,8 +267,62 @@ public class ResourceReferenceResolver {
         if (sourceLocation != null && sourceLocation.startsWith("/docs/")) {
             return sourceLocation;
         }
+        if (sourceLocation != null && sourceLocation.startsWith("/deals")) {
+            return normalizeDealsPath(sourceLocation);
+        }
         if (sourceLocation != null && isPublicHttpUrl(sourceLocation)) {
             return sourceLocation;
+        }
+        return null;
+    }
+
+    private void applyReferralMetadata(ResourceReference resource, KnowledgeDocumentDO documentDO) {
+        if (resource == null || documentDO == null) {
+            return;
+        }
+        String dealsPath = resolveDealsPath(documentDO);
+        if (StrUtil.isBlank(dealsPath)) {
+            return;
+        }
+        resource.setType("referral");
+        resource.setUrl(dealsPath);
+        Matcher matcher = DEALS_PATH_PATTERN.matcher(dealsPath);
+        if (matcher.matches()) {
+            resource.setDealId(StrUtil.trimToNull(matcher.group(1)));
+        }
+    }
+
+    private String resolveDealsPath(KnowledgeDocumentDO documentDO) {
+        if (documentDO == null) {
+            return null;
+        }
+        for (String candidate : List.of(documentDO.getSourceLocation(), documentDO.getFileUrl(), documentDO.getDocName())) {
+            String dealsPath = extractDealsPath(candidate);
+            if (StrUtil.isNotBlank(dealsPath)) {
+                return dealsPath;
+            }
+        }
+        return null;
+    }
+
+    private String extractDealsPath(String raw) {
+        if (StrUtil.isBlank(raw)) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.startsWith("/deals")) {
+            return normalizeDealsPath(trimmed);
+        }
+        return null;
+    }
+
+    private String normalizeDealsPath(String path) {
+        if (StrUtil.isBlank(path)) {
+            return null;
+        }
+        String normalized = path.trim().replaceAll("/+", "/");
+        if ("/deals".equals(normalized) || normalized.startsWith("/deals/")) {
+            return normalized.toLowerCase(Locale.ROOT);
         }
         return null;
     }

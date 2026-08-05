@@ -28,6 +28,7 @@ import com.nageoffer.ai.ragent.deals.controller.vo.ReferralDealVO;
 import com.nageoffer.ai.ragent.deals.dao.entity.ReferralDealDO;
 import com.nageoffer.ai.ragent.deals.dao.mapper.ReferralDealMapper;
 import com.nageoffer.ai.ragent.deals.service.ReferralDealKnowledgeSyncService;
+import com.nageoffer.ai.ragent.deals.service.ReferralDealSchemaService;
 import com.nageoffer.ai.ragent.deals.service.ReferralDealService;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     private final ReferralDealMapper referralDealMapper;
     private final ReferralDealKnowledgeSyncService knowledgeSyncService;
+    private final ReferralDealSchemaService schemaService;
 
     @Override
     public List<ReferralDealVO> listPublic() {
@@ -76,6 +78,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public List<ReferralDealVO> listAllForAdmin() {
+        schemaService.ensureAiEnabledColumn();
         return referralDealMapper.selectList(
                         Wrappers.lambdaQuery(ReferralDealDO.class)
                                 .eq(ReferralDealDO::getDeleted, 0)
@@ -94,6 +97,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public String create(ReferralDealSaveRequest request) {
+        schemaService.ensureAiEnabledColumn();
         validateSave(request);
         String id = normalizeId(request.getId());
         if (referralDealMapper.selectById(id) != null) {
@@ -107,6 +111,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public void update(String id, ReferralDealSaveRequest request) {
+        schemaService.ensureAiEnabledColumn();
         validateSave(request);
         ReferralDealDO existing = loadAny(id);
         ReferralDealDO record = toEntity(id, request);
@@ -156,17 +161,21 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public void setAiEnabled(String id, int aiEnabled) {
+        schemaService.ensureAiEnabledColumn();
         ReferralDealDO existing = loadAny(id);
-        ReferralDealDO update = ReferralDealDO.builder()
-                .id(existing.getId())
-                .aiEnabled(aiEnabled)
-                .build();
-        referralDealMapper.updateById(update);
+        referralDealMapper.update(
+                null,
+                Wrappers.lambdaUpdate(ReferralDealDO.class)
+                        .set(ReferralDealDO::getAiEnabled, aiEnabled)
+                        .eq(ReferralDealDO::getId, existing.getId())
+                        .eq(ReferralDealDO::getDeleted, 0)
+        );
         knowledgeSyncService.syncAsync();
     }
 
     @Override
     public int bulkSetAiEnabled(ReferralDealBulkAiEnabledRequest request) {
+        schemaService.ensureAiEnabledColumn();
         if (request == null || request.getAiEnabled() == null) {
             throw new ClientException("aiEnabled 不能为空");
         }

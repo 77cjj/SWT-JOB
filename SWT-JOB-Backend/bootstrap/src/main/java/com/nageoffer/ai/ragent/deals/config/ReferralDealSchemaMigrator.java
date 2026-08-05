@@ -17,8 +17,7 @@
 
 package com.nageoffer.ai.ragent.deals.config;
 
-import com.nageoffer.ai.ragent.deals.service.ReferralDealKnowledgeSyncService;
-import com.nageoffer.ai.ragent.deals.service.ReferralDealSeedService;
+import com.nageoffer.ai.ragent.deals.service.ReferralDealSchemaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -26,28 +25,23 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+/**
+ * 启动时确保薅羊毛表具备 AI 开关字段（避免仅部署 jar 未跑 upgrade SQL）
+ */
 @Slf4j
 @Component
-@Order(20)
+@Order(10)
 @RequiredArgsConstructor
-public class ReferralDealKnowledgeBootstrap implements ApplicationRunner {
+public class ReferralDealSchemaMigrator implements ApplicationRunner {
 
-    private final ReferralDealProperties properties;
-    private final ReferralDealSeedService seedService;
-    private final ReferralDealKnowledgeSyncService syncService;
+    private final ReferralDealSchemaService schemaService;
 
     @Override
     public void run(ApplicationArguments args) {
-        if (properties.isAutoSeedMissing()) {
-            int seeded = seedService.seedMissingFromClasspath();
-            if (seeded > 0) {
-                log.info("启动时补缺 {} 个薅羊毛项目到数据库", seeded);
-            }
+        try {
+            schemaService.ensureAiEnabledColumn();
+        } catch (Exception ex) {
+            log.error("自动补齐 t_referral_deal.ai_enabled 失败，请手动执行 upgrade_v1.6_to_v1.7.sql", ex);
         }
-        if (!properties.isSyncEnabled() || !properties.isSyncOnStartup()) {
-            return;
-        }
-        log.info("启动后异步同步薅羊毛知识库…");
-        syncService.syncAsync();
     }
 }

@@ -100,11 +100,17 @@ public class ReferralDealController {
         return Results.success();
     }
 
-    @PatchMapping("/referral-deals/{id}/ai-enabled")
+    @PostMapping("/referral-deals/{id}/ai-enabled")
     public Result<Void> setAiEnabled(@PathVariable String id, @RequestParam("enabled") int enabled) {
         StpUtil.checkRole("admin");
         referralDealService.setAiEnabled(id, enabled);
         return Results.success();
+    }
+
+    /** 兼容旧前端 PATCH 调用 */
+    @PatchMapping("/referral-deals/{id}/ai-enabled")
+    public Result<Void> setAiEnabledPatch(@PathVariable String id, @RequestParam("enabled") int enabled) {
+        return setAiEnabled(id, enabled);
     }
 
     @PostMapping("/referral-deals/bulk-ai-enabled")
@@ -116,6 +122,6 @@ public class ReferralDealController {
     @PostMapping("/referral-deals/seed-missing")
     public Result<Integer> seedMissing() {
         StpUtil.checkRole("admin");
-        return Results.success(seedService.seedMissingFromClasspath());
+        return Results.success(seedService.seedMissingFromClasspath(true));
     }
 }

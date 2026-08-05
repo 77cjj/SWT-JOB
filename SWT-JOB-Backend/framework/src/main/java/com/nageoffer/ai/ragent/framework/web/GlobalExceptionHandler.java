@@ -141,8 +141,11 @@ public class GlobalExceptionHandler {
     public Result<Void> dataAccessException(HttpServletRequest request, DataAccessException ex) {
         log.error("[{}] {} [db] {}", request.getMethod(), getUrl(request), ex.getMessage());
         String hint = "数据库访问失败，请确认已执行 resources/database 下的 upgrade SQL 并重启后端";
-        if (ex.getMessage() != null && ex.getMessage().contains("does not exist")) {
-            hint = "数据库表缺失，请在服务器执行 upgrade_v1.3_to_v1.4.sql、upgrade_v1.4_to_v1.5.sql 后重启后端";
+        String msg = ex.getMessage() != null ? ex.getMessage() : "";
+        if (msg.contains("ai_enabled") || msg.contains("t_referral_deal")) {
+            hint = "薅羊毛 AI 开关字段缺失，请执行 upgrade_v1.6_to_v1.7.sql 后重启后端（新版本也会在启动时自动补齐）";
+        } else if (msg.contains("does not exist")) {
+            hint = "数据库表缺失，请在服务器执行 upgrade_v1.3_to_v1.4.sql、upgrade_v1.4_to_v1.5.sql、upgrade_v1.6_to_v1.7.sql 后重启后端";
         }
         return Results.failure(BaseErrorCode.SERVICE_ERROR.code(), hint);
     }

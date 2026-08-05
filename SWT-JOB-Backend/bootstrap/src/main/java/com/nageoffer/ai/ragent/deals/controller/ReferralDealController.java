@@ -51,12 +51,16 @@ public class ReferralDealController {
         return Results.success(referralDealService.listPublic());
     }
 
-    @GetMapping("/referral-deals/public/excluded-ids")
+    @GetMapping({
+            "/referral-deals/public/excluded-ids",
+            "/referral-deals/excluded-ids"
+    })
     public Result<List<String>> listExcludedIds() {
         return Results.success(referralDealService.listExcludedIds());
     }
 
-    @GetMapping("/referral-deals/public/{id}")
+    /** id 排除 reserved 路径，避免与 excluded-ids 冲突 */
+    @GetMapping("/referral-deals/public/{id:^(?!excluded-ids$)[a-zA-Z0-9_-]+}")
     public Result<ReferralDealVO> getPublic(@PathVariable String id) {
         return Results.success(referralDealService.getPublic(id));
     }

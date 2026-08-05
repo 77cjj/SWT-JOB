@@ -107,4 +107,21 @@ jobs:
               exit 1
             fi
 
+            deals_body="$(curl -sS "http://127.0.0.1:9090/api/ragent/referral-deals/public")"
+            echo "referral-deals/public => ${deals_body:0:200}"
+            if echo "$deals_body" | grep -q '"success":false'; then
+              echo "::error::GET /referral-deals/public failed — check program JSON serialization / ai_enabled migration"
+              exit 1
+            fi
+            if ! echo "$deals_body" | grep -q '"success":true'; then
+              echo "::error::GET /referral-deals/public unexpected response"
+              exit 1
+            fi
+            excluded_body="$(curl -sS "http://127.0.0.1:9090/api/ragent/referral-deals/public/excluded-ids")"
+            echo "referral-deals/public/excluded-ids => ${excluded_body:0:200}"
+            if echo "$excluded_body" | grep -q '未找到该薅羊毛项目'; then
+              echo "::error::excluded-ids routed to /public/{id} — path mapping broken"
+              exit 1
+            fi
+
             echo "==> Done"

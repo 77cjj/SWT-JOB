@@ -292,7 +292,14 @@ public class StreamChatPipeline {
         String question = ctx.getRewriteResult() != null && StrUtil.isNotBlank(ctx.getRewriteResult().rewrittenQuestion())
                 ? ctx.getRewriteResult().rewrittenQuestion()
                 : ctx.getQuestion();
-        List<ResourceReference> enriched = referralDealResourceEnricher.enrich(question, merged);
+        List<ResourceReference> enriched;
+        try {
+            enriched = referralDealResourceEnricher.enrich(question, merged);
+        } catch (Exception ex) {
+            // 薅羊毛资源增强失败不应打断 SSE 主回答
+            log.warn("薅羊毛资源增强失败，已降级为原始检索资源: {}", ex.getMessage());
+            enriched = merged;
+        }
         ctx.getCallback().onResources(enriched);
     }
 

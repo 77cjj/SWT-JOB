@@ -39,12 +39,17 @@ public class ReferralDealSchemaService {
             if (ensured) {
                 return;
             }
+            // 列必须成功；索引失败不阻断业务读写
             jdbcTemplate.execute(
                     "ALTER TABLE t_referral_deal ADD COLUMN IF NOT EXISTS ai_enabled SMALLINT DEFAULT 1"
             );
-            jdbcTemplate.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_referral_deal_ai_enabled ON t_referral_deal (ai_enabled, published, deleted)"
-            );
+            try {
+                jdbcTemplate.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_referral_deal_ai_enabled ON t_referral_deal (ai_enabled, published, deleted)"
+                );
+            } catch (Exception ex) {
+                log.warn("创建 idx_referral_deal_ai_enabled 失败（可忽略）: {}", ex.getMessage());
+            }
             jdbcTemplate.execute(
                     "UPDATE t_referral_deal SET ai_enabled = 1 WHERE ai_enabled IS NULL"
             );

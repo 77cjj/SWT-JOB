@@ -144,7 +144,11 @@ export async function fetchExcludedDealIds(): Promise<string[]> {
   try {
     return await api.get<string[]>('/referral-deals/public/excluded-ids');
   } catch {
-    return [];
+    try {
+      return await api.get<string[]>('/referral-deals/excluded-ids');
+    } catch {
+      return [];
+    }
   }
 }
 

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
+import { ENABLE_OAUTH_LOGIN, GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
 import { useAuthStore } from "@/stores/authStore";
 import { Toast } from "@/components/common/Toast";
 import { LoginDialog } from "./LoginDialog";
@@ -31,7 +31,7 @@ export function GlobalAuthShell() {
     </>
   );
 
-  if (GOOGLE_CLIENT_ID) {
+  if (ENABLE_OAUTH_LOGIN && GOOGLE_CLIENT_ID) {
     return <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{inner}</GoogleOAuthProvider>;
   }
   return inner;

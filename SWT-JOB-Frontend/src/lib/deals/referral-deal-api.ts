@@ -176,7 +176,7 @@ export async function bulkUpsertReferralDeals(items: ReferralDealSavePayload[]) 
 }
 
 export async function setReferralDealAiEnabled(id: string, enabled: number) {
-  await api.patch(`/referral-deals/${id}/ai-enabled?enabled=${enabled}`);
+  await api.post(`/referral-deals/${id}/ai-enabled?enabled=${enabled}`);
 }
 
 export async function bulkSetReferralDealAiEnabled(enabled: number, ids?: string[]) {

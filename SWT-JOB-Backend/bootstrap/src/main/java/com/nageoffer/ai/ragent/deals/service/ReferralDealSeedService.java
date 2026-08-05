@@ -47,12 +47,21 @@ public class ReferralDealSeedService {
 
     private final ReferralDealMapper referralDealMapper;
     private final ReferralDealProperties properties;
+    private final ReferralDealSchemaService schemaService;
     private final ObjectMapper objectMapper;
 
     public int seedMissingFromClasspath() {
-        if (!properties.isAutoSeedMissing()) {
+        return seedMissingFromClasspath(false);
+    }
+
+    /**
+     * @param force 为 true 时忽略 auto-seed-missing 配置（管理后台手动触发）
+     */
+    public int seedMissingFromClasspath(boolean force) {
+        if (!force && !properties.isAutoSeedMissing()) {
             return 0;
         }
+        schemaService.ensureAiEnabledColumn();
         List<ReferralDealSaveRequest> seeds = loadSeedItems();
         if (seeds.isEmpty()) {
             return 0;

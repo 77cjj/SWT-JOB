@@ -19,8 +19,8 @@ package com.nageoffer.ai.ragent.deals.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.google.gson.JsonParser;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkAiEnabledRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealBulkUpsertRequest;
 import com.nageoffer.ai.ragent.deals.controller.request.ReferralDealSaveRequest;
@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +45,11 @@ public class ReferralDealServiceImpl implements ReferralDealService {
     private final ReferralDealMapper referralDealMapper;
     private final ReferralDealKnowledgeSyncService knowledgeSyncService;
     private final ReferralDealSchemaService schemaService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public List<ReferralDealVO> listPublic() {
+        schemaService.ensureSchema();
         return referralDealMapper.selectList(
                         Wrappers.lambdaQuery(ReferralDealDO.class)
                                 .eq(ReferralDealDO::getDeleted, 0)
@@ -60,6 +63,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public List<String> listExcludedIds() {
+        schemaService.ensureSchema();
         return referralDealMapper.selectList(
                         Wrappers.lambdaQuery(ReferralDealDO.class)
                                 .eq(ReferralDealDO::getDeleted, 0)
@@ -78,7 +82,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public List<ReferralDealVO> listAllForAdmin() {
-        schemaService.ensureAiEnabledColumn();
+        schemaService.ensureSchema();
         return referralDealMapper.selectList(
                         Wrappers.lambdaQuery(ReferralDealDO.class)
                                 .eq(ReferralDealDO::getDeleted, 0)
@@ -97,7 +101,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public String create(ReferralDealSaveRequest request) {
-        schemaService.ensureAiEnabledColumn();
+        schemaService.ensureSchema();
         validateSave(request);
         String id = normalizeId(request.getId());
         ReferralDealDO any = referralDealMapper.selectAnyById(id);
@@ -120,7 +124,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public void update(String id, ReferralDealSaveRequest request) {
-        schemaService.ensureAiEnabledColumn();
+        schemaService.ensureSchema();
         validateSave(request);
         String normalizedId = normalizeId(id);
         ReferralDealDO any = referralDealMapper.selectAnyById(normalizedId);
@@ -185,7 +189,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public void setAiEnabled(String id, int aiEnabled) {
-        schemaService.ensureAiEnabledColumn();
+        schemaService.ensureSchema();
         ReferralDealDO existing = loadAny(id);
         referralDealMapper.update(
                 null,
@@ -199,7 +203,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
 
     @Override
     public int bulkSetAiEnabled(ReferralDealBulkAiEnabledRequest request) {
-        schemaService.ensureAiEnabledColumn();
+        schemaService.ensureSchema();
         if (request == null || request.getAiEnabled() == null) {
             throw new ClientException("aiEnabled 不能为空");
         }
@@ -255,7 +259,7 @@ public class ReferralDealServiceImpl implements ReferralDealService {
             throw new ClientException("programJson 不能为空");
         }
         try {
-            JsonParser.parseString(request.getProgramJson().trim());
+            objectMapper.readTree(request.getProgramJson().trim());
         } catch (Exception ex) {
             throw new ClientException("programJson 不是合法 JSON");
         }
@@ -279,12 +283,8 @@ public class ReferralDealServiceImpl implements ReferralDealService {
     }
 
     private ReferralDealVO toVo(ReferralDealDO record) {
-        Object program;
-        try {
-            program = JsonParser.parseString(record.getProgramJson()).getAsJsonObject();
-        } catch (Exception ex) {
-            program = record.getProgramJson();
-        }
+        // 必须用 Jackson 可序列化的类型；Gson JsonObject 会导致接口返回「系统执行出错」
+        Object program = parseProgramForApi(record.getProgramJson());
         return ReferralDealVO.builder()
                 .id(record.getId())
                 .siteRebateUsd(record.getSiteRebateUsd())
@@ -293,7 +293,23 @@ public class ReferralDealServiceImpl implements ReferralDealService {
                 .program(program)
                 .sortOrder(record.getSortOrder())
                 .published(record.getPublished())
-                .aiEnabled(record.getAiEnabled())
+                .aiEnabled(record.getAiEnabled() != null ? record.getAiEnabled() : 1)
                 .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object parseProgramForApi(String programJson) {
+        if (StrUtil.isBlank(programJson)) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(programJson.trim(), Map.class);
+        } catch (Exception ex) {
+            try {
+                return objectMapper.readTree(programJson.trim());
+            } catch (Exception ignored) {
+                return programJson;
+            }
+        }
     }
 }

@@ -31,7 +31,13 @@ public class ReferralDealSchemaService {
 
     private volatile boolean ensured;
 
+    /** 兼容旧调用名 */
     public void ensureAiEnabledColumn() {
+        ensureSchema();
+    }
+
+    /** 确保表 + ai_enabled 字段存在（幂等） */
+    public void ensureSchema() {
         if (ensured) {
             return;
         }
@@ -39,8 +45,26 @@ public class ReferralDealSchemaService {
             if (ensured) {
                 return;
             }
+            jdbcTemplate.execute("""
+                    CREATE TABLE IF NOT EXISTS t_referral_deal (
+                        id                  VARCHAR(64) PRIMARY KEY,
+                        site_rebate_usd     DECIMAL(10, 2),
+                        site_rebate_label_zh VARCHAR(255),
+                        site_rebate_label_en VARCHAR(255),
+                        program_json        TEXT NOT NULL,
+                        sort_order          INT DEFAULT 0,
+                        published           SMALLINT DEFAULT 1,
+                        ai_enabled          SMALLINT DEFAULT 1,
+                        create_time         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        update_time         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        deleted             SMALLINT DEFAULT 0
+                    )
+                    """);
             jdbcTemplate.execute(
                     "ALTER TABLE t_referral_deal ADD COLUMN IF NOT EXISTS ai_enabled SMALLINT DEFAULT 1"
+            );
+            jdbcTemplate.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_referral_deal_published ON t_referral_deal (published, deleted)"
             );
             jdbcTemplate.execute(
                     "CREATE INDEX IF NOT EXISTS idx_referral_deal_ai_enabled ON t_referral_deal (ai_enabled, published, deleted)"
@@ -49,7 +73,7 @@ public class ReferralDealSchemaService {
                     "UPDATE t_referral_deal SET ai_enabled = 1 WHERE ai_enabled IS NULL"
             );
             ensured = true;
-            log.info("已确保 t_referral_deal.ai_enabled 字段就绪");
+            log.info("已确保 t_referral_deal 表与 ai_enabled 字段就绪");
         }
     }
 }

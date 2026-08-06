@@ -31,6 +31,9 @@ public class ChatCapabilitiesVO {
     /** 是否配置了联网搜索（Tavily API Key） */
     private boolean webSearch;
 
+    /** 联网搜索状态：ready / missing_key / disabled */
+    private String webSearchStatus;
+
     /** @deprecated 已由 webSearch 替代 */
     @Deprecated
     private boolean deepThinking;

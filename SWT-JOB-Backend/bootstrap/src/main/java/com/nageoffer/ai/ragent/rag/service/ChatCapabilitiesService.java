@@ -31,6 +31,10 @@ public class ChatCapabilitiesService {
         return webSearchService.isAvailable();
     }
 
+    public String webSearchStatus() {
+        return webSearchService.availabilityStatus();
+    }
+
     /** @deprecated 深度思考已替换为联网搜索 */
     @Deprecated
     public boolean isDeepThinkingAvailable() {

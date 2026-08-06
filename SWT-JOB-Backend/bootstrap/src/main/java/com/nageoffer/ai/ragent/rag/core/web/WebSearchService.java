@@ -26,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -47,8 +49,33 @@ public class WebSearchService {
     private final WebSearchProperties properties;
     private final ObjectMapper objectMapper;
 
+    @PostConstruct
+    void logAvailability() {
+        if (!properties.isEnabled()) {
+            log.info("联网搜索(Tavily): 已在配置中关闭 (rag.web-search.enabled=false)");
+            return;
+        }
+        if (StrUtil.isBlank(properties.getApiKey())) {
+            log.warn("联网搜索(Tavily): 未配置 TAVILY_API_KEY，前端不会显示「联网搜索」按钮");
+            return;
+        }
+        log.info("联网搜索(Tavily): 已配置 API Key ({}...)，联网搜索可用",
+                properties.getApiKey().substring(0, Math.min(8, properties.getApiKey().length())));
+    }
+
     public boolean isAvailable() {
         return properties.isEnabled() && StrUtil.isNotBlank(properties.getApiKey());
+    }
+
+    /** 供 capabilities 接口返回诊断信息（不含密钥） */
+    public String availabilityStatus() {
+        if (!properties.isEnabled()) {
+            return "disabled";
+        }
+        if (StrUtil.isBlank(properties.getApiKey())) {
+            return "missing_key";
+        }
+        return "ready";
     }
 
     public WebSearchBundle search(String query) {
@@ -76,12 +103,20 @@ public class WebSearchService {
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("联网搜索失败 status={} body={}", response.statusCode(), truncate(response.body(), 200));
+                log.warn("联网搜索失败 status={} body={}（若在国内服务器，请确认能访问 api.tavily.com）",
+                        response.statusCode(), truncate(response.body(), 200));
                 return WebSearchBundle.builder().build();
             }
-            return parseResponse(response.body());
+            WebSearchBundle bundle = parseResponse(response.body());
+            if (bundle.isEmpty()) {
+                log.info("联网搜索无结果 query={}", truncate(query, 80));
+            } else {
+                log.info("联网搜索命中 {} 条 query={}", bundle.getResources().size(), truncate(query, 80));
+            }
+            return bundle;
         } catch (Exception ex) {
-            log.warn("联网搜索异常 query={}", truncate(query, 80), ex);
+            log.warn("联网搜索异常 query={}（常见原因：服务器无法访问 api.tavily.com 或 Key 无效）",
+                    truncate(query, 80), ex);
             return WebSearchBundle.builder().build();
         }
     }

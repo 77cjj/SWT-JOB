@@ -42,6 +42,7 @@ SWT-JOB 本地开发启动脚本
   backend     启动基础设施 + Spring Boot 后端
   infra       仅启动 Docker 基础设施
   stop        停止前端/后端进程
+  restart     重启服务（修改 .env 后必须用这个，不要只 start）
   status      查看各服务状态
   logs        查看日志（frontend | backend）
 
@@ -53,6 +54,7 @@ SWT-JOB 本地开发启动脚本
   ./dev.sh                  # 全栈启动
   ./dev.sh frontend         # 只开前端
   ./dev.sh stop             # 停应用进程
+  ./dev.sh restart backend  # 修改 .env 后重启后端（含 TAVILY_API_KEY）
   ./dev.sh stop --infra     # 停应用 + Docker
 
 访问地址:
@@ -66,6 +68,7 @@ SWT-JOB 本地开发启动脚本
   - Node.js 18+（前端）
   - Java 17（后端，脚本会自动选用，勿用 Java 25）
   - AI 功能需在项目根 .env 或环境变量中配置 BAILIAN_API_KEY
+  - 联网搜索需在项目根 .env 配置 TAVILY_API_KEY，并 ./dev.sh restart backend
 EOF
 }
 
@@ -204,8 +207,14 @@ start_backend() {
   local log_file="$LOG_DIR/backend.log"
 
   if is_running "$pid_file"; then
-    warn "后端已在运行 (PID $(cat "$pid_file"))"
+    warn "后端已在运行 (PID $(cat "$pid_file"))，修改 .env 后请先执行: ./dev.sh restart backend"
     return 0
+  fi
+
+  if [[ -z "${TAVILY_API_KEY:-}" ]]; then
+    warn "未检测到 TAVILY_API_KEY（项目根 .env），联网搜索按钮不会出现"
+  else
+    ok "已加载 TAVILY_API_KEY（联网搜索可用）"
   fi
 
   if port_open "$BACKEND_PORT"; then
@@ -405,6 +414,34 @@ main() {
       ;;
     stop)
       stop_all "${extra_args[@]}"
+      ;;
+    restart)
+      local target="${extra_args[0]:-all}"
+      case "$target" in
+        all|"")
+          stop_all
+          start_infra
+          start_backend
+          start_frontend "$do_install"
+          print_ready
+          ;;
+        backend|be)
+          stop_process "后端" "$PID_DIR/backend.pid" "$BACKEND_PORT"
+          pkill -f "spring-boot:run" 2>/dev/null || true
+          sleep 1
+          start_infra
+          start_backend
+          print_ready
+          ;;
+        frontend|fe)
+          stop_process "前端" "$PID_DIR/frontend.pid" "$FRONTEND_PORT"
+          start_frontend "$do_install"
+          print_ready
+          ;;
+        *)
+          fail "用法: ./dev.sh restart [all|backend|frontend]"
+          ;;
+      esac
       ;;
     status|ps)
       show_status

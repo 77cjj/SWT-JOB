@@ -35,4 +35,8 @@ public class WebSearchProperties {
     private int timeoutSeconds = 8;
 
     private int maxSnippetChars = 600;
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey == null ? "" : apiKey.trim();
+    }
 }

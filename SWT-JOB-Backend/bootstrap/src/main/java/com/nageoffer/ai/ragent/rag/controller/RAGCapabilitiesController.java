@@ -39,6 +39,7 @@ public class RAGCapabilitiesController {
         return Results.success(
                 ChatCapabilitiesVO.builder()
                         .webSearch(chatCapabilitiesService.isWebSearchAvailable())
+                        .webSearchStatus(chatCapabilitiesService.webSearchStatus())
                         .deepThinking(false)
                         .build()
         );

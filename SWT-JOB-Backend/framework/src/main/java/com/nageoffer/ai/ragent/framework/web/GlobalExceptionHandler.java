@@ -159,7 +159,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = Throwable.class)
     public Result<Void> defaultErrorHandler(HttpServletRequest request, Throwable throwable) {
         log.error("[{}] {} ", request.getMethod(), getUrl(request), throwable);
-        return Results.failure();
+        String detail = throwable.getMessage();
+        if (StrUtil.isNotBlank(detail) && detail.length() > 180) {
+            detail = detail.substring(0, 180) + "…";
+        }
+        if (StrUtil.isNotBlank(detail) && (detail.contains("JsonObject") || detail.contains("serializer") || detail.contains("HttpMessageNotWritable"))) {
+            return Results.failure(BaseErrorCode.SERVICE_ERROR.code(),
+                    "接口序列化失败，请部署最新后端（薅羊毛 program 字段已改为 Jackson 序列化）");
+        }
+        if (StrUtil.isNotBlank(detail) && detail.contains("does not exist")) {
+            return Results.failure(BaseErrorCode.SERVICE_ERROR.code(),
+                    "数据库表/字段缺失，请执行: ./server.sh db up && ./server.sh restart backend --build");
+        }
+        return Results.failure(BaseErrorCode.SERVICE_ERROR.code(),
+                StrUtil.isNotBlank(detail) ? ("系统执行出错: " + detail) : BaseErrorCode.SERVICE_ERROR.message());
     }
 
     private String getUrl(HttpServletRequest request) {

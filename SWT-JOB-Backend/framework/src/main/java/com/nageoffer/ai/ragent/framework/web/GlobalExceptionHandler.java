@@ -147,8 +147,12 @@ public class GlobalExceptionHandler {
             hint = "数据主键冲突（常见于软删除后再次入库）。请刷新页面后重试；若仍失败请执行 ./server.sh db up 并部署最新后端";
         } else if (msg.contains("ai_enabled")) {
             hint = "薅羊毛 AI 开关字段缺失，请执行: ./server.sh db up（或 upgrade_v1.6_to_v1.7.sql）后重启后端";
+        } else if (msg.contains("free_chat_remaining") || msg.contains("official_verified")
+                || msg.contains("account_status") || msg.contains("display_name")
+                || msg.contains("restriction_note")) {
+            hint = "用户表字段缺失，请执行: ./server.sh db up 后重启后端（或部署含自动补齐的最新 jar）";
         } else if (msg.contains("does not exist") || msg.contains("t_referral_deal") || msg.contains("t_job_intel")) {
-            hint = "数据库表缺失，请在服务器执行: ./server.sh db up 后重启后端";
+            hint = "数据库表或字段缺失，请在服务器执行: ./server.sh db up && ./server.sh restart backend --build";
         }
         return Results.failure(BaseErrorCode.SERVICE_ERROR.code(), hint);
     }

@@ -34,6 +34,7 @@ http://localhost:3000/api/auth/google-callback
 |------|-----|
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | `xxxx.apps.googleusercontent.com` |
 | `NEXT_PUBLIC_RAGENT_API_BASE_URL` | `https://swtjob.vercel.app/api/ragent` |
+| `NEXT_PUBLIC_ENABLE_OAUTH_LOGIN` | 可选；不设时只要有 Google Client ID 就会显示 Google 登录。强制关闭设 `false` |
 
 保存后 **Redeploy**。
 

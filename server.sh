@@ -78,7 +78,7 @@ SWT-JOB 服务器一键启停脚本
   stop        停止后端（默认保留 Docker / Nginx）
   restart     重启后端，或 restart all 重启全部
   status      查看容器 / 后端 / Nginx 状态
-  db          数据库：status | up | sync | doctor | seed-intents（SWT 意图树一键灌入）
+  db          数据库：status | up | sync | doctor | bootstrap | backup | ensure-admin | seed-intents
   doctor      诊断 502 / 启动卡住原因
   logs        查看日志（backend | nginx | rustfs | postgres | redis）
 
@@ -1654,6 +1654,12 @@ main() {
         bash "$ROOT/scripts/db-migrate.sh" status
       elif [[ "${extra_args[0]}" == "seed-intents" || "${extra_args[0]}" == "seed-intent" ]]; then
         bash "$ROOT/scripts/seed-swt-intent-tree.sh" "${extra_args[@]:1}"
+      elif [[ "${extra_args[0]}" == "ensure-admin" || "${extra_args[0]}" == "admin" ]]; then
+        bash "$ROOT/scripts/ensure-admin-user.sh" "${extra_args[@]:1}"
+      elif [[ "${extra_args[0]}" == "bootstrap" || "${extra_args[0]}" == "init" ]]; then
+        bash "$ROOT/scripts/db-bootstrap-env.sh" "${extra_args[@]:1}"
+      elif [[ "${extra_args[0]}" == "backup" ]]; then
+        bash "$ROOT/scripts/db-backup.sh" "${extra_args[@]:1}"
       else
         bash "$ROOT/scripts/db-migrate.sh" "${extra_args[@]}"
       fi

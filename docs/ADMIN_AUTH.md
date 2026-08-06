@@ -16,11 +16,17 @@
 **不要把密码写进 Git 或发给聊天机器人。** 在 ECS 的 `/root/SWT-JOB/.env` 里设置后执行：
 
 ```bash
+# 推荐：空库 / admin 丢了也能重建
+ADMIN_PASSWORD='你的强密码' ./server.sh db ensure-admin
+
+# 或只改已有 admin 密码
 ADMIN_PASSWORD='你的强密码' ./scripts/set-admin-password.sh
 ./server.sh restart backend --force
 ```
 
-然后用用户名 `admin` + 新密码在管理端登录。
+然后用用户名 `admin` + 新密码在站点登录，再打开 `/admin`。
+
+环境隔离与生产库：见 `docs/DB_ENV_ISOLATION.md`。
 
 ## 备用 dev-admin（可选）
 

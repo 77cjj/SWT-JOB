@@ -43,10 +43,14 @@ usage() {
   ./server.sh db up
   ./server.sh db sync
   ./server.sh db seed-intents   # 灌入 SWT 意图树（见 scripts/seed-swt-intent-tree.sh）
+  ./server.sh db ensure-admin   # 重建 admin（需 ADMIN_PASSWORD）
+  ./server.sh db bootstrap      # 按 APP_ENV 建库/补表/迁移/admin
+  ./server.sh db backup         # pg_dump 到 backups/
 
 环境变量（可写入 .env）:
   PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE
   PG_CONTAINER   Docker/Podman 容器名（默认 ragent-postgres）；能连上容器则优先用容器内 psql
+  APP_ENV        staging | production（隔离说明见 docs/DB_ENV_ISOLATION.md）
 
 部署建议:
   ./server.sh db up                         # 单独补齐缺失表

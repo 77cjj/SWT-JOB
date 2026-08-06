@@ -19,6 +19,7 @@ package com.nageoffer.ai.ragent.user.service;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -88,17 +89,45 @@ public class GoogleOAuthService {
         String proxy = StrUtil.trimToEmpty(googleOAuthProperties.getTokeninfoProxyUrl());
         if (StrUtil.isNotBlank(proxy)) {
             try {
-                String sep = proxy.contains("?") ? "&" : "?";
-                String url = proxy + sep + "id_token=" + encoded;
-                return HttpRequest.get(url).timeout(12000).execute().body();
+                // 优先 POST：id_token 很长，GET query 易被网关截断/拒绝
+                return fetchTokenInfoViaProxy(proxy, idToken);
             } catch (Exception proxyEx) {
-                log.error("Google tokeninfo 代理也失败", proxyEx);
-                throw new ClientException("无法验证 Google 登录，请稍后重试（代理校验失败）");
+                log.error("Google tokeninfo 代理也失败 proxy={}", proxy, proxyEx);
+                throw new ClientException(
+                        "无法验证 Google 登录（代理校验失败）。请确认 ECS 能访问 "
+                                + proxy
+                                + "，且 .env 中 GOOGLE_TOKENINFO_PROXY_URL 正确后重启后端"
+                );
             }
         }
 
         log.error("Google tokeninfo 不可达且未配置 GOOGLE_TOKENINFO_PROXY_URL", directError);
         throw new ClientException("无法验证 Google 登录，请稍后重试（服务器无法连接 Google，请配置 GOOGLE_TOKENINFO_PROXY_URL）");
+    }
+
+    private String fetchTokenInfoViaProxy(String proxy, String idToken) {
+        String payload = JSONUtil.createObj().set("id_token", idToken).toString();
+        try (HttpResponse response = HttpRequest.post(proxy)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .body(payload)
+                .timeout(15000)
+                .execute()) {
+            int status = response.getStatus();
+            String body = StrUtil.nullToEmpty(response.body());
+            if (status == 401 || status == 403) {
+                throw new ClientException(
+                        "Google 代理被拒绝（HTTP " + status + "）。若 Vercel 开启了 Deployment Protection，请关闭或放行 ECS，或改用无保护的代理域名"
+                );
+            }
+            if (status >= 500) {
+                throw new IllegalStateException("proxy HTTP " + status + ": " + StrUtil.maxLength(body, 200));
+            }
+            if (StrUtil.isBlank(body)) {
+                throw new IllegalStateException("proxy empty body, HTTP " + status);
+            }
+            return body;
+        }
     }
 
     public record VerifiedGoogleUser(String subject, String email, String name, String picture) {

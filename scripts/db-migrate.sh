@@ -277,6 +277,9 @@ detect_migration_applied() {
       [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_compare_job_entry'")" == "1" ]] \
         && [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_site_feature_flag'")" == "1" ]]
       ;;
+    upgrade_v1.8_to_v1.9)
+      [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_deal_comment'")" == "1" ]]
+      ;;
     *)
       return 1
       ;;

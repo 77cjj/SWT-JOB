@@ -156,6 +156,11 @@ const menuGroups: MenuGroup[] = [
         icon: Gift
       },
       {
+        path: "/admin/deal-comments",
+        label: "薅羊毛评论",
+        icon: MessageSquare
+      },
+      {
         path: "/admin/sample-questions",
         label: "示例问题",
         icon: Lightbulb
@@ -184,6 +189,7 @@ const breadcrumbMap: Record<string, string> = {
   traces: "链路追踪",
   "sample-questions": "示例问题",
   "referral-deals": "薅羊毛项目",
+  "deal-comments": "薅羊毛评论",
   "job-intel": "岗位情报审核",
   "site-features": "功能开放开关",
   mappings: "关键词映射",

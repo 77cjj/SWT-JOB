@@ -18,6 +18,9 @@ interface ExternalLinkDialogProps {
   targetUrl: string;
   onClose: () => void;
   onConfirm: () => void;
+  /** 确认打开时同时复制链接（默认 true） */
+  copyOnConfirm?: boolean;
+  onCopied?: (ok: boolean) => void;
 }
 
 export default function ExternalLinkDialog({
@@ -26,10 +29,20 @@ export default function ExternalLinkDialog({
   targetUrl,
   onClose,
   onConfirm,
+  copyOnConfirm = true,
+  onCopied,
 }: ExternalLinkDialogProps) {
   const { t } = useI18n();
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (copyOnConfirm && targetUrl) {
+      try {
+        await navigator.clipboard.writeText(targetUrl);
+        onCopied?.(true);
+      } catch {
+        onCopied?.(false);
+      }
+    }
     openExternalUrl(targetUrl);
     onConfirm();
   };

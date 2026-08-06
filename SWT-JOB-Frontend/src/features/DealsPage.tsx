@@ -9,28 +9,25 @@ import {
   Button,
   Snackbar,
   Alert,
-  Collapse,
   IconButton,
   Tooltip,
 } from '@mui/material';
 import {
-  ContentCopy,
   OpenInNew,
   AccountBalance,
   MoreHoriz,
-  ExpandMore,
-  ExpandLess,
   History,
   InfoOutlined,
+  Edit,
 } from '@mui/icons-material';
 import {
   dealCategoryOrder,
   type DealCategory,
-  type OfferKind,
 } from '../data/referralDeals';
 import DealHistoryDialog from '../components/deals/DealHistoryDialog';
 import ExternalLinkDialog from '../components/deals/ExternalLinkDialog';
 import DealGuideDrawer from '../components/deals/DealGuideDrawer';
+import DealQuickEditDialog from '../components/deals/DealQuickEditDialog';
 import type { ReferralProgram } from '../data/referralDeals';
 import {
   formatEditionPeriod,
@@ -41,16 +38,14 @@ import {
 import { calcDealTotalUsd } from '../lib/deals/reward-total';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
-import { resolveBilingualLang } from '../i18n/types';
-import { pickBilingual, pickBilingualList } from '../i18n/bilingual';
+import { pickBilingual } from '../i18n/bilingual';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
-import { openExternalUrl } from '../lib/openExternalUrl';
+import { useAuthStore } from '@/stores/authStore';
 
 const categoryIcons: Record<'bank' | 'other', React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
   other: <MoreHoriz fontSize="small" />,
 };
-
 
 function hasReferralLink(item: ResolvedProgram): boolean {
   const url = item.edition.referralUrl;
@@ -60,35 +55,28 @@ function hasReferralLink(item: ResolvedProgram): boolean {
 function DealCard({
   item,
   lang,
-  onCopy,
+  isAdmin,
   onOpenExternal,
   onViewHistory,
   onOpenGuide,
+  onEdit,
 }: {
   item: ResolvedProgram;
   lang: Language;
-  onCopy: (url: string, title: string) => void;
+  isAdmin: boolean;
   onOpenExternal: (url: string, title: string) => void;
   onViewHistory: () => void;
   onOpenGuide: () => void;
+  onEdit: () => void;
 }) {
   const { t, tWithParams } = useI18n();
-  const [expanded, setExpanded] = useState(false);
   const { program, edition, status, isStale, daysUntilExpiry } = item;
   const title = pickBilingual(program.brandName, lang);
   const reward = pickBilingual(edition.reward, lang);
   const summary = pickBilingual(edition.summary, lang);
-  const requirements = pickBilingualList(edition.requirements, lang);
-  const tags = edition.tags ? pickBilingualList(edition.tags, lang) : [];
   const showReferral = hasReferralLink(item);
   const period = formatEditionPeriod(edition, lang);
-  const offerKind = program.offerKind as OfferKind;
   const officialUrl = edition.officialUrl;
-  const contentLang = resolveBilingualLang(lang);
-  const siteRebateChip =
-    !isStale &&
-    (program.siteRebateLabel?.[contentLang]?.trim() ||
-      (program.siteRebateUsd != null ? tWithParams('deals.siteRebateChip', { amount: program.siteRebateUsd }) : ''));
   const totalMoney = calcDealTotalUsd({
     rewardText: reward,
     siteRebateUsd: program.siteRebateUsd,
@@ -96,6 +84,18 @@ function DealCard({
 
   return (
     <Box
+      role="button"
+      tabIndex={0}
+      onClick={() => {
+        if (!isStale) onOpenGuide();
+      }}
+      onKeyDown={(e) => {
+        if (isStale) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenGuide();
+        }
+      }}
       sx={{
         position: 'relative',
         border: 1,
@@ -109,6 +109,7 @@ function DealCard({
         height: '100%',
         transition: 'box-shadow 0.2s, opacity 0.2s',
         overflow: 'hidden',
+        cursor: isStale ? 'default' : 'pointer',
         ...(isStale
           ? {
               opacity: 0.52,
@@ -132,11 +133,6 @@ function DealCard({
             background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #ec4899 100%)',
             color: '#fff',
             boxShadow: '0 6px 16px rgba(239,68,68,0.35)',
-            animation: 'dealPulse 2.4s ease-in-out infinite',
-            '@keyframes dealPulse': {
-              '0%, 100%': { transform: 'scale(1)' },
-              '50%': { transform: 'scale(1.04)' },
-            },
           }}
         >
           <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, lineHeight: 1.1, fontWeight: 600 }}>
@@ -145,44 +141,39 @@ function DealCard({
           <Typography variant="h6" fontWeight={900} sx={{ lineHeight: 1.1, letterSpacing: '-0.02em' }}>
             ${totalMoney.total.toFixed(totalMoney.total % 1 === 0 ? 0 : 1)}
           </Typography>
-          {totalMoney.platform != null && totalMoney.rebate > 0 ? (
-            <Typography variant="caption" sx={{ opacity: 0.95, fontSize: '0.65rem' }}>
-              ${totalMoney.platform}+${totalMoney.rebate}
-            </Typography>
-          ) : null}
         </Box>
       ) : null}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, pr: totalMoney.total != null ? 9 : 0 }}>
+
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 1,
+          pr: totalMoney.total != null ? 9 : 0,
+        }}
+      >
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
             <Typography
-              component="button"
-              type="button"
               variant="subtitle1"
               fontWeight={700}
-              onClick={onOpenGuide}
-              sx={{
-                color: isStale ? 'text.disabled' : 'text.primary',
-                textDecoration: 'none',
-                border: 0,
-                background: 'none',
-                cursor: 'pointer',
-                p: 0,
-                textAlign: 'left',
-                '&:hover': { textDecoration: isStale ? 'none' : 'underline' },
-              }}
+              sx={{ color: isStale ? 'text.disabled' : 'text.primary' }}
             >
               {title}
             </Typography>
             {program.pinned ? (
-              <Chip size="small" label={lang === 'zh' ? '置顶' : 'Pinned'} color="warning" sx={{ ml: 0.5 }} />
+              <Chip size="small" label={lang === 'zh' ? '置顶' : 'Pinned'} color="warning" />
             ) : null}
             {officialUrl ? (
               <Tooltip title={t('deals.officialInfo')}>
                 <IconButton
                   size="small"
                   aria-label={t('deals.officialInfo')}
-                  onClick={() => onOpenExternal(officialUrl, t('deals.officialTerms'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenExternal(officialUrl, t('deals.officialTerms'));
+                  }}
                   sx={{
                     p: 0.35,
                     color: 'primary.main',
@@ -191,6 +182,21 @@ function DealCard({
                   }}
                 >
                   <InfoOutlined sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            {isAdmin ? (
+              <Tooltip title="编辑项目">
+                <IconButton
+                  size="small"
+                  aria-label="编辑项目"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                  sx={{ p: 0.35 }}
+                >
+                  <Edit sx={{ fontSize: 18 }} />
                 </IconButton>
               </Tooltip>
             ) : null}
@@ -203,25 +209,6 @@ function DealCard({
             {reward}
           </Typography>
         </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-        <Chip
-          size="small"
-          label={t(`deals.offerKind.${offerKind}`)}
-          variant="outlined"
-          color={offerKind === 'refer' ? 'primary' : 'default'}
-          disabled={isStale}
-        />
-        {siteRebateChip ? (
-          <Chip size="small" label={siteRebateChip} color="secondary" variant="filled" disabled={isStale} />
-        ) : null}
-        {edition.requiresInPerson ? (
-          <Chip size="small" label={t('deals.inPersonOnly')} variant="outlined" disabled={isStale} />
-        ) : null}
-        {tags.map((tag) => (
-          <Chip key={tag} size="small" label={tag} variant="outlined" disabled={isStale} />
-        ))}
       </Box>
 
       <Typography variant="caption" color={isStale ? 'text.disabled' : 'text.secondary'}>
@@ -252,50 +239,19 @@ function DealCard({
         </Typography>
       ) : null}
 
-      <Collapse in={expanded}>
-        <Box component="ul" sx={{ m: 0, pl: 2.5, color: isStale ? 'text.disabled' : 'text.secondary' }}>
-          {requirements.map((req) => (
-            <Typography component="li" variant="body2" key={req} sx={{ mb: 0.5 }}>
-              {req}
-            </Typography>
-          ))}
-        </Box>
-      </Collapse>
-
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <IconButton size="small" onClick={() => setExpanded((v) => !v)} aria-label="toggle details">
-          {expanded ? <ExpandLess /> : <ExpandMore />}
-        </IconButton>
-        <Typography variant="caption" color="text.secondary">
-          {expanded ? t('deals.hideDetails') : t('deals.showDetails')}
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }}>
-        {!isStale ? (
-          <Button variant="outlined" size="small" onClick={onOpenGuide}>
-            {t('deals.viewGuide')}
-          </Button>
-        ) : null}
+      <Box
+        sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 'auto', pt: 0.5 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {!isStale && showReferral ? (
-          <>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<OpenInNew />}
-              onClick={() => onOpenExternal(edition.referralUrl!, title)}
-            >
-              {t('deals.openReferralLink')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ContentCopy />}
-              onClick={() => onCopy(edition.referralUrl!, title)}
-            >
-              {t('deals.copyReferralLink')}
-            </Button>
-          </>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<OpenInNew />}
+            onClick={() => onOpenExternal(edition.referralUrl!, title)}
+          >
+            {t('deals.openReferralLink')}
+          </Button>
         ) : null}
         {program.editions.length > 1 ? (
           <Button
@@ -308,20 +264,21 @@ function DealCard({
             {t('deals.viewHistory')}
           </Button>
         ) : null}
+        {isAdmin ? (
+          <Button variant="outlined" size="small" startIcon={<Edit />} onClick={onEdit}>
+            编辑
+          </Button>
+        ) : null}
       </Box>
-
-      {!isStale && !showReferral && offerKind === 'signup_bonus' ? (
-        <Typography variant="caption" color="text.secondary">
-          {t('deals.signupBonusHint')}
-        </Typography>
-      ) : null}
     </Box>
   );
 }
 
 export default function DealsPage() {
   const { t, tWithParams, language } = useI18n();
-  const { programs } = useReferralPrograms();
+  const { programs, refresh } = useReferralPrograms();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'admin';
   const [category, setCategory] = useState<DealCategory | 'all'>('all');
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity?: 'success' | 'info' }>({
     open: false,
@@ -330,6 +287,7 @@ export default function DealsPage() {
   });
   const [historyTarget, setHistoryTarget] = useState<ResolvedProgram | null>(null);
   const [guideProgram, setGuideProgram] = useState<ReferralProgram | null>(null);
+  const [editProgram, setEditProgram] = useState<ReferralProgram | null>(null);
   const [externalLink, setExternalLink] = useState<{ url: string; label: string } | null>(null);
 
   const allResolved = useMemo(() => resolveAllPrograms(programs), [programs]);
@@ -344,23 +302,7 @@ export default function DealsPage() {
     return sortProgramsForDisplay(base);
   }, [allResolved, category]);
 
-  const handleCopy = async (url: string, title: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setSnack({
-        open: true,
-        severity: 'success',
-        message: tWithParams('deals.copied', { title }),
-      });
-    } catch {
-      setSnack({ open: true, severity: 'info', message: t('deals.copyFailed') });
-    }
-  };
-
   const handleConfirmExternal = () => {
-    if (externalLink?.url) {
-      openExternalUrl(externalLink.url);
-    }
     setExternalLink(null);
   };
 
@@ -398,10 +340,11 @@ export default function DealsPage() {
             key={item.program.id}
             item={item}
             lang={language}
-            onCopy={handleCopy}
+            isAdmin={isAdmin}
             onOpenExternal={(url, label) => setExternalLink({ url, label })}
             onViewHistory={() => setHistoryTarget(item)}
             onOpenGuide={() => setGuideProgram(item.program)}
+            onEdit={() => setEditProgram(item.program)}
           />
         ))}
       </Box>
@@ -410,6 +353,25 @@ export default function DealsPage() {
         open={Boolean(guideProgram)}
         onClose={() => setGuideProgram(null)}
         program={guideProgram}
+        onCopied={(ok) =>
+          setSnack({
+            open: true,
+            severity: ok ? 'success' : 'info',
+            message: ok
+              ? tWithParams('deals.copied', { title: guideProgram?.brandName.zh || '' })
+              : t('deals.copyFailed'),
+          })
+        }
+      />
+
+      <DealQuickEditDialog
+        open={Boolean(editProgram)}
+        program={editProgram}
+        onClose={() => setEditProgram(null)}
+        onSaved={async () => {
+          setSnack({ open: true, severity: 'success', message: '已保存项目' });
+          await refresh();
+        }}
       />
 
       {filtered.length === 0 ? (
@@ -442,6 +404,16 @@ export default function DealsPage() {
         targetUrl={externalLink?.url ?? ''}
         onClose={() => setExternalLink(null)}
         onConfirm={handleConfirmExternal}
+        copyOnConfirm
+        onCopied={(ok) =>
+          setSnack({
+            open: true,
+            severity: ok ? 'success' : 'info',
+            message: ok
+              ? tWithParams('deals.copied', { title: externalLink?.label ?? '' })
+              : t('deals.copyFailed'),
+          })
+        }
       />
 
       <Snackbar

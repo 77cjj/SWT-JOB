@@ -216,8 +216,9 @@ export function ReferralDealsAdminPage() {
     const enabled = checked ? 1 : 0;
     try {
       if (!row.inDatabase) {
+        // 静态/软删除后回显：用 upsert 入库并设置 AI，避免「项目 ID 已存在」
         const payload = programToSavePayload(row.program, row.published, row.sortOrder, enabled);
-        await saveReferralDeal(row.program.id, payload, true);
+        await bulkUpsertReferralDeals([payload]);
       } else {
         await setReferralDealAiEnabled(row.program.id, enabled);
       }

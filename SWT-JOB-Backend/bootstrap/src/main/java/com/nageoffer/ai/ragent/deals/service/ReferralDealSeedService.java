@@ -72,7 +72,8 @@ public class ReferralDealSeedService {
                 continue;
             }
             String id = item.getId().trim().toLowerCase();
-            if (referralDealMapper.selectById(id) != null) {
+            ReferralDealDO existing = referralDealMapper.selectAnyById(id);
+            if (existing != null && (existing.getDeleted() == null || existing.getDeleted() == 0)) {
                 continue;
             }
             validateProgramJson(item.getProgramJson());
@@ -86,7 +87,11 @@ public class ReferralDealSeedService {
                     .published(item.getPublished() != null ? item.getPublished() : 1)
                     .aiEnabled(item.getAiEnabled() != null ? item.getAiEnabled() : 1)
                     .build();
-            referralDealMapper.insert(record);
+            if (existing != null) {
+                referralDealMapper.restoreAndUpdate(record);
+            } else {
+                referralDealMapper.insert(record);
+            }
             inserted++;
         }
         if (inserted > 0) {

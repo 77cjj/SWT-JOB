@@ -22,6 +22,7 @@ SKIP_ROCKETMQ="${SKIP_ROCKETMQ:-auto}"
 SKIP_UPDATE_CHECK=false
 AUTO_PULL_BUILD=false
 DO_BUILD=false
+AUTO_MIGRATE=false
 FORCE_BACKEND=false
 GIT_PULL_FORCE=false
 
@@ -89,8 +90,9 @@ SWT-JOB 服务器一键启停脚本
 选项:
   --infra     stop / restart 时包含 Docker 容器
   --nginx     stop / restart 时包含 Nginx（stop 会停整个 Nginx 服务）
-  --build     backend / all / restart 前先编译 jar
+  --build     backend / all / restart 前先编译 jar（同时会跑 db up）
   --pull      检测到更新时自动拉取并重新编译（非交互）
+  --migrate   启动/重启前执行 ./server.sh db up（补齐缺失表）
   --skip-update-check  跳过后端更新检测，直接启动
   --force     强杀旧进程；与 --pull 联用时 git reset --hard 对齐远程 master
 
@@ -1090,6 +1092,29 @@ build_backend() {
   ok "编译完成: ${jar}"
 }
 
+run_db_migrate_up() {
+  local migrate_script="$ROOT/scripts/db-migrate.sh"
+  if [[ ! -x "$migrate_script" && ! -f "$migrate_script" ]]; then
+    warn "未找到 ${migrate_script}，跳过数据库迁移"
+    return 0
+  fi
+  info "执行数据库迁移: ./server.sh db up"
+  load_env
+  if bash "$migrate_script" up; then
+    ok "数据库迁移完成"
+  else
+    warn "数据库迁移失败（可稍后手动: ./server.sh db doctor && ./server.sh db up）"
+    return 1
+  fi
+}
+
+maybe_run_db_migrate() {
+  # --build 部署时默认顺带补齐 schema；也可用 --migrate 单独触发
+  if [[ "$AUTO_MIGRATE" == "true" || "$DO_BUILD" == "true" ]]; then
+    run_db_migrate_up || true
+  fi
+}
+
 stop_backend() {
   local pid_file="$PID_DIR/backend.pid"
   if is_running "$pid_file"; then
@@ -1507,6 +1532,7 @@ restart_services() {
     case "$arg" in
       --build) do_build=true; DO_BUILD=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
+      --migrate) AUTO_MIGRATE=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
       --force) FORCE_BACKEND=true; GIT_PULL_FORCE=1 ;;
       --infra|--nginx) extra_args+=("$arg") ;;
@@ -1519,6 +1545,7 @@ restart_services() {
       stop_all "${extra_args[@]}"
       maybe_prepare_backend "$do_build"
       start_infra
+      maybe_run_db_migrate
       start_backend
       nginx_cmd reload
       print_ready
@@ -1526,6 +1553,7 @@ restart_services() {
     backend|be)
       stop_backend
       maybe_prepare_backend "$do_build"
+      maybe_run_db_migrate
       start_backend
       ok "后端已重启"
       ;;
@@ -1550,6 +1578,7 @@ main() {
     case "$arg" in
       --build) DO_BUILD=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
+      --migrate) AUTO_MIGRATE=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
       --force) FORCE_BACKEND=true; GIT_PULL_FORCE=1 ;;
       --infra|--nginx) extra_args+=("$arg") ;;
@@ -1564,6 +1593,7 @@ main() {
     all|start)
       start_infra
       maybe_prepare_backend "$DO_BUILD"
+      maybe_run_db_migrate
       start_backend
       nginx_cmd reload
       print_ready
@@ -1598,6 +1628,7 @@ main() {
     backend|be)
       start_infra
       maybe_prepare_backend "$DO_BUILD"
+      maybe_run_db_migrate
       start_backend
       print_ready
       ;;

@@ -49,6 +49,22 @@ GOOGLE_TOKENINFO_PROXY_URL=https://swtjob.vercel.app/api/auth/google-tokeninfo
 
 `GOOGLE_CLIENT_SECRET` 仅后端验证扩展接口时使用；当前实现用 `tokeninfo` 校验 `idToken`，**必须配置 `GOOGLE_CLIENT_ID`**。若直连 Google 超时并报「无法验证 Google 登录」，配置 `GOOGLE_TOKENINFO_PROXY_URL` 后重启即可。
 
+若报 **「代理校验失败」**：
+
+1. 确认 ECS `.env` 里 `GOOGLE_TOKENINFO_PROXY_URL` 正好是  
+   `https://swtjob.vercel.app/api/auth/google-tokeninfo`（不要多路径、不要漏写）
+2. 在 ECS 上自测代理（应返回 JSON，而不是 HTML/401）：
+   ```bash
+   curl -sS -X POST 'https://swtjob.vercel.app/api/auth/google-tokeninfo' \
+     -H 'Content-Type: application/json' \
+     -d '{"id_token":"test"}'
+   ```
+3. 若 Vercel 开了 Deployment Protection / 密码访问，会拦 ECS → 关掉保护或换无保护域名
+4. 拉最新后端（代理改为 **POST body**，避免超长 token 塞进 URL 被截断）后：
+   ```bash
+   ./server.sh restart backend --build --force
+   ```
+
 重启后端（**代码更新后必须重新编译 jar**）：
 
 ```bash

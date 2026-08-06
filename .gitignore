@@ -37,6 +37,10 @@ logs/
 scripts/logs/
 .playwright-mcp/
 
+# DB dumps from ./server.sh db backup
+backups/
+*.sql.gz
+
 # Local-only source material and git backups
 .git-backups/
 清洗完毕文档/

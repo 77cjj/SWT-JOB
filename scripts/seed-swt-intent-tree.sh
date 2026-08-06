@@ -57,7 +57,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "$PY_SEED" ]] || fail "缺少 ${PY_SEED}"
-command -v python3 >/dev/null 2>&1 || fail "需要 python3"
+
+# 优先较新的 python3.x（脚本兼容 3.6+；部分 ECS 默认 python3 过旧）
+pick_python() {
+  local cand
+  for cand in python3.12 python3.11 python3.10 python3.9 python3.8 python3.7 python3.6 python3; do
+    command -v "$cand" >/dev/null 2>&1 || continue
+    if "$cand" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 6) else 1)' 2>/dev/null; then
+      echo "$cand"
+      return 0
+    fi
+  done
+  return 1
+}
+PYTHON_BIN="$(pick_python)" || fail "需要 Python >= 3.6（当前 python3 过旧或未安装）。可 yum/apt 安装 python3，或用 conda/pyenv。"
+info "使用 Python: ${PYTHON_BIN} ($("${PYTHON_BIN}" -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])'))"
 
 # 复用 db-migrate 的连接探测（导出函数太难，直接 source 部分逻辑）
 load_env() {
@@ -153,7 +167,7 @@ if [[ -n "$DEALS_KB_ID" ]]; then
   DEALS_COL="$(run_psql_scalar "SELECT collection_name FROM t_knowledge_base WHERE id='${DEALS_KB_ID}' AND deleted=0 LIMIT 1" | tr -d '[:space:]' || true)"
   info "薅羊毛知识库: id=${DEALS_KB_ID} collection=${DEALS_COL:-}"
 else
-  warn "未单独识别薅羊毛 KB，deals 节点将回退到主知识库"
+  warn "未单独识别薅羊毛 KB（名称含 羊毛/deal/refer），deals 节点将回退到主知识库（可忽略，或稍后 --deals-kb-id）"
   DEALS_KB_ID="$KB_ID"
   DEALS_COL="$KB_COL"
 fi
@@ -168,8 +182,8 @@ PY_ARGS=(--print-sql)
 TMP_SQL="$(mktemp /tmp/swt-intent-seed.XXXXXX.sql)"
 trap 'rm -f "$TMP_SQL"' EXIT
 
-python3 "$PY_SEED" "${PY_ARGS[@]}" >"$TMP_SQL"
-COUNT="$(python3 "$PY_SEED" --count)"
+"${PYTHON_BIN}" "$PY_SEED" "${PY_ARGS[@]}" >"$TMP_SQL"
+COUNT="$("${PYTHON_BIN}" "$PY_SEED" --count)"
 info "将写入 ${COUNT} 个意图节点"
 
 if [[ "$DRY_RUN" == true ]]; then

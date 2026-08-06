@@ -56,12 +56,15 @@ PGPASSWORD='强密码'
 
 ```bash
 ./server.sh db                 # 迁移状态
-./server.sh db up              # 补齐 upgrade
+./server.sh db up              # 补齐 upgrade（也会检查岗位情报表是否被误登记但实际缺失）
 ./server.sh db bootstrap       # 按 APP_ENV 引导
 ./server.sh db ensure-admin    # 重建/重置 admin（需 ADMIN_PASSWORD）
 ./server.sh db backup          # pg_dump 到 backups/
 ./server.sh db seed-intents    # 只动意图树，不动用户表
 ```
+
+> 岗位情报后台若提示「表或字段缺失」：再跑一次 `./server.sh db up`，并 `./server.sh restart backend --build --force`。
+> 新版后端启动时会自动 `CREATE TABLE IF NOT EXISTS` 补齐 `t_job_intel_*`（兼容历史迁移误登记）。
 
 ## 管理员账号
 

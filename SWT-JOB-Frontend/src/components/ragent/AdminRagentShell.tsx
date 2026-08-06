@@ -15,6 +15,7 @@ import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTerm
 import { SampleQuestionPage } from "@/pages/admin/sample-questions/SampleQuestionPage";
 import { ReferralDealsAdminPage } from "@/pages/admin/referral-deals/ReferralDealsAdminPage";
 import { JobIntelAdminPage } from "@/pages/admin/job-intel/JobIntelAdminPage";
+import { SiteFeaturesAdminPage } from "@/pages/admin/site-features/SiteFeaturesAdminPage";
 import { SystemSettingsPage } from "@/pages/admin/settings/SystemSettingsPage";
 import { RagTraceDetailPage } from "@/pages/admin/traces/RagTraceDetailPage";
 import { RagTracePage } from "@/pages/admin/traces/RagTracePage";
@@ -71,6 +72,8 @@ function resolveAdminPage(segments: string[]): ReactNode {
       return segments.length === 1 ? <ReferralDealsAdminPage /> : <NotFoundPage />;
     case "job-intel":
       return segments.length === 1 ? <JobIntelAdminPage /> : <NotFoundPage />;
+    case "site-features":
+      return segments.length === 1 ? <SiteFeaturesAdminPage /> : <NotFoundPage />;
     case "mappings":
       return segments.length === 1 ? <QueryTermMappingPage /> : <NotFoundPage />;
     case "users":

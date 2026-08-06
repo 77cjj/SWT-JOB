@@ -13,6 +13,8 @@ import {
   markOnboardingDone,
   type OnboardingStep,
 } from '../../lib/onboarding/steps';
+import { useSiteFeatures } from '../../context/SiteFeaturesContext';
+import { featureKeyForPath } from '../../lib/site/siteFeaturesApi';
 
 type OnboardingContextValue = {
   startTour: () => void;
@@ -221,16 +223,23 @@ export function OnboardingTour() {
   const router = useRouter();
   const isMobile = useDevice();
   const userId = useAuthStore((s) => s.user?.userId ?? null);
+  const { features, loading: featuresLoading } = useSiteFeatures();
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(true);
 
   const section =
     router.pathname === '/deals' && router.query.section === 'market' ? 'market' : undefined;
-  const steps = useMemo(
-    () => getStepsForRoute(router.pathname, section),
-    [router.pathname, section],
-  );
+  const featureEnabled = useMemo(() => {
+    const key = featureKeyForPath(router.pathname);
+    if (!key) return true;
+    return features[key] !== false;
+  }, [features, router.pathname]);
+  const steps = useMemo(() => {
+    // 功能未开放时不展示新手教程
+    if (!featureEnabled) return [] as OnboardingStep[];
+    return getStepsForRoute(router.pathname, section);
+  }, [featureEnabled, router.pathname, section]);
 
   useEffect(() => {
     setDone(isOnboardingDone(userId));
@@ -262,6 +271,11 @@ export function OnboardingTour() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (featuresLoading) return;
+    if (!featureEnabled) {
+      setActive(false);
+      return;
+    }
     if (isOnboardingDone(userId)) return;
     if (steps.length === 0) return;
 
@@ -287,7 +301,7 @@ export function OnboardingTour() {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [router.pathname, section, steps, userId]);
+  }, [router.pathname, section, steps, userId, featureEnabled, featuresLoading]);
 
   const supportVisible = !shouldHideSupportWidget(router.pathname);
 

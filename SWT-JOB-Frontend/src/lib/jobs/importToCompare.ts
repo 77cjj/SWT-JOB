@@ -1,5 +1,6 @@
 import type { JobRecord } from '../../types/job';
 import { SAVED_JOBS_UPDATED_EVENT } from '../../hooks/useSavedJobs';
+import { submitCompareJobToServer } from '../compare/compareJobApi';
 
 const STORAGE_KEY = 'swt-saved-jobs';
 const DEFAULT_PROJECT_START = '2026-06-01';
@@ -34,7 +35,7 @@ function writeSavedJobs(jobs: JobRecord[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
 }
 
-/** 将岗位情报库条目导入「选岗计算器」已保存列表 */
+/** 将岗位情报库条目导入「选岗计算器」已保存列表，并异步同步到服务器 */
 export function importIntelJobToCompare(source: JobRecord): JobRecord {
   const imported: JobRecord = {
     ...source,
@@ -44,6 +45,9 @@ export function importIntelJobToCompare(source: JobRecord): JobRecord {
   writeSavedJobs([...existing, imported]);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(SAVED_JOBS_UPDATED_EVENT));
+    void submitCompareJobToServer({ ...imported }).catch(() => {
+      // 本地已保存；服务器失败不阻断导入
+    });
   }
   return imported;
 }

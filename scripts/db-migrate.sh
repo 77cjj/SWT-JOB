@@ -273,6 +273,10 @@ detect_migration_applied() {
     upgrade_v1.6_to_v1.7)
       [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='t_referral_deal' AND column_name='ai_enabled'")" == "1" ]]
       ;;
+    upgrade_v1.7_to_v1.8)
+      [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_compare_job_entry'")" == "1" ]] \
+        && [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_site_feature_flag'")" == "1" ]]
+      ;;
     *)
       return 1
       ;;
@@ -353,6 +357,29 @@ print_status() {
   echo ""
 }
 
+# 修复「迁移已登记但表实际缺失」的历史坑（尤其是岗位情报 v1.4→v1.5）
+heal_missing_critical_tables() {
+  local dry_run="${1:-false}"
+  local contrib_n
+  contrib_n="$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_job_intel_contribution'")"
+  if [[ "$contrib_n" != "1" ]]; then
+    local f="$DB_DIR/upgrade_v1.4_to_v1.5.sql"
+    if [[ ! -f "$f" ]]; then
+      warn "缺少 $f，无法自动补齐岗位情报表"
+      return 0
+    fi
+    if [[ "$dry_run" == true ]]; then
+      info "[dry-run] 将强制补齐岗位情报表: $(basename "$f")"
+      return 0
+    fi
+    warn "检测到 t_job_intel_contribution 缺失（即使迁移已登记也会补齐）"
+    info "强制执行: $(basename "$f") ..."
+    run_psql_file "$f"
+    record_migration "upgrade_v1.4_to_v1.5" "$(basename "$f")"
+    ok "已补齐岗位情报相关表"
+  fi
+}
+
 apply_pending() {
   local dry_run="${1:-false}"
   ensure_migration_table
@@ -385,8 +412,10 @@ apply_pending() {
     applied=$((applied + 1))
   done
 
+  heal_missing_critical_tables "$dry_run"
+
   if [[ $applied -eq 0 ]]; then
-    ok "没有需要执行的迁移。"
+    ok "没有需要执行的迁移（已检查关键表是否缺失）。"
   fi
 }
 

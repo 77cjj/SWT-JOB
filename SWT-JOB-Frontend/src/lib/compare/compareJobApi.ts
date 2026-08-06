@@ -1,6 +1,6 @@
 import { RAGENT_API_BASE_URL } from '@/config/runtimeEnv';
 import { storage } from '@/utils/storage';
-import type { JobRecord } from '@/types/job';
+import type { JobRecord } from '../../types/job';
 
 function baseUrl() {
   return RAGENT_API_BASE_URL.replace(/\/$/, '');

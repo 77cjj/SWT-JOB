@@ -8,6 +8,7 @@
     "dev:clean": "rm -rf .next-dev && NEXT_DIST_DIR=.next-dev next dev -H 127.0.0.1",
     "start": "next start",
     "build": "next build",
+    "check": "NEXT_TELEMETRY_DISABLED=1 NEXT_PUBLIC_RAGENT_API_BASE_URL=${NEXT_PUBLIC_RAGENT_API_BASE_URL:-https://example.com/api/ragent} NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID:-placeholder} NEXT_PUBLIC_SANITY_DATASET=${NEXT_PUBLIC_SANITY_DATASET:-production} next build",
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "sanity": "sanity dev --host 127.0.0.1 --port 3333",

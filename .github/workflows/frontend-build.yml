@@ -1,0 +1,51 @@
+name: Frontend Build Check
+
+on:
+  pull_request:
+    paths:
+      - "SWT-JOB-Frontend/**"
+      - "scripts/check-frontend.sh"
+      - ".github/workflows/frontend-build.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "SWT-JOB-Frontend/**"
+      - "scripts/check-frontend.sh"
+      - ".github/workflows/frontend-build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: SWT-JOB-Frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: SWT-JOB-Frontend/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Production build (Vercel-equivalent typecheck)
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          # 占位即可：只为通过构建期环境变量校验，不依赖真实 Sanity/API
+          NEXT_PUBLIC_RAGENT_API_BASE_URL: https://example.com/api/ragent
+          NEXT_PUBLIC_SANITY_PROJECT_ID: placeholder
+          NEXT_PUBLIC_SANITY_DATASET: production
+        run: npm run build

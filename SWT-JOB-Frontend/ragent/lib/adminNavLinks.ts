@@ -23,6 +23,7 @@ export const ADMIN_NAV_FLAT_ITEMS: AdminNavFlatItem[] = [
   { path: "/admin/users", label: "用户管理" },
   { path: "/admin/job-intel", label: "岗位情报审核" },
   { path: "/admin/referral-deals", label: "薅羊毛项目" },
+  { path: "/admin/deal-comments", label: "薅羊毛评论" },
   { path: "/admin/sample-questions", label: "示例问题" },
   { path: "/admin/site-features", label: "功能开放开关" },
   { path: "/admin/settings", label: "系统设置" }

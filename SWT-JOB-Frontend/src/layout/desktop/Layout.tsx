@@ -46,7 +46,8 @@ export default function DesktopLayout({
   const rootMinH = rootClassName?.includes('h-') ? '' : 'min-h-screen';
   const headerBorderClass = isDark ? 'border-neutral-800/60' : 'border-neutral-200';
   // 登录/注册弹窗打开时抬高顶栏，保证可切换语言
-  const headerZ = authDialogOpen ? 'z-[1060]' : 'z-50';
+  // 高于维护毛玻璃（1200），保证顶栏始终可点返回
+  const headerZ = authDialogOpen ? 'z-[1600]' : 'z-[1300]';
   const headerStickyClass = isDark
     ? `sticky top-0 ${headerZ} border-b bg-neutral-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/70`
     : `sticky top-0 ${headerZ} border-b bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70`;
@@ -55,7 +56,10 @@ export default function DesktopLayout({
   const linkActiveClass = isDark ? 'text-neutral-100 font-semibold' : 'text-neutral-900 font-semibold';
 
   return (
-    <div className={cn(rootClass, 'flex flex-col', rootMinH, rootClassName)}>
+    <div
+      className={cn(rootClass, 'flex flex-col', rootMinH, rootClassName)}
+      style={{ ['--app-header-height' as string]: '56px', ['--app-bottom-nav-height' as string]: '0px' }}
+    >
       <header className={`shrink-0 px-8 py-3 ${headerStickyClass} ${headerBorderClass}`}>
         <div className={`mx-auto flex ${maxWidthClassName} items-center justify-between`}>
           <h1 className="text-xl font-semibold tracking-wide">SWT Helper</h1>

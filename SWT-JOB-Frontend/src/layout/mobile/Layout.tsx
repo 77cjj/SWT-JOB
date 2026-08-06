@@ -47,7 +47,8 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
   const pathname = router.pathname;
   const isDark = mode === 'dark';
   const authDialogOpen = useAuthStore((s) => s.loginDialogOpen);
-  const headerZ = authDialogOpen ? 'z-[1060]' : 'z-50';
+  // 高于维护毛玻璃（1200），保证顶栏始终可点返回
+  const headerZ = authDialogOpen ? 'z-[1600]' : 'z-[1300]';
 
   const navLabel = (key: NavKey) => {
     const full = t(`nav.${key}`);
@@ -65,6 +66,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
         isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-white text-neutral-900',
         rootClassName,
       )}
+      style={{ ['--app-header-height' as string]: '56px', ['--app-bottom-nav-height' as string]: '5rem' }}
     >
       <header
         className={`sticky top-0 ${headerZ} flex shrink-0 items-center justify-between border-b px-4 py-3 backdrop-blur-md ${
@@ -95,7 +97,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
         {children}
       </main>
       <nav
-        className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 shrink-0 border-t pb-[env(safe-area-inset-bottom,0px)] ${
+        className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-[1300] shrink-0 border-t pb-[env(safe-area-inset-bottom,0px)] ${
           isDark ? 'border-neutral-800/60 bg-neutral-950' : 'border-neutral-200 bg-white'
         }`}
       >

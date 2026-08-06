@@ -15,7 +15,7 @@ const LABELS: Record<string, string> = {
 
 /**
  * 功能未开放时：页面内容仍渲染，上层叠加毛玻璃 + 维护提示。
- * 管理员后台路由不受影响。
+ * 不遮挡顶部菜单栏（以及移动端底栏），保证用户能离开当前页。
  */
 export function FeatureMaintenanceGate() {
   const router = useRouter();
@@ -38,8 +38,16 @@ export function FeatureMaintenanceGate() {
       aria-label={`${label}维护中`}
       sx={{
         position: 'fixed',
-        inset: 0,
-        zIndex: 1500,
+        // 避开顶栏，保留导航可点
+        top: 'var(--app-header-height, 56px)',
+        left: 0,
+        right: 0,
+        // 移动端避开底栏
+        bottom: {
+          xs: 'calc(var(--app-bottom-nav-height, 5rem) + env(safe-area-inset-bottom, 0px))',
+          md: 0,
+        },
+        zIndex: 1200,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -47,6 +55,7 @@ export function FeatureMaintenanceGate() {
         background: 'rgba(15, 23, 42, 0.28)',
         backdropFilter: 'blur(14px) saturate(1.15)',
         WebkitBackdropFilter: 'blur(14px) saturate(1.15)',
+        pointerEvents: 'auto',
       }}
     >
       <Box
@@ -74,7 +83,7 @@ export function FeatureMaintenanceGate() {
           {label}仍在开发中
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-          网站维护者正在完善此页面。内容可从菜单进入预览，正式开放前暂不可操作；敬请期待。
+          网站维护者正在完善此页面。可点击上方菜单切换到其他功能；正式开放前暂不可操作。
         </Typography>
       </Box>
     </Box>

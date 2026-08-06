@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { EyeOff, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload } from 'lucide-react';
+import { EyeOff, MessageSquare, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -345,6 +346,12 @@ export function ReferralDealsAdminPage() {
                       <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
                         <Pencil className="mr-1 h-4 w-4" />
                         编辑
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/admin/deal-comments?dealId=${encodeURIComponent(program.id)}`}>
+                          <MessageSquare className="mr-1 h-4 w-4" />
+                          评论
+                        </Link>
                       </Button>
                       {row.published === 0 ? (
                         <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { ReferralProgram } from '../../data/referralDeals';
 import { referralPrograms as staticPrograms } from '../../data/referralDeals';
@@ -12,25 +12,32 @@ export function useReferralPrograms() {
   const [programs, setPrograms] = useState<ReferralProgram[]>(staticPrograms);
   const [loading, setLoading] = useState(true);
 
+  const refresh = useCallback(async () => {
+    try {
+      const [records, excludedIds] = await Promise.all([
+        fetchPublicReferralDeals(),
+        fetchExcludedDealIds(),
+      ]);
+      setPrograms(mergeReferralPrograms(records, excludedIds));
+    } catch {
+      // 保持现有数据
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
-    Promise.all([fetchPublicReferralDeals(), fetchExcludedDealIds()])
-      .then(([records, excludedIds]) => {
-        if (!active) return;
-        setPrograms(mergeReferralPrograms(records, excludedIds));
-      })
-      .catch(() => {
-        // 保持静态数据
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    void (async () => {
+      await refresh();
+      if (!active) return;
+    })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [refresh]);
 
-  return { programs, loading };
+  return { programs, loading, refresh, setPrograms };
 }
 
 export function findReferralProgram(programs: ReferralProgram[], id: string) {

@@ -24,7 +24,6 @@ import {
   type ResolvedProgram,
 } from '../../lib/deals/deal-utils';
 import type { ReferralProgram } from '../../data/referralDeals';
-import { openExternalUrl } from '../../lib/openExternalUrl';
 
 
 function StepList({ title, steps }: { title: string; steps: string[] }) {
@@ -49,9 +48,10 @@ type DealGuideDrawerProps = {
   open: boolean;
   onClose: () => void;
   program: ReferralProgram | null;
+  onCopied?: (ok: boolean) => void;
 };
 
-export default function DealGuideDrawer({ open, onClose, program }: DealGuideDrawerProps) {
+export default function DealGuideDrawer({ open, onClose, program, onCopied }: DealGuideDrawerProps) {
   const { t, language } = useI18n();
   const lang = language as Language;
   const resolved: ResolvedProgram | null = program ? resolveProgram(program) : null;
@@ -67,9 +67,6 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
   }, [open]);
 
   const handleConfirmExternal = () => {
-    if (externalLink?.url) {
-      openExternalUrl(externalLink.url);
-    }
     setExternalLink(null);
   };
 
@@ -223,6 +220,8 @@ export default function DealGuideDrawer({ open, onClose, program }: DealGuideDra
         targetLabel={externalLink?.label ?? ''}
         onClose={() => setExternalLink(null)}
         onConfirm={handleConfirmExternal}
+        copyOnConfirm
+        onCopied={onCopied}
       />
     </>
   );

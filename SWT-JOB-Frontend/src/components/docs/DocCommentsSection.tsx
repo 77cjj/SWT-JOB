@@ -279,22 +279,81 @@ export function CommentsSection({ contextKind, contextId }: CommentsSectionProps
   const [localVersion, setLocalVersion] = useState(0);
   const [draft, setDraft] = useState('');
   const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [remoteDealComments, setRemoteDealComments] = useState<import('../../lib/docs/comments/demoComments').DocComment[]>([]);
+  const [remoteReady, setRemoteReady] = useState(contextKind !== 'deal');
 
   useEffect(() => {
     setVotes(readUserVotes());
   }, [localVersion]);
 
+  useEffect(() => {
+    if (contextKind !== 'deal' || !contextId) {
+      setRemoteReady(true);
+      return;
+    }
+    let cancelled = false;
+    setRemoteReady(false);
+    void import('../../lib/deals/dealCommentApi')
+      .then(({ fetchPublicDealComments }) => fetchPublicDealComments(contextId))
+      .then((rows) => {
+        if (cancelled) return;
+        setRemoteDealComments(
+          rows.map((r) => ({
+            id: r.id,
+            dealId: r.dealId,
+            userId: r.userId,
+            parentId: r.parentId,
+            body: r.body,
+            programYear: '—',
+            workState: '—',
+            helpfulCount: r.helpfulCount ?? 0,
+            dislikeCount: r.dislikeCount ?? 0,
+            createdAt: (r.createTime || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+          })),
+        );
+        setRemoteReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRemoteDealComments([]);
+        setRemoteReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [contextKind, contextId, localVersion]);
+
   const forest = useMemo(() => {
-    const base = getCommentsForContext(contextKind, contextId);
+    const base =
+      contextKind === 'deal'
+        ? remoteReady
+          ? remoteDealComments
+          : []
+        : getCommentsForContext(contextKind, contextId);
+    // 远程 + 本地兜底一并展示
     const merged = mergeComments(base, contextKind, contextId);
     void localVersion;
     return buildCommentForest(merged, sort, votes.likes, votes.dislikes);
-  }, [contextKind, contextId, sort, votes.likes, votes.dislikes, localVersion]);
+  }, [
+    contextKind,
+    contextId,
+    sort,
+    votes.likes,
+    votes.dislikes,
+    localVersion,
+    remoteDealComments,
+    remoteReady,
+  ]);
 
   const totalCount = useMemo(() => {
-    const base = getCommentsForContext(contextKind, contextId);
+    const base =
+      contextKind === 'deal'
+        ? remoteReady
+          ? remoteDealComments
+          : []
+        : getCommentsForContext(contextKind, contextId);
     return mergeComments(base, contextKind, contextId).length;
-  }, [contextKind, contextId, localVersion]);
+  }, [contextKind, contextId, localVersion, remoteDealComments, remoteReady]);
 
   const inputPlaceholder = totalCount === 0 ? '暂无评论' : '写下你的评论…';
 
@@ -309,11 +368,41 @@ export function CommentsSection({ contextKind, contextId }: CommentsSectionProps
     }
     if (!canSubmitCommentNow()) return;
     const user = useAuthStore.getState().user;
-    const userId = user?.userId?.startsWith('u-') ? user.userId : 'u-maya-2025';
+    const userId = user?.userId || `u-${Date.now()}`;
     void createIdempotencyKey('comment');
+
+    if (contextKind === 'deal') {
+      void import('../../lib/deals/dealCommentApi')
+        .then(({ submitDealComment }) => submitDealComment({ dealId: contextId, body }))
+        .then(() => {
+          markCommentSubmitted();
+          setDraft('');
+          bump();
+        })
+        .catch(() => {
+          // 回退本地
+          appendLocalComment({
+            id: `local-${Date.now()}`,
+            dealId: contextId,
+            userId,
+            body,
+            programYear: '2025',
+            workState: '—',
+            helpfulCount: 0,
+            dislikeCount: 0,
+            createdAt: new Date().toISOString().slice(0, 10),
+            local: true,
+          });
+          markCommentSubmitted();
+          setDraft('');
+          bump();
+        });
+      return;
+    }
+
     appendLocalComment({
       id: `local-${Date.now()}`,
-      ...(contextKind === 'doc' ? { docSlug: contextId } : { dealId: contextId }),
+      docSlug: contextId,
       userId,
       body,
       programYear: '2025',
@@ -335,11 +424,40 @@ export function CommentsSection({ contextKind, contextId }: CommentsSectionProps
     }
     if (!canSubmitCommentNow()) return;
     const user = useAuthStore.getState().user;
-    const userId = user?.userId?.startsWith('u-') ? user.userId : 'u-maya-2025';
+    const userId = user?.userId || `u-${Date.now()}`;
     void createIdempotencyKey('reply');
+
+    if (contextKind === 'deal') {
+      void import('../../lib/deals/dealCommentApi')
+        .then(({ submitDealComment }) =>
+          submitDealComment({ dealId: contextId, body, parentId }),
+        )
+        .then(() => {
+          markCommentSubmitted();
+          bump();
+        })
+        .catch(() => {
+          appendLocalReply(parentId, {
+            id: `local-r-${Date.now()}`,
+            dealId: contextId,
+            userId,
+            body,
+            programYear: '2025',
+            workState: '—',
+            helpfulCount: 0,
+            dislikeCount: 0,
+            createdAt: new Date().toISOString().slice(0, 10),
+            local: true,
+          });
+          markCommentSubmitted();
+          bump();
+        });
+      return;
+    }
+
     appendLocalReply(parentId, {
       id: `local-r-${Date.now()}`,
-      ...(contextKind === 'doc' ? { docSlug: contextId } : { dealId: contextId }),
+      docSlug: contextId,
       userId,
       body,
       programYear: '2025',

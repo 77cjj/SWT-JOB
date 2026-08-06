@@ -195,6 +195,22 @@ CREATE TABLE t_site_feature_flag (
 );
 COMMENT ON TABLE t_site_feature_flag IS '站点菜单功能开关';
 
+CREATE TABLE t_deal_comment (
+    id              VARCHAR(64) PRIMARY KEY,
+    deal_id         VARCHAR(64) NOT NULL,
+    user_id         VARCHAR(64) NOT NULL,
+    parent_id       VARCHAR(64),
+    body            TEXT NOT NULL,
+    status          VARCHAR(32) NOT NULL DEFAULT 'visible',
+    helpful_count   INT NOT NULL DEFAULT 0,
+    dislike_count   INT NOT NULL DEFAULT 0,
+    create_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted         SMALLINT NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_deal_comment_deal ON t_deal_comment (deal_id, status, deleted, create_time DESC);
+COMMENT ON TABLE t_deal_comment IS '薅羊毛项目评论';
+
 -- ============================================
 -- Knowledge Base Tables
 -- ============================================

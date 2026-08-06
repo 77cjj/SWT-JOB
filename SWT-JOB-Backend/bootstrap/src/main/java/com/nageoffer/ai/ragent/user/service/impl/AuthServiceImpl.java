@@ -34,6 +34,7 @@ import com.nageoffer.ai.ragent.user.service.GoogleOAuthService.VerifiedGoogleUse
 import com.nageoffer.ai.ragent.user.service.WeChatOAuthService;
 import com.nageoffer.ai.ragent.user.service.WeChatOAuthService.VerifiedWeChatUser;
 import com.nageoffer.ai.ragent.user.service.AuthService;
+import com.nageoffer.ai.ragent.user.service.UserSchemaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +54,7 @@ public class AuthServiceImpl implements AuthService {
     private final AppleOAuthService appleOAuthService;
     private final WeChatOAuthService weChatOAuthService;
     private final AuthProperties authProperties;
+    private final UserSchemaService userSchemaService;
 
     @Override
     public LoginVO login(LoginRequest requestParam) {
@@ -65,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
             StpUtil.login(DEV_BYPASS_LOGIN_ID);
             return new LoginVO(DEV_BYPASS_LOGIN_ID, "admin", StpUtil.getTokenValue(), DEFAULT_AVATAR_URL);
         }
+        userSchemaService.ensureUserColumns();
         UserDO user = findByUsername(username);
         if (user == null || !passwordMatches(password, user.getPassword())) {
             throw new ClientException("用户名或密码错误");
@@ -97,6 +100,7 @@ public class AuthServiceImpl implements AuthService {
         if ("admin".equalsIgnoreCase(username)) {
             throw new ClientException("该用户名不可用");
         }
+        userSchemaService.ensureUserColumns();
         if (findByUsername(username) != null) {
             throw new ClientException("用户名已存在");
         }
@@ -151,6 +155,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserDO findOrCreateOAuthUser(String username, String avatar, String displayHint) {
+        userSchemaService.ensureUserColumns();
         UserDO user = findByUsername(username);
         if (user == null) {
             user = UserDO.builder()

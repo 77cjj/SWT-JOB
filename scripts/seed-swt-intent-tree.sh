@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${SERVER_ENV_FILE:-$ROOT/.env}"
 DB_MIGRATE="$ROOT/scripts/db-migrate.sh"
 PY_SEED="$ROOT/scripts/seed_swt_intent_tree.py"
+SQL_TMPL="$ROOT/scripts/seed_swt_intent_tree.sql.tmpl"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -34,8 +35,9 @@ usage() {
 
 说明:
   - 可重复执行：会软删除 create_by=seed-swt-intent 的旧节点再插入
+  - 优先使用预生成 SQL 模板（scripts/seed_swt_intent_tree.sql.tmpl），不依赖 Python
   - 未传 --kb-id 时自动取 t_knowledge_base 中最早一条未删除知识库
-  - 名称含「羊毛/deal/refer」的知识库优先用作 deals KB
+  - 名称含「羊毛/deal/refer」的知识库优先用作 deals KB（没有则回退主 KB，可忽略）
   - 执行后请重启后端以刷新意图缓存: ./server.sh restart backend
 EOF
 }
@@ -56,9 +58,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -f "$PY_SEED" ]] || fail "缺少 ${PY_SEED}"
+[[ -f "$SQL_TMPL" || -f "$PY_SEED" ]] || fail "缺少种子文件（${SQL_TMPL} 或 ${PY_SEED}）"
 
-# 优先较新的 python3.x（脚本兼容 3.6+；部分 ECS 默认 python3 过旧）
+# 优先较新的 python3.x；没有也没关系——可用预生成 SQL 模板
 pick_python() {
   local cand
   for cand in python3.12 python3.11 python3.10 python3.9 python3.8 python3.7 python3.6 python3; do
@@ -70,8 +72,40 @@ pick_python() {
   done
   return 1
 }
-PYTHON_BIN="$(pick_python)" || fail "需要 Python >= 3.6（当前 python3 过旧或未安装）。可 yum/apt 安装 python3，或用 conda/pyenv。"
-info "使用 Python: ${PYTHON_BIN} ($("${PYTHON_BIN}" -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])'))"
+PYTHON_BIN=""
+if PYTHON_BIN="$(pick_python)"; then
+  info "使用 Python: ${PYTHON_BIN} ($("${PYTHON_BIN}" -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])'))"
+else
+  [[ -f "$SQL_TMPL" ]] || fail "需要 Python >= 3.6，或仓库内预生成模板 ${SQL_TMPL}"
+  warn "未找到可用 Python，将使用预生成 SQL 模板灌入意图树"
+fi
+
+sql_literal_or_null() {
+  # 输出 SQL 字面量（已加引号）或 NULL
+  local raw="${1:-}"
+  if [[ -z "$raw" ]]; then
+    printf 'NULL'
+    return 0
+  fi
+  raw="${raw//\'/\'\'}"
+  printf "'%s'" "$raw"
+}
+
+render_sql_from_tmpl() {
+  local out="$1"
+  local main_kb deals_kb main_col deals_col
+  main_kb="$(sql_literal_or_null "$KB_ID")"
+  deals_kb="$(sql_literal_or_null "$DEALS_KB_ID")"
+  main_col="$(sql_literal_or_null "$KB_COL")"
+  deals_col="$(sql_literal_or_null "$DEALS_COL")"
+  # 模板里是 '__MAIN_KB_ID__' 这类占位；替换整段字面量，空值变为 NULL
+  sed \
+    -e "s/'__MAIN_KB_ID__'/${main_kb//\//\\/}/g" \
+    -e "s/'__DEALS_KB_ID__'/${deals_kb//\//\\/}/g" \
+    -e "s/'__MAIN_KB_COL__'/${main_col//\//\\/}/g" \
+    -e "s/'__DEALS_KB_COL__'/${deals_col//\//\\/}/g" \
+    "$SQL_TMPL" >"$out"
+}
 
 # 复用 db-migrate 的连接探测（导出函数太难，直接 source 部分逻辑）
 load_env() {
@@ -172,18 +206,33 @@ else
   DEALS_COL="$KB_COL"
 fi
 
-PY_ARGS=(--print-sql)
-[[ -n "$KB_ID" ]] && PY_ARGS+=(--kb-id "$KB_ID")
-[[ -n "$DEALS_KB_ID" ]] && PY_ARGS+=(--deals-kb-id "$DEALS_KB_ID")
-[[ -n "$KB_COL" ]] && PY_ARGS+=(--kb-collection "$KB_COL")
-[[ -n "$DEALS_COL" ]] && PY_ARGS+=(--deals-kb-collection "$DEALS_COL")
-[[ "$DISABLE_DEMO" == true ]] && PY_ARGS+=(--disable-demo)
-
 TMP_SQL="$(mktemp /tmp/swt-intent-seed.XXXXXX.sql)"
 trap 'rm -f "$TMP_SQL"' EXIT
 
-"${PYTHON_BIN}" "$PY_SEED" "${PY_ARGS[@]}" >"$TMP_SQL"
-COUNT="$("${PYTHON_BIN}" "$PY_SEED" --count)"
+# --keep-demo 需要动态生成（模板默认会禁用演示树）
+USE_TMPL=true
+if [[ "$DISABLE_DEMO" != true ]]; then
+  USE_TMPL=false
+fi
+if [[ ! -f "$SQL_TMPL" ]]; then
+  USE_TMPL=false
+fi
+
+if [[ "$USE_TMPL" == true ]]; then
+  render_sql_from_tmpl "$TMP_SQL"
+  COUNT="$(grep -c '^INSERT INTO t_intent_node' "$TMP_SQL" || true)"
+  info "使用预生成模板灌入（无需 Python）"
+else
+  [[ -n "$PYTHON_BIN" && -f "$PY_SEED" ]] || fail "需要 Python 生成 SQL（缺少模板或使用了 --keep-demo）"
+  PY_ARGS=(--print-sql)
+  [[ -n "$KB_ID" ]] && PY_ARGS+=(--kb-id "$KB_ID")
+  [[ -n "$DEALS_KB_ID" ]] && PY_ARGS+=(--deals-kb-id "$DEALS_KB_ID")
+  [[ -n "$KB_COL" ]] && PY_ARGS+=(--kb-collection "$KB_COL")
+  [[ -n "$DEALS_COL" ]] && PY_ARGS+=(--deals-kb-collection "$DEALS_COL")
+  [[ "$DISABLE_DEMO" == true ]] && PY_ARGS+=(--disable-demo)
+  "${PYTHON_BIN}" "$PY_SEED" "${PY_ARGS[@]}" >"$TMP_SQL"
+  COUNT="$("${PYTHON_BIN}" "$PY_SEED" --count)"
+fi
 info "将写入 ${COUNT} 个意图节点"
 
 if [[ "$DRY_RUN" == true ]]; then

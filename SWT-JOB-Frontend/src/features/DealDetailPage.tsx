@@ -126,8 +126,26 @@ export default function DealDetailPage() {
         </Box>
 
         {isStale ? (
-          <Alert severity="warning">{t('deals.staleHint')}</Alert>
-        ) : (
+          <Typography
+            variant="caption"
+            fontWeight={800}
+            sx={{
+              alignSelf: 'flex-start',
+              px: 1.25,
+              py: 0.4,
+              borderRadius: 1.5,
+              bgcolor: 'action.hover',
+              color: 'text.secondary',
+              border: 1,
+              borderColor: 'divider',
+              letterSpacing: '0.06em',
+            }}
+          >
+            {t('deals.expiredBadge')}
+          </Typography>
+        ) : null}
+
+        {showSiteRebate ? (
           <Alert severity="info" icon={false} sx={{ border: 1, borderColor: 'primary.light' }}>
             <Typography variant="subtitle2" fontWeight={700} gutterBottom>
               {t('deals.siteRebateTitle')}
@@ -135,13 +153,11 @@ export default function DealDetailPage() {
             <Typography variant="h6" color="primary.main" fontWeight={800}>
               {siteRebateLabel}
             </Typography>
-            {program.siteRebateUsd != null ? (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                {t('deals.siteRebateAmountHint')}
-              </Typography>
-            ) : null}
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+              {t('deals.siteRebateAmountHint')}
+            </Typography>
           </Alert>
-        )}
+        ) : null}
 
         <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
           {pickBilingual(edition.summary, lang)}

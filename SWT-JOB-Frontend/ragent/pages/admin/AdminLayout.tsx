@@ -30,6 +30,7 @@ import {
   Search,
   Settings,
   SunMedium,
+  ToggleLeft,
   Upload,
   Users,
   FolderKanban,
@@ -160,6 +161,11 @@ const menuGroups: MenuGroup[] = [
         icon: Lightbulb
       },
       {
+        path: "/admin/site-features",
+        label: "功能开放开关",
+        icon: ToggleLeft
+      },
+      {
         path: "/admin/settings",
         label: "系统设置",
         icon: Settings
@@ -179,6 +185,7 @@ const breadcrumbMap: Record<string, string> = {
   "sample-questions": "示例问题",
   "referral-deals": "薅羊毛项目",
   "job-intel": "岗位情报审核",
+  "site-features": "功能开放开关",
   mappings: "关键词映射",
   settings: "系统设置",
   users: "用户管理"

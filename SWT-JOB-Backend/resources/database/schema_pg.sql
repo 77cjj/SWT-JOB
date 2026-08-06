@@ -127,6 +127,74 @@ CREATE INDEX idx_referral_deal_published ON t_referral_deal (published, deleted)
 CREATE INDEX idx_referral_deal_ai_enabled ON t_referral_deal (ai_enabled, published, deleted);
 COMMENT ON TABLE t_referral_deal IS '薅羊毛官方项目（含本站返现与实操说明 JSON）';
 
+CREATE TABLE t_job_intel_contribution (
+    id              VARCHAR(64) PRIMARY KEY,
+    job_id          VARCHAR(64),
+    submitter_id    VARCHAR(64) NOT NULL,
+    state_code      VARCHAR(8),
+    job_title       VARCHAR(255),
+    hourly_wage     NUMERIC(10, 2),
+    notes           TEXT NOT NULL,
+    status          VARCHAR(32) NOT NULL DEFAULT 'pending',
+    admin_summary   TEXT,
+    published       SMALLINT NOT NULL DEFAULT 0,
+    create_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted         SMALLINT NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_job_intel_contrib_status ON t_job_intel_contribution (status, deleted);
+COMMENT ON TABLE t_job_intel_contribution IS '用户提交的岗位情报贡献';
+
+CREATE TABLE t_job_intel_document (
+    id              VARCHAR(64) PRIMARY KEY,
+    job_id          VARCHAR(64) NOT NULL,
+    kind            VARCHAR(32) NOT NULL,
+    title           VARCHAR(255),
+    body            TEXT NOT NULL,
+    uploader_id     VARCHAR(64) NOT NULL,
+    status          VARCHAR(32) NOT NULL DEFAULT 'pending',
+    create_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted         SMALLINT NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_job_intel_doc_job ON t_job_intel_document (job_id, status, deleted);
+COMMENT ON TABLE t_job_intel_document IS '岗位细则 / 雇主发布信息（用户上传）';
+
+CREATE TABLE t_compare_job_entry (
+    id                  VARCHAR(64) PRIMARY KEY,
+    client_job_id       VARCHAR(64),
+    user_id             VARCHAR(64),
+    job_title           VARCHAR(255) NOT NULL,
+    company             VARCHAR(255),
+    state_code          VARCHAR(8) NOT NULL,
+    hourly_wage         NUMERIC(10, 2) NOT NULL,
+    avg_hours_per_week  NUMERIC(8, 2),
+    tipped              SMALLINT NOT NULL DEFAULT 0,
+    average_tip         NUMERIC(10, 2),
+    has_housing         SMALLINT NOT NULL DEFAULT 0,
+    housing_cost_per_week NUMERIC(10, 2),
+    second_job_hours    NUMERIC(8, 2),
+    second_job_hourly_wage NUMERIC(10, 2),
+    project_start_date  DATE,
+    project_end_date    DATE,
+    payload_json        TEXT NOT NULL,
+    source              VARCHAR(32) NOT NULL DEFAULT 'compare_form',
+    create_time         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted             SMALLINT NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_compare_job_user ON t_compare_job_entry (user_id, deleted, create_time DESC);
+COMMENT ON TABLE t_compare_job_entry IS '选岗计算器用户提交的岗位快照';
+
+CREATE TABLE t_site_feature_flag (
+    feature_key     VARCHAR(64) PRIMARY KEY,
+    enabled         SMALLINT NOT NULL DEFAULT 1,
+    label_zh        VARCHAR(128),
+    sort_order      INT NOT NULL DEFAULT 0,
+    update_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE t_site_feature_flag IS '站点菜单功能开关';
+
 -- ============================================
 -- Knowledge Base Tables
 -- ============================================

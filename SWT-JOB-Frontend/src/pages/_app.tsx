@@ -10,6 +10,7 @@ import '../index.css';
 import '../ragent-local.css';
 import { Analytics } from '@vercel/analytics/next';
 import { DocsRouteLoadingProvider } from '../context/DocsRouteLoadingContext';
+import { SiteFeaturesProvider } from '../context/SiteFeaturesContext';
 
 const FloatingSupportWidget = dynamic(
   () => import('../components/support/FloatingSupportWidget'),
@@ -23,6 +24,11 @@ const OnboardingTour = dynamic(
 
 const GlobalAuthShell = dynamic(
   () => import('../components/ragent/GlobalAuthShell').then((m) => m.GlobalAuthShell),
+  { ssr: false },
+);
+
+const FeatureMaintenanceGate = dynamic(
+  () => import('../components/site/FeatureMaintenanceGate').then((m) => m.FeatureMaintenanceGate),
   { ssr: false },
 );
 
@@ -85,15 +91,18 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <I18nProvider>
       <AppThemeProvider>
-        <DocsRouteLoadingProvider value={docsRouteLoading}>
-          {/* @ts-expect-error - router is provided by Next.js internally */}
-          <SWTApp Component={Component} pageProps={pageProps} />
-          <OnboardingTour />
-          <GlobalAuthShell />
-          {docsRouteLoading ? (
-            <div className="docs-route-progress" aria-hidden />
-          ) : null}
-        </DocsRouteLoadingProvider>
+        <SiteFeaturesProvider>
+          <DocsRouteLoadingProvider value={docsRouteLoading}>
+            {/* @ts-expect-error - router is provided by Next.js internally */}
+            <SWTApp Component={Component} pageProps={pageProps} />
+            <FeatureMaintenanceGate />
+            <OnboardingTour />
+            <GlobalAuthShell />
+            {docsRouteLoading ? (
+              <div className="docs-route-progress" aria-hidden />
+            ) : null}
+          </DocsRouteLoadingProvider>
+        </SiteFeaturesProvider>
       </AppThemeProvider>
     </I18nProvider>
   );

@@ -13,12 +13,18 @@ import { useI18n } from '../context/I18nContext';
 import type { JobRecord } from '../types/job';
 import type { IncomeSummary } from '../utils/jobMetrics';
 import { DEMO_SAVED_JOBS } from '../lib/jobs/demoJobs';
+import { submitCompareJobToServer } from '../lib/compare/compareJobApi';
 
 export default function HomeExperience() {
   const { t, tWithParams } = useI18n();
   const router = useRouter();
   const { jobs, addJob, updateJob, deleteJob } = useSavedJobs();
   const [importSnack, setImportSnack] = useState(false);
+  const [syncSnack, setSyncSnack] = useState<{ open: boolean; ok: boolean; message: string }>({
+    open: false,
+    ok: true,
+    message: '',
+  });
   const [detailJob, setDetailJob] = useState<JobRecord | null>(null);
   const [editingJob, setEditingJob] = useState<JobRecord | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -27,6 +33,16 @@ export default function HomeExperience() {
     income: IncomeSummary | null;
     projectWeeks: number;
   } | null>(null);
+
+  const persistToServer = useCallback(async (job: JobRecord) => {
+    try {
+      await submitCompareJobToServer(job);
+      setSyncSnack({ open: true, ok: true, message: '已同步到服务器' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '服务器同步失败（本地仍已保存）';
+      setSyncSnack({ open: true, ok: false, message });
+    }
+  }, []);
 
   const handlePreviewChange = useCallback(
     (payload: { income: IncomeSummary | null; projectWeeks: number } | null) => {
@@ -63,6 +79,7 @@ export default function HomeExperience() {
 
   const handleSubmit = (job: JobRecord) => {
     addJob(job);
+    void persistToServer(job);
   };
 
   const handleEdit = (job: JobRecord) => {
@@ -71,8 +88,10 @@ export default function HomeExperience() {
 
   const handleEditSubmit = (job: JobRecord) => {
     if (editingJob) {
+      const merged = { ...editingJob, ...job, jobId: editingJob.jobId };
       updateJob(editingJob.jobId, job);
       setEditingJob(null);
+      void persistToServer(merged);
     }
   };
 
@@ -210,6 +229,20 @@ export default function HomeExperience() {
         >
           <Alert severity="success" onClose={() => setImportSnack(false)}>
             {t('home.importedFromIntel')}
+          </Alert>
+        </Snackbar>
+
+        <Snackbar
+          open={syncSnack.open}
+          autoHideDuration={3500}
+          onClose={() => setSyncSnack((s) => ({ ...s, open: false }))}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            severity={syncSnack.ok ? 'success' : 'warning'}
+            onClose={() => setSyncSnack((s) => ({ ...s, open: false }))}
+          >
+            {syncSnack.message}
           </Alert>
         </Snackbar>
       </Box>

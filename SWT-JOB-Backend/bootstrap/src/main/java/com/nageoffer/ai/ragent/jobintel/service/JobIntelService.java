@@ -44,9 +44,11 @@ public class JobIntelService {
 
     private final JobIntelContributionMapper contributionMapper;
     private final JobIntelDocumentMapper documentMapper;
+    private final JobIntelSchemaService schemaService;
 
     @Transactional
     public String submitContribution(String userId, JobIntelContributionSubmitRequest req) {
+        schemaService.ensureSchema();
         String notes = StrUtil.trim(req.getNotes());
         Assert.notBlank(notes, () -> new ClientException("请填写情报内容"));
         Assert.isTrue(notes.length() >= 10, () -> new ClientException("情报内容至少 10 字"));
@@ -66,6 +68,7 @@ public class JobIntelService {
     }
 
     public List<JobIntelContributionVO> listContributionsAdmin(String status) {
+        schemaService.ensureSchema();
         var q = Wrappers.lambdaQuery(JobIntelContributionDO.class)
                 .eq(JobIntelContributionDO::getDeleted, 0)
                 .orderByDesc(JobIntelContributionDO::getCreateTime);
@@ -77,6 +80,7 @@ public class JobIntelService {
 
     @Transactional
     public void reviewContribution(String id, JobIntelContributionReviewRequest req) {
+        schemaService.ensureSchema();
         JobIntelContributionDO row = contributionMapper.selectById(id);
         Assert.notNull(row, () -> new ClientException("记录不存在"));
         if (req.getStatus() != null) {
@@ -96,6 +100,7 @@ public class JobIntelService {
 
     @Transactional
     public String submitDocument(String userId, String jobId, JobIntelDocumentSubmitRequest req) {
+        schemaService.ensureSchema();
         Assert.notBlank(jobId, () -> new ClientException("岗位 ID 无效"));
         String kind = StrUtil.trimToNull(req.getKind());
         Assert.isTrue("job_rules".equals(kind) || "employer_posting".equals(kind),
@@ -117,6 +122,7 @@ public class JobIntelService {
     }
 
     public List<JobIntelDocumentVO> listDocumentsPublic(String jobId) {
+        schemaService.ensureSchema();
         return documentMapper.selectList(
                 Wrappers.lambdaQuery(JobIntelDocumentDO.class)
                         .eq(JobIntelDocumentDO::getJobId, jobId)
@@ -127,6 +133,7 @@ public class JobIntelService {
     }
 
     public List<JobIntelDocumentVO> listDocumentsAdmin(String status) {
+        schemaService.ensureSchema();
         var q = Wrappers.lambdaQuery(JobIntelDocumentDO.class)
                 .eq(JobIntelDocumentDO::getDeleted, 0)
                 .orderByDesc(JobIntelDocumentDO::getCreateTime);

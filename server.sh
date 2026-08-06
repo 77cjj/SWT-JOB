@@ -22,6 +22,7 @@ SKIP_ROCKETMQ="${SKIP_ROCKETMQ:-auto}"
 SKIP_UPDATE_CHECK=false
 AUTO_PULL_BUILD=false
 FORCE_BACKEND=false
+GIT_PULL_FORCE=false
 
 INFRA_SERVICES=(postgres redis rmqnamesrv rmqbroker rustfs)
 declare -A INFRA_PORTS=(
@@ -90,7 +91,7 @@ SWT-JOB 服务器一键启停脚本
   --build     backend / all / restart 前先编译 jar
   --pull      检测到更新时自动拉取并重新编译（非交互）
   --skip-update-check  跳过后端更新检测，直接启动
-  --force     backend / fix 时强制杀掉旧进程再启
+  --force     强杀旧进程；与 --pull 联用时 git reset --hard 对齐远程 master
 
 环境变量（可写入项目根 .env）:
   BAILIAN_API_KEY      AI 功能必填
@@ -972,7 +973,7 @@ git_pull_and_build() {
   info "拉取最新代码..."
   reset_server_generated_configs
 
-  if [[ "${GIT_PULL_FORCE}" == "true" || "${GIT_PULL_FORCE}" == "1" ]]; then
+  if [[ "${GIT_PULL_FORCE:-}" == "true" || "${GIT_PULL_FORCE:-}" == "1" ]]; then
     local upstream ref
     upstream="$(git_upstream_ref)"
     ref="${upstream#origin/}"
@@ -994,7 +995,11 @@ maybe_prepare_backend() {
   ensure_server_config
 
   if [[ "$do_build" == "true" ]]; then
-    build_backend
+    if [[ "$AUTO_PULL_BUILD" == "true" ]]; then
+      git_pull_and_build
+    else
+      build_backend
+    fi
     return 0
   fi
 
@@ -1464,6 +1469,7 @@ restart_services() {
       --build) do_build=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
+      --force) FORCE_BACKEND=true; GIT_PULL_FORCE=1 ;;
       --infra|--nginx) extra_args+=("$arg") ;;
       *) extra_args+=("$arg") ;;
     esac
@@ -1506,7 +1512,7 @@ main() {
       --build) do_build=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
-      --force) FORCE_BACKEND=true ;;
+      --force) FORCE_BACKEND=true; GIT_PULL_FORCE=1 ;;
       --infra|--nginx) extra_args+=("$arg") ;;
       -h|--help) usage; exit 0 ;;
       *) extra_args+=("$arg") ;;

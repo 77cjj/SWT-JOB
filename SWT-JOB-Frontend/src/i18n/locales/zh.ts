@@ -529,6 +529,7 @@ export const zh = {
       expired_stale: '已结束 · 待更新',
     },
     staleHint: '本季活动已过期，新一季条款尚未更新至本站。可查看历史活动了解以往奖励与开户条件。',
+    expiredBadge: '失效',
     statsActive: '{count} 个进行中',
     statsStale: '{count} 个待更新',
     viewHistory: '历史活动',

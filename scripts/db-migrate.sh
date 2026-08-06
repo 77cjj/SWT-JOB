@@ -42,6 +42,7 @@ usage() {
   ./server.sh db doctor
   ./server.sh db up
   ./server.sh db sync
+  ./server.sh db seed-intents   # 灌入 SWT 意图树（见 scripts/seed-swt-intent-tree.sh）
 
 环境变量（可写入 .env）:
   PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE

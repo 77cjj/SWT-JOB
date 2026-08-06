@@ -83,13 +83,17 @@ export default function DealGuideDrawer({ open, onClose, program, onCopied }: De
   const { edition, isStale } = resolved;
   const title = pickBilingual(program.brandName, lang);
   const contentLang = resolveBilingualLang(lang);
+  const siteRebateUsd =
+    program.siteRebateUsd != null && Number.isFinite(Number(program.siteRebateUsd))
+      ? Number(program.siteRebateUsd)
+      : null;
+  // 返现为 0 / 未设置时不在攻略中展示
+  const showSiteRebate = !isStale && siteRebateUsd != null && siteRebateUsd > 0;
   const siteRebateLabel =
-    program.siteRebateLabel?.[contentLang] ||
-    (program.siteRebateUsd != null
-      ? contentLang === 'zh'
-        ? `约 $${program.siteRebateUsd}（以管理员设置为准）`
-        : `About $${program.siteRebateUsd}`
-      : t('deals.siteRebateTbd'));
+    program.siteRebateLabel?.[contentLang]?.trim() ||
+    (contentLang === 'zh'
+      ? `约 $${siteRebateUsd}（以管理员设置为准）`
+      : `About $${siteRebateUsd}`);
 
   const howToClaim = pickBilingualList(program.howToClaim, lang);
   const practicalSteps = pickBilingualList(program.practicalSteps, lang);
@@ -142,9 +146,27 @@ export default function DealGuideDrawer({ open, onClose, program, onCopied }: De
 
           <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
             <Stack spacing={2.5}>
-              {isStale ? <Alert severity="warning">{t('deals.staleHint')}</Alert> : null}
+              {isStale ? (
+                <Typography
+                  variant="caption"
+                  fontWeight={800}
+                  sx={{
+                    alignSelf: 'flex-start',
+                    px: 1.25,
+                    py: 0.4,
+                    borderRadius: 1.5,
+                    bgcolor: 'action.hover',
+                    color: 'text.secondary',
+                    border: 1,
+                    borderColor: 'divider',
+                    letterSpacing: '0.06em',
+                  }}
+                >
+                  {t('deals.expiredBadge')}
+                </Typography>
+              ) : null}
 
-              {!isStale ? (
+              {showSiteRebate ? (
                 <Alert severity="info" icon={false} sx={{ border: 1, borderColor: 'primary.light' }}>
                   <Typography variant="subtitle2" fontWeight={700}>
                     {t('deals.siteRebateTitle')}

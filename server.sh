@@ -21,6 +21,7 @@ LOW_MEM_MODE="${LOW_MEM_MODE:-auto}"
 SKIP_ROCKETMQ="${SKIP_ROCKETMQ:-auto}"
 SKIP_UPDATE_CHECK=false
 AUTO_PULL_BUILD=false
+DO_BUILD=false
 FORCE_BACKEND=false
 GIT_PULL_FORCE=false
 
@@ -726,9 +727,22 @@ stop_infra() {
 }
 
 find_backend_jar() {
-  find "$BACKEND/bootstrap/target" -maxdepth 1 -name '*.jar' \
+  local jar=""
+  jar="$(find "$BACKEND/bootstrap/target" -maxdepth 1 -name '*.jar' \
     ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name '*-original.jar' \
-    -print 2>/dev/null | head -1
+    -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || true)"
+  if [[ -n "$jar" ]]; then
+    echo "$jar"
+    return 0
+  fi
+  ls -t "$BACKEND/bootstrap/target"/*.jar 2>/dev/null | grep -v -E 'sources|javadoc|original' | head -1 || true
+}
+
+jar_matches_current_head() {
+  [[ -f "$LAST_BUILD_SHA" ]] || return 1
+  local head_sha
+  head_sha="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
+  [[ -n "$head_sha" ]] && [[ "$(cat "$LAST_BUILD_SHA")" == "$head_sha" ]]
 }
 
 backend_http_ok() {
@@ -1008,14 +1022,33 @@ maybe_prepare_backend() {
       build_backend
       return 0
     fi
-    if backend_changed_since_last_build; then
-      build_backend
+    if [[ "$do_build" == "true" ]] || ! jar_matches_current_head || backend_changed_since_last_build; then
+      if [[ "$do_build" == "true" ]]; then
+        info "检测到 --build：强制重新编译 jar"
+      elif ! jar_matches_current_head; then
+        warn "当前 git HEAD 与上次编译不一致，将重新编译 jar"
+      fi
+      if [[ "$AUTO_PULL_BUILD" == "true" ]] && [[ "${GIT_PULL_FORCE:-}" == "1" || "${GIT_PULL_FORCE:-}" == "true" ]]; then
+        git_pull_and_build
+      elif [[ "$AUTO_PULL_BUILD" == "true" ]]; then
+        local behind
+        behind="$(count_remote_commits_behind)"
+        if [[ "$behind" -gt 0 ]]; then
+          git_pull_and_build
+        else
+          build_backend
+        fi
+      else
+        build_backend
+      fi
       return 0
     fi
     local behind
     behind="$(count_remote_commits_behind)"
     if [[ "$behind" -gt 0 ]]; then
       git_pull_and_build
+    else
+      warn "代码已是最新且 jar 存在，跳过编译（需要强制编译请加 --build）"
     fi
     return 0
   fi
@@ -1114,6 +1147,12 @@ start_backend() {
   local jar
   jar="$(find_backend_jar)"
   [[ -n "$jar" ]] || fail "未找到 jar，请先执行: ./server.sh build"
+
+  if ! jar_matches_current_head; then
+    warn "将启动 jar: ${jar}（注意：该 jar 不是当前 git HEAD 编译产物，建议 ./server.sh build）"
+  else
+    info "将启动 jar: ${jar}"
+  fi
 
   info "启动 Spring Boot 后端..."
   info "日志: ${log_file}"
@@ -1461,12 +1500,12 @@ stop_all() {
 
 restart_services() {
   local target="${1:-backend}"
-  local do_build=false
+  local do_build="$DO_BUILD"
   local extra_args=()
   shift || true
   for arg in "$@"; do
     case "$arg" in
-      --build) do_build=true ;;
+      --build) do_build=true; DO_BUILD=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
       --force) FORCE_BACKEND=true; GIT_PULL_FORCE=1 ;;
@@ -1505,11 +1544,11 @@ main() {
   local cmd="${1:-all}"
   shift || true
 
-  local do_build=false
+  DO_BUILD=false
   local extra_args=()
   for arg in "$@"; do
     case "$arg" in
-      --build) do_build=true ;;
+      --build) DO_BUILD=true ;;
       --pull) AUTO_PULL_BUILD=true ;;
       --skip-update-check) SKIP_UPDATE_CHECK=true ;;
       --force) FORCE_BACKEND=true; GIT_PULL_FORCE=1 ;;
@@ -1524,7 +1563,7 @@ main() {
   case "$cmd" in
     all|start)
       start_infra
-      maybe_prepare_backend "$do_build"
+      maybe_prepare_backend "$DO_BUILD"
       start_backend
       nginx_cmd reload
       print_ready
@@ -1558,7 +1597,7 @@ main() {
       ;;
     backend|be)
       start_infra
-      maybe_prepare_backend "$do_build"
+      maybe_prepare_backend "$DO_BUILD"
       start_backend
       print_ready
       ;;

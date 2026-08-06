@@ -47,6 +47,11 @@ usage() {
   PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE
   PG_CONTAINER   Docker/Podman 容器名（默认 ragent-postgres）；能连上容器则优先用容器内 psql
 
+部署建议:
+  ./server.sh db up                         # 单独补齐缺失表
+  ./server.sh restart backend --build       # 编译时会自动 db up
+  ./server.sh restart backend --migrate     # 仅迁移不强制编译
+
 说明:
   - 记录表: t_schema_migration
   - 若你以前手动 psql 跑过升级脚本，先 ./server.sh db status，再 ./server.sh db sync，最后 ./server.sh db up
@@ -254,10 +259,14 @@ detect_migration_applied() {
       [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_referral_deal'")" == "1" ]]
       ;;
     upgrade_v1.4_to_v1.5)
-      [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='t_sample_question' AND column_name='answer'")" == "1" ]]
+      # 该脚本建的是岗位情报表，不是 sample_question.answer
+      [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='t_job_intel_contribution'")" == "1" ]]
       ;;
     upgrade_v1.5_to_v1.6)
       [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='t_user' AND column_name='free_chat_remaining'")" == "1" ]]
+      ;;
+    upgrade_v1.6_to_v1.7)
+      [[ "$(run_psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='t_referral_deal' AND column_name='ai_enabled'")" == "1" ]]
       ;;
     *)
       return 1

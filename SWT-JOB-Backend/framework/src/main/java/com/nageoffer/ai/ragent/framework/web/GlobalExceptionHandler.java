@@ -140,12 +140,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = DataAccessException.class)
     public Result<Void> dataAccessException(HttpServletRequest request, DataAccessException ex) {
         log.error("[{}] {} [db] {}", request.getMethod(), getUrl(request), ex.getMessage());
-        String hint = "数据库访问失败，请确认已执行 resources/database 下的 upgrade SQL 并重启后端";
+        String hint = "数据库访问失败，请确认已执行: ./server.sh db up && ./server.sh restart backend --build";
         String msg = ex.getMessage() != null ? ex.getMessage() : "";
-        if (msg.contains("ai_enabled") || msg.contains("t_referral_deal")) {
-            hint = "薅羊毛 AI 开关字段缺失，请执行 upgrade_v1.6_to_v1.7.sql 后重启后端（新版本也会在启动时自动补齐）";
-        } else if (msg.contains("does not exist")) {
-            hint = "数据库表缺失，请在服务器执行 upgrade_v1.3_to_v1.4.sql、upgrade_v1.4_to_v1.5.sql、upgrade_v1.6_to_v1.7.sql 后重启后端";
+        String lower = msg.toLowerCase();
+        if (lower.contains("duplicate") || lower.contains("unique") || lower.contains("already exists")) {
+            hint = "数据主键冲突（常见于软删除后再次入库）。请刷新页面后重试；若仍失败请执行 ./server.sh db up 并部署最新后端";
+        } else if (msg.contains("ai_enabled")) {
+            hint = "薅羊毛 AI 开关字段缺失，请执行: ./server.sh db up（或 upgrade_v1.6_to_v1.7.sql）后重启后端";
+        } else if (msg.contains("does not exist") || msg.contains("t_referral_deal") || msg.contains("t_job_intel")) {
+            hint = "数据库表缺失，请在服务器执行: ./server.sh db up 后重启后端";
         }
         return Results.failure(BaseErrorCode.SERVICE_ERROR.code(), hint);
     }

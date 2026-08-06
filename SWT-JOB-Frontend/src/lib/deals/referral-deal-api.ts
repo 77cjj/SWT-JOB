@@ -157,8 +157,10 @@ export async function fetchAdminReferralDeals(): Promise<ReferralDealRecord[]> {
 }
 
 export async function saveReferralDeal(id: string, payload: ReferralDealSavePayload, isNew: boolean) {
+  // 统一走 bulk-upsert：可恢复软删除行，避免「项目 ID 已存在」
   if (isNew) {
-    return api.post<string>('/referral-deals', payload);
+    await bulkUpsertReferralDeals([payload]);
+    return id;
   }
   await api.put(`/referral-deals/${id}`, payload);
 }
@@ -167,8 +169,9 @@ export async function deleteReferralDeal(id: string) {
   await api.delete(`/referral-deals/${id}`);
 }
 
-export async function hideReferralDeal(id: string, title: string, isNew: boolean) {
-  await saveReferralDeal(id, tombstonePayload(id, title), isNew);
+export async function hideReferralDeal(id: string, title: string, _isNew?: boolean) {
+  // 隐藏始终 upsert tombstone，勿用 create（软删除后主键仍在）
+  await bulkUpsertReferralDeals([tombstonePayload(id, title)]);
 }
 
 export async function bulkUpsertReferralDeals(items: ReferralDealSavePayload[]) {

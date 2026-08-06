@@ -100,11 +100,20 @@ public class ReferralDealServiceImpl implements ReferralDealService {
         schemaService.ensureAiEnabledColumn();
         validateSave(request);
         String id = normalizeId(request.getId());
-        if (referralDealMapper.selectById(id) != null) {
-            throw new ClientException("项目 ID 已存在: " + id);
+        ReferralDealDO any = referralDealMapper.selectAnyById(id);
+        if (any != null && (any.getDeleted() == null || any.getDeleted() == 0)) {
+            throw new ClientException("项目 ID 已存在: " + id + "（若刚删除过，请改用编辑或重新勾选 AI 时走更新）");
         }
         ReferralDealDO record = toEntity(id, request);
-        referralDealMapper.insert(record);
+        if (any != null) {
+            // 软删除行仍占主键：恢复并更新，避免「项目 ID 已存在」/ 重复键
+            if (request.getAiEnabled() == null) {
+                record.setAiEnabled(any.getAiEnabled() != null ? any.getAiEnabled() : 1);
+            }
+            referralDealMapper.restoreAndUpdate(record);
+        } else {
+            referralDealMapper.insert(record);
+        }
         knowledgeSyncService.syncAsync();
         return id;
     }
@@ -113,13 +122,23 @@ public class ReferralDealServiceImpl implements ReferralDealService {
     public void update(String id, ReferralDealSaveRequest request) {
         schemaService.ensureAiEnabledColumn();
         validateSave(request);
-        ReferralDealDO existing = loadAny(id);
-        ReferralDealDO record = toEntity(id, request);
-        record.setCreateTime(existing.getCreateTime());
-        if (request.getAiEnabled() == null) {
-            record.setAiEnabled(existing.getAiEnabled() != null ? existing.getAiEnabled() : 1);
+        String normalizedId = normalizeId(id);
+        ReferralDealDO any = referralDealMapper.selectAnyById(normalizedId);
+        ReferralDealDO record = toEntity(normalizedId, request);
+        if (any == null) {
+            referralDealMapper.insert(record);
+        } else if (any.getDeleted() != null && any.getDeleted() != 0) {
+            if (request.getAiEnabled() == null) {
+                record.setAiEnabled(any.getAiEnabled() != null ? any.getAiEnabled() : 1);
+            }
+            referralDealMapper.restoreAndUpdate(record);
+        } else {
+            if (request.getAiEnabled() == null) {
+                record.setAiEnabled(any.getAiEnabled() != null ? any.getAiEnabled() : 1);
+            }
+            record.setCreateTime(any.getCreateTime());
+            referralDealMapper.updateById(record);
         }
-        referralDealMapper.updateById(record);
         knowledgeSyncService.syncAsync();
     }
 
@@ -141,10 +160,15 @@ public class ReferralDealServiceImpl implements ReferralDealService {
             }
             String id = normalizeId(item.getId());
             validateSave(item);
-            ReferralDealDO existing = referralDealMapper.selectById(id);
+            ReferralDealDO existing = referralDealMapper.selectAnyById(id);
             ReferralDealDO record = toEntity(id, item);
             if (existing == null) {
                 referralDealMapper.insert(record);
+            } else if (existing.getDeleted() != null && existing.getDeleted() != 0) {
+                if (item.getAiEnabled() == null) {
+                    record.setAiEnabled(existing.getAiEnabled());
+                }
+                referralDealMapper.restoreAndUpdate(record);
             } else {
                 record.setCreateTime(existing.getCreateTime());
                 if (item.getAiEnabled() == null) {

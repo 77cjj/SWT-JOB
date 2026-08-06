@@ -90,13 +90,16 @@ export default function DealDetailPage() {
   const { edition, isStale } = resolved;
   const title = pickBilingual(program.brandName, lang);
   const contentLang = resolveBilingualLang(lang);
+  const siteRebateUsd =
+    program.siteRebateUsd != null && Number.isFinite(Number(program.siteRebateUsd))
+      ? Number(program.siteRebateUsd)
+      : null;
+  const showSiteRebate = !isStale && siteRebateUsd != null && siteRebateUsd > 0;
   const siteRebateLabel =
-    program.siteRebateLabel?.[contentLang] ||
-    (program.siteRebateUsd != null
-      ? contentLang === 'zh'
-        ? `约 $${program.siteRebateUsd}（以管理员设置为准）`
-        : `About $${program.siteRebateUsd} (as configured)`
-      : t('deals.siteRebateTbd'));
+    program.siteRebateLabel?.[contentLang]?.trim() ||
+    (contentLang === 'zh'
+      ? `约 $${siteRebateUsd}（以管理员设置为准）`
+      : `About $${siteRebateUsd} (as configured)`);
 
   const howToClaim = pickBilingualList(program.howToClaim, lang);
   const practicalSteps = pickBilingualList(program.practicalSteps, lang);

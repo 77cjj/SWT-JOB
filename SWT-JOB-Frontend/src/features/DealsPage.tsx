@@ -120,7 +120,27 @@ function DealCard({
           : { '&:hover': { boxShadow: 2 } }),
       }}
     >
-      {!isStale && totalMoney.total != null ? (
+      {isStale ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 1,
+            px: 1.25,
+            py: 0.4,
+            borderRadius: 1.5,
+            bgcolor: 'action.disabledBackground',
+            color: 'text.secondary',
+            border: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="caption" fontWeight={800} sx={{ letterSpacing: '0.06em' }}>
+            {t('deals.expiredBadge')}
+          </Typography>
+        </Box>
+      ) : totalMoney.total != null ? (
         <Box
           sx={{
             position: 'absolute',
@@ -150,7 +170,7 @@ function DealCard({
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: 1,
-          pr: totalMoney.total != null ? 9 : 0,
+          pr: isStale || totalMoney.total != null ? 7 : 0,
         }}
       >
         <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -218,12 +238,6 @@ function DealCard({
       <Typography variant="body2" color={isStale ? 'text.disabled' : 'text.secondary'} sx={{ lineHeight: 1.55 }}>
         {summary}
       </Typography>
-
-      {isStale ? (
-        <Alert severity="warning" variant="outlined" sx={{ py: 0, fontSize: '0.75rem' }}>
-          {t('deals.staleHint')}
-        </Alert>
-      ) : null}
 
       {!isStale && edition.validUntil && daysUntilExpiry !== null && daysUntilExpiry >= 0 ? (
         <Typography variant="caption" color={status === 'expiring' ? 'warning.main' : 'text.secondary'}>

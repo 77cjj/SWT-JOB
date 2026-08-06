@@ -533,6 +533,7 @@ export const en = {
       expired_stale: 'Ended · Awaiting update',
     },
     staleHint: 'This season’s offer has expired and the next one is not yet posted. View history for past rewards and requirements.',
+    expiredBadge: 'Expired',
     statsActive: '{count} active',
     statsStale: '{count} awaiting update',
     viewHistory: 'View history',

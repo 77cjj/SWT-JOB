@@ -82,8 +82,13 @@ export function LoginDialog() {
       setLocalError(t('auth.needUsernamePassword'));
       return;
     }
-    if (password.length < 6) {
-      setLocalError(t('auth.passwordTooShort'));
+    // 与后端 AuthServiceImpl USERNAME_PATTERN / 密码长度保持一致
+    if (!/^[a-zA-Z0-9_\u4e00-\u9fff]{3,32}$/.test(username)) {
+      setLocalError(t('auth.usernameInvalid'));
+      return;
+    }
+    if (password.length < 6 || password.length > 64) {
+      setLocalError(t('auth.passwordLengthInvalid'));
       return;
     }
     if (password !== confirmPassword) {

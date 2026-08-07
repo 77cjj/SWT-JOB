@@ -35,7 +35,6 @@ import {
   sortProgramsForDisplay,
   type ResolvedProgram,
 } from '../lib/deals/deal-utils';
-import { calcDealTotalUsd } from '../lib/deals/reward-total';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
 import { pickBilingual } from '../i18n/bilingual';
@@ -73,14 +72,27 @@ function DealCard({
   const { program, edition, status, isStale, daysUntilExpiry } = item;
   const title = pickBilingual(program.brandName, lang);
   const reward = pickBilingual(edition.reward, lang);
-  const summary = pickBilingual(edition.summary, lang);
+  const guideBrief = (
+    (edition.cardGuideBrief ? pickBilingual(edition.cardGuideBrief, lang) : '') ||
+    pickBilingual(edition.summary, lang)
+  ).trim();
+  const extraBrief = (
+    (edition.cardExtraBrief ? pickBilingual(edition.cardExtraBrief, lang) : '') ||
+    (program.siteRebateUsd != null &&
+    program.siteRebateUsd > 0 &&
+    program.siteRebateLabel
+      ? pickBilingual(program.siteRebateLabel, lang)
+      : '')
+  ).trim();
   const showReferral = hasReferralLink(item);
   const period = formatEditionPeriod(edition, lang);
   const officialUrl = edition.officialUrl;
-  const totalMoney = calcDealTotalUsd({
-    rewardText: reward,
-    siteRebateUsd: program.siteRebateUsd,
-  });
+  const highlightAmount =
+    program.highlightAmountUsd != null &&
+    Number.isFinite(program.highlightAmountUsd) &&
+    program.highlightAmountUsd > 0
+      ? program.highlightAmountUsd
+      : null;
 
   return (
     <Box
@@ -140,7 +152,7 @@ function DealCard({
             {t('deals.expiredBadge')}
           </Typography>
         </Box>
-      ) : totalMoney.total != null ? (
+      ) : highlightAmount != null ? (
         <Box
           sx={{
             position: 'absolute',
@@ -156,10 +168,10 @@ function DealCard({
           }}
         >
           <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, lineHeight: 1.1, fontWeight: 600 }}>
-            {t('deals.totalTake')}
+            {t('deals.highlightAmount')}
           </Typography>
           <Typography variant="h6" fontWeight={900} sx={{ lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-            ${totalMoney.total.toFixed(totalMoney.total % 1 === 0 ? 0 : 1)}
+            ${highlightAmount.toFixed(highlightAmount % 1 === 0 ? 0 : 1)}
           </Typography>
         </Box>
       ) : null}
@@ -170,7 +182,7 @@ function DealCard({
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: 1,
-          pr: isStale || totalMoney.total != null ? 7 : 0,
+          pr: isStale || highlightAmount != null ? 7 : 0,
         }}
       >
         <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -235,9 +247,42 @@ function DealCard({
         {period}
       </Typography>
 
-      <Typography variant="body2" color={isStale ? 'text.disabled' : 'text.secondary'} sx={{ lineHeight: 1.55 }}>
-        {summary}
-      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        <Box>
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            sx={{ color: isStale ? 'text.disabled' : 'text.secondary', letterSpacing: '0.02em' }}
+          >
+            {t('deals.cardGuideLabel')}
+          </Typography>
+          <Typography
+            variant="body2"
+            color={isStale ? 'text.disabled' : 'text.primary'}
+            sx={{ lineHeight: 1.5, mt: 0.15 }}
+          >
+            {guideBrief}
+          </Typography>
+        </Box>
+        {extraBrief ? (
+          <Box>
+            <Typography
+              variant="caption"
+              fontWeight={700}
+              sx={{ color: isStale ? 'text.disabled' : 'warning.dark', letterSpacing: '0.02em' }}
+            >
+              {t('deals.cardExtraLabel')}
+            </Typography>
+            <Typography
+              variant="body2"
+              color={isStale ? 'text.disabled' : 'text.secondary'}
+              sx={{ lineHeight: 1.5, mt: 0.15 }}
+            >
+              {extraBrief}
+            </Typography>
+          </Box>
+        ) : null}
+      </Box>
 
       {!isStale && edition.validUntil && daysUntilExpiry !== null && daysUntilExpiry >= 0 ? (
         <Typography variant="caption" color={status === 'expiring' ? 'warning.main' : 'text.secondary'}>

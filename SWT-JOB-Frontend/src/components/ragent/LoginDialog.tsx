@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Eye, EyeOff, Lock, User } from 'lucide-react';
-import { toast } from 'sonner';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,22 +26,25 @@ export function LoginDialog() {
   const setAuthDialogMode = useAuthStore((s) => s.setAuthDialogMode);
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
+  const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset);
   const isLoading = useAuthStore((s) => s.isLoading);
   const requestSupportOpen = useSupportWidgetStore((s) => s.requestOpen);
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [form, setForm] = React.useState({
     username: '',
+    email: '',
     password: '',
     confirmPassword: '',
   });
   const [localError, setLocalError] = React.useState<string | null>(null);
 
   const isRegister = mode === 'register';
+  const isForgot = mode === 'forgot';
 
   React.useEffect(() => {
     if (!open) {
-      setForm({ username: '', password: '', confirmPassword: '' });
+      setForm({ username: '', email: '', password: '', confirmPassword: '' });
       setLocalError(null);
       setShowPassword(false);
     }
@@ -76,13 +78,21 @@ export function LoginDialog() {
     event.preventDefault();
     setLocalError(null);
     const username = form.username.trim();
+    const email = form.email.trim();
     const password = form.password.trim();
     const confirmPassword = form.confirmPassword.trim();
     if (!username || !password) {
       setLocalError(t('auth.needUsernamePassword'));
       return;
     }
-    // 与后端 AuthServiceImpl USERNAME_PATTERN / 密码长度保持一致
+    if (!email) {
+      setLocalError(t('auth.needEmail'));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setLocalError(t('auth.emailInvalid'));
+      return;
+    }
     if (!/^[a-zA-Z0-9_\u4e00-\u9fff]{3,32}$/.test(username)) {
       setLocalError(t('auth.usernameInvalid'));
       return;
@@ -96,24 +106,46 @@ export function LoginDialog() {
       return;
     }
     try {
-      await register(username, password);
+      await register(username, password, email);
       closeLoginDialog();
     } catch {
       // toast handled in store
     }
   };
 
-  const handleForgotPassword = () => {
-    const name = form.username.trim() || t('auth.usernameUnset');
-    closeLoginDialog();
-    requestSupportOpen('human', tWithParams('auth.forgotPasswordDraft', { username: name }));
-    toast.message(t('auth.forgotPasswordToast'));
+  const handleForgotSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLocalError(null);
+    const account = form.email.trim() || form.username.trim();
+    if (!account) {
+      setLocalError(t('auth.needForgotAccount'));
+      return;
+    }
+    try {
+      await requestPasswordReset(account);
+      if (!account.includes('@')) {
+        requestSupportOpen('human', tWithParams('auth.forgotPasswordDraft', { username: account }));
+      }
+      setAuthDialogMode('login');
+    } catch {
+      // toast handled in store
+    }
   };
+
+  const title = isForgot
+    ? t('auth.forgotTitle')
+    : isRegister
+      ? t('auth.registerTitle')
+      : t('auth.loginTitle');
+  const description = isForgot
+    ? t('auth.forgotDesc')
+    : isRegister
+      ? t('auth.registerDesc')
+      : reason || t('auth.loginDesc');
 
   return (
     <Dialog
       open={open}
-      // 非 modal：顶栏语言切换在弹窗打开时仍可点击；点叉关闭后留在当前页
       modal={false}
       onOpenChange={(next) => (!next ? handleClose() : undefined)}
     >
@@ -136,7 +168,6 @@ export function LoginDialog() {
           }
         }}
         onInteractOutside={(event) => {
-          // 允许点击顶栏语言菜单等控件，不强制关掉弹窗
           const target = event.target as HTMLElement | null;
           if (
             target?.closest('header') ||
@@ -154,18 +185,12 @@ export function LoginDialog() {
         }}
       >
         <DialogHeader className="space-y-2 px-6 pt-6 text-left">
-          <DialogTitle className="font-display text-xl">
-            {isRegister ? t('auth.registerTitle') : t('auth.loginTitle')}
-          </DialogTitle>
-          <DialogDescription>
-            {isRegister
-              ? t('auth.registerDesc')
-              : reason || t('auth.loginDesc')}
-          </DialogDescription>
+          <DialogTitle className="font-display text-xl">{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
-          {!isRegister && ENABLE_OAUTH_LOGIN ? (
+          {!isRegister && !isForgot && ENABLE_OAUTH_LOGIN ? (
             <div className="space-y-2">
               {GOOGLE_CLIENT_ID ? (
                 <div className="flex flex-col items-center gap-1">
@@ -183,7 +208,7 @@ export function LoginDialog() {
             </div>
           ) : null}
 
-          {!isRegister && ENABLE_OAUTH_LOGIN ? (
+          {!isRegister && !isForgot && ENABLE_OAUTH_LOGIN ? (
             <div className="relative py-1">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
@@ -194,42 +219,66 @@ export function LoginDialog() {
             </div>
           ) : null}
 
-          <form className="space-y-3" onSubmit={isRegister ? handleRegister : handlePasswordLogin}>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={
-                  isRegister ? t('auth.usernameHint') : t('auth.usernamePlaceholder')
-                }
-                value={form.username}
-                onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
-                className="pl-10"
-                autoComplete="username"
-                aria-label={t('auth.username')}
-              />
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                placeholder={
-                  isRegister ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')
-                }
-                value={form.password}
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                className="pl-10 pr-10"
-                autoComplete={isRegister ? 'new-password' : 'current-password'}
-                aria-label={t('auth.password')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((p) => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                aria-label={t('auth.showPassword')}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+          <form
+            className="space-y-3"
+            onSubmit={isForgot ? handleForgotSubmit : isRegister ? handleRegister : handlePasswordLogin}
+          >
+            {!isForgot ? (
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder={
+                    isRegister ? t('auth.usernameHint') : t('auth.usernamePlaceholder')
+                  }
+                  value={form.username}
+                  onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                  className="pl-10"
+                  autoComplete="username"
+                  aria-label={t('auth.username')}
+                />
+              </div>
+            ) : null}
+
+            {isRegister || isForgot ? (
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder={isForgot ? t('auth.forgotAccountPlaceholder') : t('auth.emailPlaceholder')}
+                  value={form.email}
+                  onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  className="pl-10"
+                  autoComplete="email"
+                  aria-label={t('auth.email')}
+                />
+              </div>
+            ) : null}
+
+            {!isForgot ? (
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={
+                    isRegister ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')
+                  }
+                  value={form.password}
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                  className="pl-10 pr-10"
+                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  aria-label={t('auth.password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  aria-label={t('auth.showPassword')}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            ) : null}
+
             {isRegister ? (
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -243,38 +292,57 @@ export function LoginDialog() {
                   aria-label={t('auth.confirmPassword')}
                 />
               </div>
-            ) : (
+            ) : null}
+
+            {!isRegister && !isForgot ? (
               <div className="flex justify-end">
                 <button
                   type="button"
                   className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                  onClick={handleForgotPassword}
+                  onClick={() => setAuthDialogMode('forgot')}
                 >
                   {t('auth.forgotPassword')}
                 </button>
               </div>
-            )}
+            ) : null}
+
             {localError ? <p className="text-sm text-destructive">{localError}</p> : null}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isRegister
+              {isForgot
                 ? isLoading
-                  ? t('auth.registering')
-                  : t('auth.register')
-                : isLoading
-                  ? t('auth.loggingIn')
-                  : t('auth.login')}
+                  ? t('auth.forgotSubmitting')
+                  : t('auth.forgotSubmit')
+                : isRegister
+                  ? isLoading
+                    ? t('auth.registering')
+                    : t('auth.register')
+                  : isLoading
+                    ? t('auth.loggingIn')
+                    : t('auth.login')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            {isRegister ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
-            <button
-              type="button"
-              className="font-medium text-foreground underline-offset-2 hover:underline"
-              onClick={() => setAuthDialogMode(isRegister ? 'login' : 'register')}
-            >
-              {isRegister ? t('auth.goLogin') : t('auth.goRegister')}
-            </button>
+            {isForgot ? (
+              <button
+                type="button"
+                className="font-medium text-foreground underline-offset-2 hover:underline"
+                onClick={() => setAuthDialogMode('login')}
+              >
+                {t('auth.goLogin')}
+              </button>
+            ) : (
+              <>
+                {isRegister ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
+                <button
+                  type="button"
+                  className="font-medium text-foreground underline-offset-2 hover:underline"
+                  onClick={() => setAuthDialogMode(isRegister ? 'login' : 'register')}
+                >
+                  {isRegister ? t('auth.goLogin') : t('auth.goRegister')}
+                </button>
+              </>
+            )}
           </p>
 
           <Button type="button" variant="ghost" className="w-full" onClick={handleClose}>

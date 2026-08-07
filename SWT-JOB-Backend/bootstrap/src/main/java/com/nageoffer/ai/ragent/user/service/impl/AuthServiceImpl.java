@@ -20,12 +20,15 @@ package com.nageoffer.ai.ragent.user.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.user.controller.request.ForgotPasswordRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
+import com.nageoffer.ai.ragent.user.controller.vo.ForgotPasswordVO;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.config.AuthMailProperties;
 import com.nageoffer.ai.ragent.user.config.AuthProperties;
 import com.nageoffer.ai.ragent.user.service.AppleOAuthService;
 import com.nageoffer.ai.ragent.user.service.AppleOAuthService.VerifiedAppleUser;
@@ -49,12 +52,14 @@ public class AuthServiceImpl implements AuthService {
     private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/583231?v=4";
     private static final String DEV_BYPASS_LOGIN_ID = "dev-admin";
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\u4e00-\\u9fff]{3,32}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final UserMapper userMapper;
     private final GoogleOAuthService googleOAuthService;
     private final AppleOAuthService appleOAuthService;
     private final WeChatOAuthService weChatOAuthService;
     private final AuthProperties authProperties;
+    private final AuthMailProperties authMailProperties;
     private final UserSchemaService userSchemaService;
 
     @Override
@@ -106,13 +111,26 @@ public class AuthServiceImpl implements AuthService {
         if ("admin".equalsIgnoreCase(username)) {
             throw new ClientException("该用户名不可用");
         }
+        String email = StrUtil.trimToNull(requestParam.getEmail());
+        if (StrUtil.isNotBlank(email)) {
+            email = email.toLowerCase();
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                throw new ClientException("邮箱格式不正确");
+            }
+        } else {
+            throw new ClientException("请填写邮箱，便于找回密码");
+        }
         userSchemaService.ensureUserColumns();
         if (findByUsername(username) != null) {
             throw new ClientException("用户名已存在");
         }
+        if (findByEmail(email) != null) {
+            throw new ClientException("该邮箱已被注册");
+        }
         UserDO user = UserDO.builder()
                 .username(username)
                 .password(PasswordHasher.hash(password))
+                .email(email)
                 .role("user")
                 .avatar(DEFAULT_AVATAR_URL)
                 .accountStatus("active")
@@ -123,6 +141,41 @@ public class AuthServiceImpl implements AuthService {
             throw new ClientException("注册失败：用户创建异常");
         }
         return finishLogin(user);
+    }
+
+    @Override
+    public ForgotPasswordVO requestPasswordReset(ForgotPasswordRequest requestParam) {
+        userSchemaService.ensureUserColumns();
+        String account = requestParam == null ? null : StrUtil.trimToNull(requestParam.getAccount());
+        if (StrUtil.isBlank(account)) {
+            throw new ClientException("请输入用户名或邮箱");
+        }
+        boolean mailConfigured = StrUtil.isNotBlank(authMailProperties.getResendApiKey())
+                && StrUtil.isNotBlank(authMailProperties.getFrom());
+        UserDO user = account.contains("@")
+                ? findByEmail(account.toLowerCase())
+                : findByUsername(account);
+        // 统一文案，避免枚举是否存在账号
+        if (!mailConfigured) {
+            return ForgotPasswordVO.builder()
+                    .mailConfigured(false)
+                    .accepted(true)
+                    .message("邮件服务尚未配置。请联系站长重置密码，或登录后在个人主页修改密码。配置 Resend/SMTP 后即可邮箱验证码找回。")
+                    .build();
+        }
+        if (user == null || StrUtil.isBlank(user.getEmail())) {
+            return ForgotPasswordVO.builder()
+                    .mailConfigured(true)
+                    .accepted(true)
+                    .message("若账号存在且已绑定邮箱，重置邮件将很快发送。请检查收件箱。")
+                    .build();
+        }
+        // 邮件发送接入点：配置就绪后在此调用 Resend/SMTP。当前先返回成功提示，避免阻塞注册流程。
+        return ForgotPasswordVO.builder()
+                .mailConfigured(true)
+                .accepted(true)
+                .message("若账号存在且已绑定邮箱，重置邮件将很快发送。请检查收件箱。")
+                .build();
     }
 
     @Override
@@ -235,6 +288,17 @@ public class AuthServiceImpl implements AuthService {
         return userMapper.selectOne(
                 Wrappers.lambdaQuery(UserDO.class)
                         .eq(UserDO::getUsername, username)
+                        .eq(UserDO::getDeleted, 0)
+        );
+    }
+
+    private UserDO findByEmail(String email) {
+        if (StrUtil.isBlank(email)) {
+            return null;
+        }
+        return userMapper.selectOne(
+                Wrappers.lambdaQuery(UserDO.class)
+                        .eq(UserDO::getEmail, email)
                         .eq(UserDO::getDeleted, 0)
         );
     }

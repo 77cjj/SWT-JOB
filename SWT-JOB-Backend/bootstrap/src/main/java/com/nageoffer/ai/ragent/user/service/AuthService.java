@@ -17,8 +17,10 @@
 
 package com.nageoffer.ai.ragent.user.service;
 
+import com.nageoffer.ai.ragent.user.controller.request.ForgotPasswordRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
+import com.nageoffer.ai.ragent.user.controller.vo.ForgotPasswordVO;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 
 public interface AuthService {
@@ -35,6 +37,8 @@ public interface AuthService {
     LoginVO loginWithApple(String idToken);
 
     LoginVO loginWithWeChat(String code);
+
+    ForgotPasswordVO requestPasswordReset(ForgotPasswordRequest requestParam);
 
     void logout();
 }

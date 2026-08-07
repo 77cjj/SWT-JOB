@@ -72,7 +72,19 @@ export default function DealGuideDrawer({ open, onClose, program, onCopied }: De
 
   if (!program || !resolved) {
     return (
-      <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 420 } } }}>
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        ModalProps={{ sx: { zIndex: 1200 } }}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 420 },
+            top: 'var(--app-header-height, 56px)',
+            height: 'calc(100% - var(--app-header-height, 56px))',
+          },
+        }}
+      >
         <Box sx={{ p: 2 }}>
           <Typography color="text.secondary">{t('deals.detailNotFound')}</Typography>
         </Box>
@@ -106,10 +118,17 @@ export default function DealGuideDrawer({ open, onClose, program, onCopied }: De
         anchor="right"
         open={open}
         onClose={onClose}
+        // 低于顶栏 z-index(1300)，并避开 header 高度，避免攻略被菜单遮住
+        ModalProps={{ sx: { zIndex: 1200 } }}
         PaperProps={{
           sx: {
             width: { xs: '100%', sm: 440, md: 480 },
             maxWidth: '100vw',
+            top: 'var(--app-header-height, 56px)',
+            height: {
+              xs: 'calc(100% - var(--app-header-height, 56px) - var(--app-bottom-nav-height, 0px))',
+              md: 'calc(100% - var(--app-header-height, 56px))',
+            },
           },
         }}
       >

@@ -92,8 +92,10 @@ export const NOTION_REMITTANCE_ROWS: NotionDealRow[] = [
 
 function remittanceDeal(partial: Omit<ReferralProgram, 'category' | 'offerKind' | 'displayGroup'>): ReferralProgram {
   return {
+    rewardBadgeKind: 'cash',
+    recommendPriority: 35,
     ...partial,
-    category: 'other',
+    category: 'remittance',
     offerKind: 'refer',
     displayGroup: 'remittance',
   };
@@ -104,6 +106,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'instarem',
     brandName: { zh: 'Instarem', en: 'Instarem' },
+    rewardBadgeKind: 'coupon',
+    recommendPriority: 55,
     editions: [{
       id: 'instarem-2026',
       validFrom: '2026-08-01',
@@ -118,6 +122,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'lemfi',
     brandName: { zh: 'LemFi', en: 'LemFi' },
+    highlightAmountUsd: 30,
+    recommendPriority: 22,
     siteRebateUsd: 10,
     siteRebateLabel: { zh: '本站返现 10刀', en: '$10 site cashback' },
     editions: [{
@@ -126,6 +132,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '$20 官方奖励 + 本站返现 $10', en: '$20 official + $10 site cashback' },
       summary: { zh: '验证账户并汇款 ≥$100；官方 $20，本站另返 $10。', en: 'Verify and send $100+; $20 official bonus + $10 from site.' },
+      cardGuideBrief: { zh: '验证账户并汇款 ≥$100，官方约 $20。', en: 'Verify + send $100+ for ~$20 official bonus.' },
+      cardExtraBrief: { zh: '本站另返 $10。', en: 'Site adds $10 cashback.' },
       requirements: { zh: ['汇款 $100', '使用 Refer 码 JIAJCETW', '等待约 1 天到账'], en: ['Send $100+', 'Code JIAJCETW', '~1 day to post'] },
       referralUrl: 'https://referral.lemfi.com/spBv1MpHk5b',
       tags: { zh: ['换汇', 'Refer JIAJCETW'], en: ['Remittance', 'Code JIAJCETW'] },
@@ -139,6 +147,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'panda-remit',
     brandName: { zh: '熊猫速汇 Panda Remit', en: 'Panda Remit' },
+    highlightAmountUsd: 7,
+    recommendPriority: 32,
     siteRebateUsd: 7,
     siteRebateLabel: { zh: '本站返现 7刀', en: '$7 site cashback' },
     editions: [{
@@ -147,6 +157,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '免手续费/汇率提升 + 本站返现 $7', en: 'Fee waiver/rate boost + $7 site cashback' },
       summary: { zh: '使用 Refer 码 RS46GM 成功汇款；首次汇款免手续费。', en: 'Use code RS46GM; first transfer fee waiver.' },
+      cardGuideBrief: { zh: 'Refer 码汇款成功，首次常免手续费。', en: 'Transfer with refer code; first transfer often fee-free.' },
+      cardExtraBrief: { zh: '本站返现 $7。', en: 'Site cashback $7.' },
       requirements: { zh: ['Refer 码 RS46GM', '成功汇款'], en: ['Code RS46GM', 'Complete transfer'] },
       referralUrl: 'https://p.pandaremit.com/h5activity/launchInvitationCode?countryCode=USA&shareCode=UlM0NkdN&lang=zh-hans',
       tags: { zh: ['换汇', 'Refer RS46GM'], en: ['Remittance', 'Code RS46GM'] },
@@ -160,6 +172,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'taptap',
     brandName: { zh: 'Taptap Send', en: 'Taptap Send' },
+    highlightAmountUsd: 20,
+    recommendPriority: 24,
     siteRebateUsd: 10,
     siteRebateLabel: { zh: '本站返现 10刀', en: '$10 site cashback' },
     editions: [{
@@ -168,6 +182,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '$10 官方奖励 + 本站返现 $10', en: '$10 official + $10 site cashback' },
       summary: { zh: '汇款 ≥$51 成功到账；兑换码 JIAJUN9。', en: 'Send $51+; promo code JIAJUN9.' },
+      cardGuideBrief: { zh: '兑换码汇款 ≥$51 拿官方 $10。', en: 'Promo code + send $51+ for $10 official.' },
+      cardExtraBrief: { zh: '本站另返 $10。', en: 'Site adds $10.' },
       requirements: { zh: ['汇款 ≥$51', 'Refer 码 JIAJUN9', '成功到账'], en: ['Send $51+', 'Code JIAJUN9', 'Transfer completes'] },
       referralUrl: 'https://taptapsend.onelink.me/Lrab/appreferral',
       tags: { zh: ['换汇', 'Refer JIAJUN9'], en: ['Remittance', 'Code JIAJUN9'] },
@@ -181,6 +197,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'remitly',
     brandName: { zh: 'Remitly', en: 'Remitly' },
+    highlightAmountUsd: 15,
+    recommendPriority: 26,
     siteRebateUsd: 10,
     siteRebateLabel: { zh: '本站返现 10刀', en: '$10 site cashback' },
     editions: [{
@@ -189,6 +207,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '首笔 $100+ 减 $5 + 本站返现 $10', en: '$5 off first $100+ transfer + $10 site cashback' },
       summary: { zh: '仅限 20 人；首笔转账 $100 以上。', en: 'Limited to 20 people; first transfer $100+.' },
+      cardGuideBrief: { zh: '首笔 ≥$100 减免 + 本站返现。', en: 'First $100+ transfer fee cut + site cashback.' },
+      cardExtraBrief: { zh: '本站返现约 $10。', en: 'About $10 site cashback.' },
       requirements: { zh: ['首笔转账 ≥$100', '名额有限（约 20 人）'], en: ['First transfer $100+', 'Limited slots (~20)'] },
       referralUrl: 'https://www.remitly.com/r/2phnuadt',
       tags: { zh: ['换汇', '名额有限'], en: ['Remittance', 'Limited slots'] },
@@ -197,6 +217,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   }),
   remittanceDeal({
     id: 'wirebarley',
+    rewardBadgeKind: 'coupon',
+    recommendPriority: 70,
     brandName: { zh: 'WireBarley', en: 'WireBarley' },
     editions: [{
       id: 'wirebarley-2026',
@@ -215,6 +237,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'wise',
     brandName: { zh: 'Wise', en: 'Wise' },
+    highlightAmountUsd: 10,
+    recommendPriority: 28,
     siteRebateUsd: 10,
     siteRebateLabel: { zh: '本站返现 10刀', en: '$10 site cashback' },
     editions: [{
@@ -236,6 +260,8 @@ export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
     id: 'western-union',
     brandName: { zh: 'Western Union', en: 'Western Union' },
+    rewardBadgeKind: 'coupon',
+    recommendPriority: 75,
     siteRebateUsd: 0,
     editions: [{
       id: 'wu-2026',

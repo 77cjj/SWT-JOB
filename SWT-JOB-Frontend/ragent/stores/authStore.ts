@@ -10,6 +10,7 @@ import {
   login as loginRequest,
   logout as logoutRequest,
   register as registerRequest,
+  requestPasswordReset as requestPasswordResetApi,
 } from "@/services/authService";
 import { RAGENT_BYPASS_AUTH } from "@/config/runtimeEnv";
 import { setAuthToken } from "@/services/api";
@@ -18,7 +19,7 @@ import { storage } from "@/utils/storage";
 import { getTranslation } from "../../src/i18n";
 import { readUiLanguage } from "../../src/i18n/readUiLanguage";
 
-export type AuthDialogMode = "login" | "register";
+export type AuthDialogMode = "login" | "register" | "forgot";
 
 interface AuthState {
   user: User | null;
@@ -29,7 +30,8 @@ interface AuthState {
   loginDialogReason: string | null;
   authDialogMode: AuthDialogMode;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, email: string) => Promise<void>;
+  requestPasswordReset: (account: string) => Promise<void>;
   googleLogin: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -142,15 +144,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
     }
   },
-  register: async (username, password) => {
+  register: async (username, password, email) => {
     set({ isLoading: true });
     try {
-      const data = await registerRequest(username, password);
+      const data = await registerRequest(username, password, email);
       applyAuthSession(set, data, username);
       get().fetchCurrentUser().catch(() => null);
       toast.success(authT("auth.registerSuccess"), { position: "top-center" });
     } catch (error) {
       toast.error((error as Error).message || authT("auth.registerFailed"));
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  requestPasswordReset: async (account) => {
+    set({ isLoading: true });
+    try {
+      const data = await requestPasswordResetApi(account);
+      toast.message(data?.message || authT("auth.forgotPasswordToast"), { position: "top-center" });
+    } catch (error) {
+      toast.error((error as Error).message || authT("auth.forgotPasswordFailed"));
       throw error;
     } finally {
       set({ isLoading: false });

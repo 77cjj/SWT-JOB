@@ -209,8 +209,11 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   useEffect(() => {
     if (!router.isReady) return;
     const qTab = router.query.tab;
-    if (qTab === 'wallet' || qTab === 'orders' || qTab === 'refer' || qTab === 'job_intel' || qTab === 'my_listings') {
+    if (qTab === 'orders' || qTab === 'refer' || qTab === 'job_intel' || qTab === 'my_listings') {
       setTab(qTab as MainTab);
+    } else if (qTab === 'wallet') {
+      // 钱包暂未启用：市集与个人主页均隐藏
+      setTab('refer');
     }
     const depositStatus = router.query.deposit;
     if (depositStatus === 'success') {
@@ -504,7 +507,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
         <Tab value="job_intel" icon={<WorkOutline />} iconPosition="start" label={t('marketplace.tabs.jobIntel')} sx={{ minHeight: 40 }} />
         <Tab value="my_listings" icon={<Storefront />} iconPosition="start" label={t('marketplace.tabs.myListings')} sx={{ minHeight: 40 }} />
         <Tab value="orders" icon={<Gavel />} iconPosition="start" label={t('marketplace.tabs.orders')} sx={{ minHeight: 40 }} />
-        <Tab value="wallet" icon={<AccountBalanceWallet />} iconPosition="start" label={t('marketplace.tabs.wallet')} sx={{ minHeight: 40 }} />
       </Tabs>
 
       {showLoadingBar ? <LinearProgress sx={{ mb: 2 }} /> : null}

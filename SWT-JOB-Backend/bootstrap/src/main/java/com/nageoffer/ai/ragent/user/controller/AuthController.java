@@ -20,8 +20,10 @@ package com.nageoffer.ai.ragent.user.controller;
 import com.nageoffer.ai.ragent.user.controller.request.GoogleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.AppleLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.WeChatLoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.ForgotPasswordRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
+import com.nageoffer.ai.ragent.user.controller.vo.ForgotPasswordVO;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
@@ -55,6 +57,15 @@ public class AuthController {
     @PostMapping("/auth/register")
     public Result<LoginVO> register(@RequestBody RegisterRequest requestParam) {
         return Results.success(authService.register(requestParam));
+    }
+
+    /**
+     * 忘记密码：邮箱验证码/重置邮件依赖第三方（Resend/SMTP）。
+     * 未配置时返回引导文案，不暴露账号是否存在。
+     */
+    @PostMapping("/auth/forgot-password")
+    public Result<ForgotPasswordVO> forgotPassword(@RequestBody ForgotPasswordRequest requestParam) {
+        return Results.success(authService.requestPasswordReset(requestParam));
     }
 
     /**

@@ -35,6 +35,8 @@ import { toast } from 'sonner';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import IconButton from '@mui/material/IconButton';
+import ProfileDealBoard from '../../components/profile/ProfileDealBoard';
+import { useI18n } from '../../context/I18nContext';
 
 function authHeaders(): HeadersInit {
   const token = storage.getToken();
@@ -44,7 +46,7 @@ function authHeaders(): HeadersInit {
     : { 'Content-Type': 'application/json' };
 }
 
-type ProfileSection = 'edit' | 'wallet' | 'password';
+type ProfileSection = 'edit' | 'password';
 
 function SectionTitle({
   title,
@@ -70,6 +72,7 @@ function SectionTitle({
 
 export default function UserProfilePage() {
   const router = useRouter();
+  const { language } = useI18n();
   const isMobile = useDevice();
   const authUser = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -153,7 +156,7 @@ export default function UserProfilePage() {
   useEffect(() => {
     if (!router.isReady) return;
     const section = router.query.tab;
-    if (typeof section === 'string' && ['edit', 'wallet', 'password'].includes(section)) {
+    if (typeof section === 'string' && ['edit', 'password'].includes(section)) {
       window.setTimeout(() => {
         document.getElementById(`profile-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 120);
@@ -285,7 +288,7 @@ export default function UserProfilePage() {
   };
 
   const content = (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
       {loading ? (
         <Typography color="text.secondary">加载中…</Typography>
       ) : !profile ? (
@@ -311,9 +314,6 @@ export default function UserProfilePage() {
                   <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'center', sm: 'flex-start' }}>
                     <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => scrollTo('edit')}>
                       编辑资料
-                    </Button>
-                    <Button size="small" variant="outlined" startIcon={<AccountBalanceWalletIcon />} onClick={() => scrollTo('wallet')}>
-                      钱包
                     </Button>
                     <Button size="small" variant="outlined" component={Link} href="/deals/market?tab=my_listings">
                       我的帖子
@@ -388,7 +388,15 @@ export default function UserProfilePage() {
             </Box>
           ) : null}
 
-          {/* 本人：各区块平铺 */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(280px, 0.9fr) minmax(0, 1.6fr)' },
+              gap: 2.5,
+              alignItems: 'start',
+            }}
+          >
+            <Stack spacing={2}>
           {isOwner ? (
             <>
               <Paper id="profile-edit" variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, scrollMarginTop: 88 }}>
@@ -609,82 +617,6 @@ export default function UserProfilePage() {
                 </Stack>
               </Paper>
 
-              <Paper id="profile-wallet" variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, scrollMarginTop: 88 }}>
-                <SectionTitle title="钱包与 AI" icon={<AccountBalanceWalletIcon fontSize="small" color="action" />} />
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  余额可用于市集托管押金与 AI 问答（约 $0.5/次）。发布帖子需提前存押金，让行动者更安心。
-                </Alert>
-                {!isAuthenticated ? (
-                  <Alert severity="warning">请先登录</Alert>
-                ) : (
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3 }}>
-                    <Box>
-                      <Typography variant="h3" fontWeight={800} color="primary.main">
-                        ${(wallet?.balance ?? 0).toFixed(2)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        托管中 ${(wallet?.locked ?? 0).toFixed(2)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        累计充值 ${(wallet?.deposited ?? 0).toFixed(2)}
-                      </Typography>
-                      {authUser?.freeChatRemaining != null ? (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                          剩余 AI 问答：{authUser.freeChatRemaining} 次
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          AI 问答：管理员/老用户通常不限次
-                        </Typography>
-                      )}
-                    </Box>
-                    <Box>
-                      <Stack spacing={1.5}>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                          <TextField
-                            size="small"
-                            type="number"
-                            label="充值 USD"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                            sx={{ width: 160 }}
-                          />
-                          <Button variant="contained" onClick={() => void handleDeposit()}>
-                            {stripeEnabled ? 'Stripe 充值' : '演示充值'}
-                          </Button>
-                        </Stack>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                          <TextField
-                            size="small"
-                            type="number"
-                            label="购买问答次数"
-                            value={aiBuyCount}
-                            onChange={(e) => setAiBuyCount(e.target.value)}
-                            sx={{ width: 160 }}
-                          />
-                          <Button variant="outlined" onClick={() => void handleBuyAi()}>
-                            用余额购买
-                          </Button>
-                        </Stack>
-                      </Stack>
-                      {txs.length > 0 ? (
-                        <Box sx={{ mt: 2 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            最近流水
-                          </Typography>
-                          {txs.slice(0, 8).map((tx) => (
-                            <Typography key={tx.id} variant="caption" display="block" color="text.secondary">
-                              {new Date(tx.createdAt).toLocaleString()} · {tx.type} · ${tx.amount.toFixed(2)}
-                              {tx.note ? ` — ${tx.note}` : ''}
-                            </Typography>
-                          ))}
-                        </Box>
-                      ) : null}
-                    </Box>
-                  </Box>
-                )}
-              </Paper>
-
               <Paper id="profile-password" variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, scrollMarginTop: 88 }}>
                 <SectionTitle title="修改密码" icon={<VpnKeyIcon fontSize="small" color="action" />} />
                 <Box sx={{ maxWidth: 480 }}>
@@ -733,7 +665,16 @@ export default function UserProfilePage() {
                 </Box>
               </Paper>
             </>
-          ) : null}
+          ) : (
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {language === 'zh' ? '仅本人可编辑资料与密码。' : 'Only the owner can edit profile and password.'}
+                </Typography>
+              </Paper>
+          )}
+            </Stack>
+            <ProfileDealBoard userId={userId} language={language} editable={isOwner} />
+          </Box>
         </Stack>
       )}
     </Container>
@@ -742,6 +683,6 @@ export default function UserProfilePage() {
   return isMobile ? (
     <MobileLayout>{content}</MobileLayout>
   ) : (
-    <DesktopLayout maxWidthClassName="max-w-5xl">{content}</DesktopLayout>
+    <DesktopLayout maxWidthClassName="max-w-6xl">{content}</DesktopLayout>
   );
 }

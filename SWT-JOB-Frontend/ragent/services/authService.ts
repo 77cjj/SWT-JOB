@@ -8,8 +8,15 @@ export async function login(username: string, password: string) {
   return api.post<LoginResponse>("/auth/login", { username, password });
 }
 
-export async function register(username: string, password: string) {
-  return api.post<LoginResponse>("/auth/register", { username, password });
+export async function register(username: string, password: string, email: string) {
+  return api.post<LoginResponse>("/auth/register", { username, password, email });
+}
+
+export async function requestPasswordReset(account: string) {
+  return api.post<{ mailConfigured?: boolean; accepted?: boolean; message?: string }>(
+    "/auth/forgot-password",
+    { account },
+  );
 }
 
 export async function loginWithGoogle(idToken: string) {

@@ -25,4 +25,7 @@ public class RegisterRequest {
     private String username;
 
     private String password;
+
+    /** 注册邮箱（用于找回密码；需配置邮件服务后才能发验证码） */
+    private String email;
 }

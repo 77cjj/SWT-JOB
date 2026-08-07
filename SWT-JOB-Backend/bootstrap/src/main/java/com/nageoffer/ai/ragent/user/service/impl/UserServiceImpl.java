@@ -241,6 +241,7 @@ public class UserServiceImpl implements UserService {
                 .accountStatus(StrUtil.blankToDefault(record.getAccountStatus(), "active"))
                 .restrictionNote(record.getRestrictionNote())
                 .displayName(record.getDisplayName())
+                .email(record.getEmail())
                 .createTime(record.getCreateTime())
                 .updateTime(record.getUpdateTime())
                 .build();

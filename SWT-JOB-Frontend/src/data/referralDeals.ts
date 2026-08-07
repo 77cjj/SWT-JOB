@@ -1,6 +1,23 @@
 import { notionRemittancePrograms } from './notionDealsSeed';
 
-export type DealCategory = 'bank' | 'cashback' | 'mobile' | 'other';
+/** 列表顶部分类：银行 / 换汇 / 返现 / 其他 App / 线下测试 / 运营商 / 其他 */
+export type DealCategory =
+  | 'bank'
+  | 'remittance'
+  | 'cashback'
+  | 'app'
+  | 'study'
+  | 'mobile'
+  | 'other';
+
+/**
+ * 右上角角标展示逻辑：
+ * - cash：可拿现金/返现，显示 $ 金额
+ * - credit：交易积分等非直接提现
+ * - coupon：优惠券/折扣/礼品卡，不显示「可拿现金」
+ * - none：不显示金额角标
+ */
+export type RewardBadgeKind = 'cash' | 'credit' | 'coupon' | 'none';
 
 /** 官方精选排序分组（相似项目靠近展示） */
 export type DealDisplayGroup =
@@ -73,17 +90,32 @@ export interface ReferralProgram {
   siteRebateLabel?: BilingualText;
   /**
    * 卡片右上角展示金额（USD，管理员单独配置）。
-   * 仅配置后显示；不会自动把官方奖励与本站返现加总。
+   * 仅配置后且 rewardBadgeKind 允许时显示；不会自动加总。
    */
   highlightAmountUsd?: number | null;
+  /** 右上角角标类型；缺省按 cash 处理 */
+  rewardBadgeKind?: RewardBadgeKind;
+  /**
+   * 推荐排序分（越小越靠前）。高收益/站长推荐项目应设较小值。
+   * 未设置时按类别与金额兜底。
+   */
+  recommendPriority?: number | null;
 }
 
-export const dealCategoryOrder: DealCategory[] = ['bank', 'other'];
+export const dealCategoryOrder: DealCategory[] = [
+  'bank',
+  'remittance',
+  'cashback',
+  'app',
+  'study',
+  'mobile',
+  'other',
+];
 
 export const referralPrograms: ReferralProgram[] = [
   {
     id: 'kalshi',
-    category: 'other',
+    category: 'app',
     displayGroup: 'predictions',
     offerKind: 'refer',
     pinned: true,
@@ -94,6 +126,8 @@ export const referralPrograms: ReferralProgram[] = [
       zh: '保底返现 $7.5（预测）+ 最高 $12.5（加密）',
       en: 'From $7.5 (predictions) + up to $12.5 (crypto)',
     },
+    rewardBadgeKind: 'credit',
+    recommendPriority: 5,
     editions: [
       {
         id: 'kalshi-2026',
@@ -171,7 +205,7 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'moomoo',
-    category: 'other',
+    category: 'app',
     displayGroup: 'promo-other',
     offerKind: 'refer',
     brandName: { zh: 'Moomoo 富途', en: 'Moomoo' },
@@ -180,6 +214,8 @@ export const referralPrograms: ReferralProgram[] = [
       zh: '平台奖励发放后返现一半（约 $5–75）',
       en: '50% cashback after platform payout (~$5–75)',
     },
+    rewardBadgeKind: 'cash',
+    recommendPriority: 40,
     editions: [
       {
         id: 'moomoo-2026-07',
@@ -237,6 +273,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'refer',
     brandName: { zh: 'Chime', en: 'Chime' },
     highlightAmountUsd: 100,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 20,
     editions: [
       {
         id: 'chime-2026',
@@ -361,6 +399,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'refer',
     brandName: { zh: 'SoFi', en: 'SoFi' },
     highlightAmountUsd: 50,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 25,
     editions: [
       {
         id: 'sofi-2026-bank-referral',
@@ -441,6 +481,8 @@ export const referralPrograms: ReferralProgram[] = [
       zh: '本站返现 $40',
       en: '$40 site cashback',
     },
+    rewardBadgeKind: 'cash',
+    recommendPriority: 15,
     editions: [
       {
         id: 'revolut-2026',
@@ -535,6 +577,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'refer',
     brandName: { zh: 'Capital One 360', en: 'Capital One 360' },
     highlightAmountUsd: 300,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 12,
     editions: [
       {
         id: 'cap1-2026',
@@ -592,6 +636,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'signup_bonus',
     brandName: { zh: 'Bank of America', en: 'Bank of America' },
     highlightAmountUsd: 500,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 8,
     editions: [
       {
         id: 'bofa-2026',
@@ -649,6 +695,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'signup_bonus',
     brandName: { zh: 'Chase Secure Checking', en: 'Chase Secure Checking' },
     highlightAmountUsd: 400,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 10,
     editions: [
       {
         id: 'chase-2026',
@@ -707,6 +755,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'signup_bonus',
     brandName: { zh: 'Citi Bank Checking', en: 'Citi Bank Checking' },
     highlightAmountUsd: 325,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 18,
     editions: [
       {
         id: 'citi-2025-winter',
@@ -764,6 +814,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'signup_bonus',
     brandName: { zh: 'Wells Fargo Checking', en: 'Wells Fargo Checking' },
     highlightAmountUsd: 325,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 14,
     editions: [
       {
         id: 'wf-2026',
@@ -822,11 +874,13 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'rakuten',
-    category: 'other',
+    category: 'cashback',
     displayGroup: 'cashback',
     offerKind: 'refer',
     brandName: { zh: 'Rakuten', en: 'Rakuten' },
     highlightAmountUsd: 30,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 50,
     editions: [
       {
         id: 'rakuten-2026',
@@ -881,10 +935,11 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'weee',
-    category: 'other',
+    category: 'cashback',
     offerKind: 'refer',
     brandName: { zh: 'Weee!', en: 'Weee!' },
-    highlightAmountUsd: 20,
+    rewardBadgeKind: 'coupon',
+    recommendPriority: 60,
     editions: [
       {
         id: 'weee-2026',
@@ -934,11 +989,12 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'total-wireless',
-    category: 'other',
+    category: 'mobile',
     displayGroup: 'promo-other',
     offerKind: 'promo',
     brandName: { zh: 'Total Wireless', en: 'Total Wireless' },
-    highlightAmountUsd: 50,
+    rewardBadgeKind: 'coupon',
+    recommendPriority: 80,
     editions: [
       {
         id: 'tw-iphone13-2025',
@@ -991,11 +1047,13 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'utest-wearable-150',
-    category: 'other',
+    category: 'study',
     displayGroup: 'ny-study',
     offerKind: 'refer',
     brandName: { zh: 'Utest 智能手环测试 ①', en: 'Utest Wearable Band Study 1' },
     highlightAmountUsd: 150,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 30,
     editions: [
       {
         id: 'utest-wearable-150-2026',
@@ -1042,11 +1100,13 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'wearable-study-225',
-    category: 'other',
+    category: 'study',
     displayGroup: 'ny-study',
     offerKind: 'promo',
     brandName: { zh: '手环测试 ②', en: 'Wearable Band Study 2' },
     highlightAmountUsd: 225,
+    rewardBadgeKind: 'cash',
+    recommendPriority: 28,
     editions: [
       {
         id: 'wearable-study-225-2026',
@@ -1093,7 +1153,7 @@ export const referralPrograms: ReferralProgram[] = [
   },
   {
     id: 'ny-test',
-    category: 'other',
+    category: 'study',
     displayGroup: 'ny-study',
     offerKind: 'promo',
     brandName: { zh: '纽约测试（站内演示）', en: 'NYC Test (demo)' },
@@ -1108,6 +1168,8 @@ export const referralPrograms: ReferralProgram[] = [
       zh: ['在管理后台可替换为真实纽约线下测试项目'],
       en: ['Replace with a real NYC study in admin when ready'],
     },
+    rewardBadgeKind: 'cash',
+    recommendPriority: 90,
     editions: [
       {
         id: 'ny-test-2026',

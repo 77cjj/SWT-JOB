@@ -44,6 +44,9 @@ public class UserDO {
 
     private String password;
 
+    /** 登录邮箱（找回密码）；可空 */
+    private String email;
+
     /**
      * 用户头像 URL
      */

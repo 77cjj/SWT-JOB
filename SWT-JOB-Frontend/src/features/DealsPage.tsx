@@ -376,6 +376,7 @@ export default function DealsPage() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === 'admin';
   const [category, setCategory] = useState<DealCategory | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity?: 'success' | 'info' }>({
     open: false,
     message: '',
@@ -422,30 +423,165 @@ export default function DealsPage() {
         ))}
       </Tabs>
 
-      <Alert severity="info" icon={false} sx={{ mb: 2, py: 0.75 }}>
-        <Typography variant="body2">{t('deals.clickCardHint')}</Typography>
-      </Alert>
-
       <Box
         sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-          gap: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          mb: 1.5,
+          flexWrap: 'wrap',
         }}
       >
-        {filtered.map((item) => (
-          <DealCard
-            key={item.program.id}
-            item={item}
-            lang={language}
-            isAdmin={isAdmin}
-            onOpenExternal={(url, label) => setExternalLink({ url, label })}
-            onViewHistory={() => setHistoryTarget(item)}
-            onOpenGuide={() => setGuideProgram(item.program)}
-            onEdit={() => setEditProgram(item.program)}
-          />
-        ))}
+        <Typography variant="body2" color="text.secondary">
+          {t('deals.clickCardHint')}
+        </Typography>
+        <Box sx={{ display: 'inline-flex', border: 1, borderColor: 'divider', borderRadius: 999, p: 0.25 }}>
+          <Button
+            size="small"
+            onClick={() => setViewMode('list')}
+            sx={{
+              borderRadius: 999,
+              px: 1.5,
+              minWidth: 0,
+              bgcolor: viewMode === 'list' ? 'text.primary' : 'transparent',
+              color: viewMode === 'list' ? 'background.paper' : 'text.secondary',
+              '&:hover': { bgcolor: viewMode === 'list' ? 'text.primary' : 'action.hover' },
+            }}
+          >
+            {language === 'zh' ? '列表' : 'List'}
+          </Button>
+          <Button
+            size="small"
+            onClick={() => setViewMode('cards')}
+            sx={{
+              borderRadius: 999,
+              px: 1.5,
+              minWidth: 0,
+              bgcolor: viewMode === 'cards' ? 'text.primary' : 'transparent',
+              color: viewMode === 'cards' ? 'background.paper' : 'text.secondary',
+              '&:hover': { bgcolor: viewMode === 'cards' ? 'text.primary' : 'action.hover' },
+            }}
+          >
+            {language === 'zh' ? '卡片' : 'Cards'}
+          </Button>
+        </Box>
       </Box>
+
+      {viewMode === 'list' ? (
+        <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
+          {filtered.map((item) => {
+            const title = pickBilingual(item.program.brandName, language);
+            const reward = pickBilingual(item.edition.reward, language);
+            const guideBrief = (
+              (item.edition.cardGuideBrief
+                ? pickBilingual(item.edition.cardGuideBrief, language)
+                : '') || pickBilingual(item.edition.summary, language)
+            ).trim();
+            const cornerBadge = resolveDealCornerBadge(item.program);
+            const amount =
+              !item.isStale &&
+              cornerBadge &&
+              (cornerBadge.kind === 'cash' || cornerBadge.kind === 'credit')
+                ? cornerBadge.amount
+                : null;
+            return (
+              <Box
+                key={item.program.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (!item.isStale) setGuideProgram(item.program);
+                }}
+                onKeyDown={(e) => {
+                  if (item.isStale) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setGuideProgram(item.program);
+                  }
+                }}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'minmax(0, 1.2fr) minmax(0, 1.6fr) auto',
+                  },
+                  gap: { xs: 0.75, sm: 2 },
+                  alignItems: 'center',
+                  py: 1.75,
+                  borderBottom: 1,
+                  borderColor: 'divider',
+                  cursor: item.isStale ? 'default' : 'pointer',
+                  opacity: item.isStale ? 0.55 : 1,
+                  transition: 'background-color .15s ease',
+                  '&:hover': { bgcolor: item.isStale ? 'transparent' : 'action.hover' },
+                }}
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+                      fontWeight: 700,
+                      fontSize: '1.05rem',
+                    }}
+                  >
+                    {title}
+                  </Typography>
+                  <Typography variant="body2" color="primary.main" fontWeight={700}>
+                    {reward}
+                  </Typography>
+                </Box>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    display: { xs: '-webkit-box', sm: 'block' },
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {guideBrief}
+                </Typography>
+                <Box sx={{ textAlign: { sm: 'right' }, flexShrink: 0 }}>
+                  {amount != null ? (
+                    <Typography fontWeight={800} color="error.main">
+                      ${amount.toFixed(amount % 1 === 0 ? 0 : 1)}
+                    </Typography>
+                  ) : item.isStale ? (
+                    <Chip size="small" label={t('deals.expiredBadge')} />
+                  ) : null}
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {formatEditionPeriod(item.edition, language)}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gap: 2,
+          }}
+        >
+          {filtered.map((item) => (
+            <DealCard
+              key={item.program.id}
+              item={item}
+              lang={language}
+              isAdmin={isAdmin}
+              onOpenExternal={(url, label) => setExternalLink({ url, label })}
+              onViewHistory={() => setHistoryTarget(item)}
+              onOpenGuide={() => setGuideProgram(item.program)}
+              onEdit={() => setEditProgram(item.program)}
+            />
+          ))}
+        </Box>
+      )}
 
       <DealGuideDrawer
         open={Boolean(guideProgram)}

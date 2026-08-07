@@ -59,8 +59,18 @@ public class UserSchemaService {
             jdbcTemplate.execute(
                     "ALTER TABLE t_user ADD COLUMN IF NOT EXISTS free_chat_remaining INT"
             );
+            jdbcTemplate.execute(
+                    "ALTER TABLE t_user ADD COLUMN IF NOT EXISTS email VARCHAR(191)"
+            );
+            try {
+                jdbcTemplate.execute(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS uk_t_user_email ON t_user (email) WHERE email IS NOT NULL AND deleted = 0"
+                );
+            } catch (Exception ex) {
+                log.warn("创建 t_user.email 唯一索引失败（可忽略，若库不支持部分索引）: {}", ex.getMessage());
+            }
             ensured = true;
-            log.info("已确保 t_user 扩展字段就绪（official_verified/account_status/free_chat_remaining 等）");
+            log.info("已确保 t_user 扩展字段就绪（official_verified/account_status/free_chat_remaining/email 等）");
         }
     }
 }

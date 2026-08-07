@@ -17,10 +17,20 @@
 
 package com.nageoffer.ai.ragent.user.config;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Configuration
-@EnableConfigurationProperties({AuthProperties.class, AuthMailProperties.class})
-public class AuthConfiguration {
+/**
+ * 找回密码邮件：配置 RESEND_API_KEY 或 SMTP 后才真正发信。
+ * 未配置时接口仍返回成功文案，引导用户联系站长。
+ */
+@Data
+@ConfigurationProperties(prefix = "auth.mail")
+public class AuthMailProperties {
+
+    /** Resend API Key；非空即视为已配置邮件 */
+    private String resendApiKey = "";
+
+    /** 发件人，如 SWT Helper <noreply@example.com> */
+    private String from = "";
 }

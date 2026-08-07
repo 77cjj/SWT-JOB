@@ -41,6 +41,7 @@ public class UserVO {
     private String accountStatus;
     private String restrictionNote;
     private String displayName;
+    private String email;
     private Date createTime;
     private Date updateTime;
 }

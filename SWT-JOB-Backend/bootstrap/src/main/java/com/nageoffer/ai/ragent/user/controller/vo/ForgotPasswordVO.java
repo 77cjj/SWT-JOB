@@ -15,12 +15,24 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.config;
+package com.nageoffer.ai.ragent.user.controller.vo;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Configuration
-@EnableConfigurationProperties({AuthProperties.class, AuthMailProperties.class})
-public class AuthConfiguration {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ForgotPasswordVO {
+
+    /** 是否已配置第三方邮件服务（Resend / SMTP 等） */
+    private boolean mailConfigured;
+
+    /** 是否已找到账号（模糊提示，避免枚举用户） */
+    private boolean accepted;
+
+    private String message;
 }

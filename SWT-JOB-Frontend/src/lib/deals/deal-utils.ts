@@ -102,31 +102,67 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
   const groupOrder: Record<string, number> = {
     'bank-neobank': 0,
     'bank-national': 1,
-    predictions: 2,
-    remittance: 3,
+    remittance: 2,
+    predictions: 3,
     cashback: 4,
     'ny-study': 5,
     'promo-other': 6,
   };
 
+  const categoryOrder: Record<string, number> = {
+    bank: 0,
+    remittance: 1,
+    cashback: 2,
+    app: 3,
+    study: 4,
+    mobile: 5,
+    other: 6,
+  };
+
   const resolveGroup = (program: ReferralProgram): string => {
     if (program.displayGroup) return program.displayGroup;
     if (program.category === 'bank') return 'bank-national';
+    if (program.category === 'remittance') return 'remittance';
+    if (program.category === 'cashback') return 'cashback';
+    if (program.category === 'study') return 'ny-study';
     if (program.id === 'kalshi') return 'predictions';
-    if (program.id === 'rakuten') return 'cashback';
-    if (program.id === 'total-wireless') return 'promo-other';
     return 'promo-other';
+  };
+
+  const recommendScoreOf = (item: ResolvedProgram): number => {
+    const p = item.program;
+    if (p.recommendPriority != null && Number.isFinite(p.recommendPriority)) {
+      return Number(p.recommendPriority);
+    }
+    const amount =
+      p.highlightAmountUsd != null && Number.isFinite(p.highlightAmountUsd)
+        ? Number(p.highlightAmountUsd)
+        : 0;
+    const kind = p.rewardBadgeKind ?? 'cash';
+    if (kind === 'cash' && amount > 0) return 100 - Math.min(amount, 99);
+    if (kind === 'credit') return 120;
+    return 200;
   };
 
   return [...items].sort((a, b) => {
     const pinA = a.program.pinned ? 0 : 1;
     const pinB = b.program.pinned ? 0 : 1;
     if (pinA !== pinB) return pinA - pinB;
+
+    const statusDiff = rank[a.status] - rank[b.status];
+    if (statusDiff !== 0) return statusDiff;
+
+    const scoreDiff = recommendScoreOf(a) - recommendScoreOf(b);
+    if (scoreDiff !== 0) return scoreDiff;
+
+    const ca = categoryOrder[a.program.category] ?? 99;
+    const cb = categoryOrder[b.program.category] ?? 99;
+    if (ca !== cb) return ca - cb;
+
     const ga = groupOrder[resolveGroup(a.program)] ?? 99;
     const gb = groupOrder[resolveGroup(b.program)] ?? 99;
     if (ga !== gb) return ga - gb;
-    const dr = rank[a.status] - rank[b.status];
-    if (dr !== 0) return dr;
+
     return a.program.brandName.zh.localeCompare(b.program.brandName.zh, 'zh');
   });
 }

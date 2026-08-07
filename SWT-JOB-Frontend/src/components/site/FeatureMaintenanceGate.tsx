@@ -4,14 +4,7 @@ import { useRouter } from 'next/router';
 import { Box, Typography } from '@mui/material';
 import { useSiteFeatures } from '../../context/SiteFeaturesContext';
 import { featureKeyForPath } from '../../lib/site/siteFeaturesApi';
-
-const LABELS: Record<string, string> = {
-  chat: 'AI 问答',
-  deals: '薅羊毛',
-  compare: '选岗计算器',
-  jobs: '岗位情报',
-  docs: 'SWT 文档',
-};
+import { useI18n } from '../../context/I18nContext';
 
 /**
  * 功能未开放时：页面内容仍渲染，上层叠加毛玻璃 + 维护提示。
@@ -19,6 +12,7 @@ const LABELS: Record<string, string> = {
  */
 export function FeatureMaintenanceGate() {
   const router = useRouter();
+  const { t, tWithParams } = useI18n();
   const { features, loading } = useSiteFeatures();
   const pathname = router.pathname || '';
 
@@ -29,20 +23,18 @@ export function FeatureMaintenanceGate() {
   if (loading) return null;
   if (features[key] !== false) return null;
 
-  const label = LABELS[key] || '该功能';
+  const label = t(`siteFeatures.labels.${key}`);
 
   return (
     <Box
       role="dialog"
       aria-modal="true"
-      aria-label={`${label}维护中`}
+      aria-label={tWithParams('siteFeatures.ariaMaintaining', { label })}
       sx={{
         position: 'fixed',
-        // 避开顶栏，保留导航可点
         top: 'var(--app-header-height, 56px)',
         left: 0,
         right: 0,
-        // 移动端避开底栏
         bottom: {
           xs: 'calc(var(--app-bottom-nav-height, 5rem) + env(safe-area-inset-bottom, 0px))',
           md: 0,
@@ -80,10 +72,10 @@ export function FeatureMaintenanceGate() {
           SWT Helper
         </Typography>
         <Typography variant="h5" sx={{ mt: 1, mb: 1.25, fontWeight: 800, letterSpacing: '-0.02em' }}>
-          {label}仍在开发中
+          {tWithParams('siteFeatures.underDevelopment', { label })}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-          网站维护者正在完善此页面。可点击上方菜单切换到其他功能；正式开放前暂不可操作。
+          {t('siteFeatures.underDevelopmentHint')}
         </Typography>
       </Box>
     </Box>

@@ -19,6 +19,11 @@ import {
   History,
   InfoOutlined,
   Edit,
+  CurrencyExchange,
+  ShoppingBag,
+  Apps,
+  Science,
+  PhoneAndroid,
 } from '@mui/icons-material';
 import {
   dealCategoryOrder,
@@ -35,14 +40,20 @@ import {
   sortProgramsForDisplay,
   type ResolvedProgram,
 } from '../lib/deals/deal-utils';
+import { resolveDealCornerBadge } from '../lib/deals/reward-badge';
 import { useI18n } from '../context/I18nContext';
 import type { Language } from '../i18n/types';
 import { pickBilingual } from '../i18n/bilingual';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
 import { useAuthStore } from '@/stores/authStore';
 
-const categoryIcons: Record<'bank' | 'other', React.ReactNode> = {
+const categoryIcons: Record<DealCategory, React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
+  remittance: <CurrencyExchange fontSize="small" />,
+  cashback: <ShoppingBag fontSize="small" />,
+  app: <Apps fontSize="small" />,
+  study: <Science fontSize="small" />,
+  mobile: <PhoneAndroid fontSize="small" />,
   other: <MoreHoriz fontSize="small" />,
 };
 
@@ -87,11 +98,14 @@ function DealCard({
   const showReferral = hasReferralLink(item);
   const period = formatEditionPeriod(edition, lang);
   const officialUrl = edition.officialUrl;
-  const highlightAmount =
-    program.highlightAmountUsd != null &&
-    Number.isFinite(program.highlightAmountUsd) &&
-    program.highlightAmountUsd > 0
-      ? program.highlightAmountUsd
+  const cornerBadge = resolveDealCornerBadge(program);
+  const showAmountBadge =
+    !isStale &&
+    cornerBadge != null &&
+    (cornerBadge.kind === 'cash' || cornerBadge.kind === 'credit');
+  const amountValue =
+    showAmountBadge && (cornerBadge.kind === 'cash' || cornerBadge.kind === 'credit')
+      ? cornerBadge.amount
       : null;
 
   return (
@@ -152,7 +166,7 @@ function DealCard({
             {t('deals.expiredBadge')}
           </Typography>
         </Box>
-      ) : highlightAmount != null ? (
+      ) : showAmountBadge && amountValue != null ? (
         <Box
           sx={{
             position: 'absolute',
@@ -162,16 +176,39 @@ function DealCard({
             px: 1.25,
             py: 0.5,
             borderRadius: 1.5,
-            background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #ec4899 100%)',
+            background:
+              cornerBadge?.kind === 'credit'
+                ? 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)'
+                : 'linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #ec4899 100%)',
             color: '#fff',
             boxShadow: '0 6px 16px rgba(239,68,68,0.35)',
           }}
         >
           <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, lineHeight: 1.1, fontWeight: 600 }}>
-            {t('deals.highlightAmount')}
+            {t(cornerBadge!.labelKey)}
           </Typography>
           <Typography variant="h6" fontWeight={900} sx={{ lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-            ${highlightAmount.toFixed(highlightAmount % 1 === 0 ? 0 : 1)}
+            ${amountValue.toFixed(amountValue % 1 === 0 ? 0 : 1)}
+          </Typography>
+        </Box>
+      ) : cornerBadge?.kind === 'coupon' && !isStale ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 1,
+            px: 1.25,
+            py: 0.45,
+            borderRadius: 1.5,
+            bgcolor: 'action.hover',
+            color: 'text.secondary',
+            border: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="caption" fontWeight={700}>
+            {t('deals.highlightCoupon')}
           </Typography>
         </Box>
       ) : null}
@@ -182,7 +219,7 @@ function DealCard({
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: 1,
-          pr: isStale || highlightAmount != null ? 7 : 0,
+          pr: isStale || showAmountBadge || cornerBadge?.kind === 'coupon' ? 7 : 0,
         }}
       >
         <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -355,9 +392,7 @@ export default function DealsPage() {
     const base =
       category === 'all'
         ? allResolved
-        : category === 'other'
-          ? allResolved.filter((r) => r.program.category !== 'bank')
-          : allResolved.filter((r) => r.program.category === category);
+        : allResolved.filter((r) => r.program.category === category);
     return sortProgramsForDisplay(base);
   }, [allResolved, category]);
 
@@ -372,20 +407,24 @@ export default function DealsPage() {
         onChange={(_, v) => setCategory(v)}
         variant="scrollable"
         scrollButtons="auto"
-        sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
+        sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
       >
         <Tab value="all" label={t('common.all')} sx={{ minHeight: 40, py: 1 }} />
         {dealCategoryOrder.map((cat) => (
           <Tab
             key={cat}
             value={cat}
-            icon={(categoryIcons[cat === 'bank' ? 'bank' : 'other']) as React.ReactElement}
+            icon={(categoryIcons[cat] ?? categoryIcons.other) as React.ReactElement}
             iconPosition="start"
             label={t(`deals.categories.${cat}`)}
             sx={{ minHeight: 40, py: 1 }}
           />
         ))}
       </Tabs>
+
+      <Alert severity="info" icon={false} sx={{ mb: 2, py: 0.75 }}>
+        <Typography variant="body2">{t('deals.clickCardHint')}</Typography>
+      </Alert>
 
       <Box
         sx={{

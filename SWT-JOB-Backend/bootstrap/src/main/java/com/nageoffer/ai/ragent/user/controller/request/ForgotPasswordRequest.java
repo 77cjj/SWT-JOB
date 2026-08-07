@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.config;
+package com.nageoffer.ai.ragent.user.controller.request;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import lombok.Data;
 
-@Configuration
-@EnableConfigurationProperties({AuthProperties.class, AuthMailProperties.class})
-public class AuthConfiguration {
+@Data
+public class ForgotPasswordRequest {
+
+    /** 用户名或注册邮箱 */
+    private String account;
 }

@@ -57,7 +57,8 @@ export const en = {
     loginReasonChat: 'Sign in to save chats and use full AI features',
     loginReasonRequired: 'Please sign in first',
     registerTitle: 'Create an account',
-    registerDesc: 'Your account is stored in our database. You can sign in with username and password right away.',
+    registerDesc:
+      'Create an account with username, email, and password. Email is used for password recovery once mail is configured.',
     username: 'Username',
     password: 'Password',
     confirmPassword: 'Confirm password',
@@ -78,6 +79,18 @@ export const en = {
     goLogin: 'Sign in',
     continueBrowsing: 'Continue browsing',
     needUsernamePassword: 'Enter username and password',
+    needEmail: 'Email is required for password recovery',
+    needForgotAccount: 'Enter your username or email',
+    email: 'Email',
+    emailPlaceholder: 'Email for recovery',
+    emailInvalid: 'Invalid email format',
+    forgotTitle: 'Reset password',
+    forgotDesc:
+      'Enter username or email. Email verification codes need Resend/SMTP; until configured, contact the site owner.',
+    forgotAccountPlaceholder: 'Username or email',
+    forgotSubmit: 'Request reset',
+    forgotSubmitting: 'Submitting…',
+    forgotPasswordFailed: 'Password reset request failed',
     passwordMismatch: 'Passwords do not match',
     passwordTooShort: 'Password must be at least 6 characters',
     passwordLengthInvalid: 'Password must be 6–64 characters',
@@ -525,10 +538,15 @@ export const en = {
     signupBonusHint: 'Official sign-up bonus only—no public referral link',
     categories: {
       bank: 'Bank accounts',
-      cashback: 'Cashback apps',
+      remittance: 'Remittance',
+      cashback: 'Cashback / shopping',
+      app: 'Other apps',
+      study: 'In-person studies',
       mobile: 'Mobile carriers',
       other: 'Other',
     },
+    clickCardHint:
+      'Tip: tap a card to open the guide from the right. The corner amount is set by admins and is not an auto-sum of official bonus + site cashback.',
     status: {
       active: 'Active',
       expiring: 'Expiring soon',
@@ -580,6 +598,8 @@ export const en = {
     siteRebateChip: 'Site pays ${amount}',
     totalTake: 'Total take',
     highlightAmount: 'Up to',
+    highlightCredit: 'Credits',
+    highlightCoupon: 'Coupon',
     cardGuideLabel: 'Quick guide',
     cardExtraLabel: 'Site perk',
     howToClaimTitle: 'How to claim the official reward',
@@ -594,6 +614,7 @@ export const en = {
     escrowPitchTitle: 'Why escrow upfront?',
     escrowPitchBody: 'Sellers must fund their wallet before publishing. Escrow stays locked until completion is confirmed—reducing fake listings and walk-aways.',
     walletMovedHint: 'Wallet lives on your profile: deposit for marketplace escrow or buy AI chat credits.',
+    walletDisabledHint: 'Wallet is temporarily disabled on both marketplace and profile.',
     goProfileWallet: 'Open my wallet',
     editListing: 'Edit',
     resume: 'Resume',
@@ -772,6 +793,21 @@ export const en = {
     loadError: 'Failed to load poll',
     submitError: 'Submit failed. Try again.',
     totalVotes: '{count} votes',
+  },
+
+  // Feature flags / maintenance
+  siteFeatures: {
+    labels: {
+      chat: 'AI Chat',
+      deals: 'Deals',
+      compare: 'Job compare',
+      jobs: 'Job intel',
+      docs: 'SWT docs',
+    },
+    underDevelopment: '{label} is still in development',
+    underDevelopmentHint:
+      'The site maintainer is finishing this page. Use the top menu to switch elsewhere; it is not interactive until launch.',
+    ariaMaintaining: '{label} under maintenance',
   },
 
   // Errors and Validation

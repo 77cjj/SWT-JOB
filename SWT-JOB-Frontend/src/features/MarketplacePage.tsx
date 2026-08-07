@@ -209,8 +209,11 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   useEffect(() => {
     if (!router.isReady) return;
     const qTab = router.query.tab;
-    if (qTab === 'wallet' || qTab === 'orders' || qTab === 'refer' || qTab === 'job_intel' || qTab === 'my_listings') {
+    if (qTab === 'orders' || qTab === 'refer' || qTab === 'job_intel' || qTab === 'my_listings') {
       setTab(qTab as MainTab);
+    } else if (qTab === 'wallet') {
+      // 钱包暂未启用：市集与个人主页均隐藏
+      setTab('refer');
     }
     const depositStatus = router.query.deposit;
     if (depositStatus === 'success') {
@@ -504,34 +507,15 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
         <Tab value="job_intel" icon={<WorkOutline />} iconPosition="start" label={t('marketplace.tabs.jobIntel')} sx={{ minHeight: 40 }} />
         <Tab value="my_listings" icon={<Storefront />} iconPosition="start" label={t('marketplace.tabs.myListings')} sx={{ minHeight: 40 }} />
         <Tab value="orders" icon={<Gavel />} iconPosition="start" label={t('marketplace.tabs.orders')} sx={{ minHeight: 40 }} />
-        <Tab value="wallet" icon={<AccountBalanceWallet />} iconPosition="start" label={t('marketplace.tabs.wallet')} sx={{ minHeight: 40 }} />
       </Tabs>
 
       {showLoadingBar ? <LinearProgress sx={{ mb: 2 }} /> : null}
 
       {tab === 'wallet' ? (
         <Alert severity="info" sx={{ maxWidth: 560 }}>
-          <Typography fontWeight={600} sx={{ mb: 1 }}>
-            {t('marketplace.walletMovedHint')}
+          <Typography fontWeight={600}>
+            {t('marketplace.walletDisabledHint')}
           </Typography>
-          {authUser?.userId ? (
-            <Button
-              component={Link}
-              href={`/u/${authUser.userId}?tab=wallet`}
-              variant="contained"
-              size="small"
-            >
-              {t('marketplace.goProfileWallet')}
-            </Button>
-          ) : (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => useAuthStore.getState().openLoginDialog(t('marketplace.loginRequired'))}
-            >
-              {t('marketplace.loginRequired')}
-            </Button>
-          )}
         </Alert>
       ) : null}
 

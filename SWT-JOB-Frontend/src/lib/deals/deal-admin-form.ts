@@ -43,6 +43,10 @@ export interface DealAdminForm {
   pinned: boolean;
   /** 卡片右上角金额（USD，手动配置，不自动加总） */
   highlightAmountUsd: string;
+  /** 角标类型：cash / credit / coupon / none */
+  rewardBadgeKind: string;
+  /** 推荐排序（越小越靠前） */
+  recommendPriority: string;
   /** 卡片字段一：攻略简版 */
   cardGuideBrief: string;
   /** 卡片字段二：本站权益简版 */
@@ -107,6 +111,8 @@ export const emptyDealAdminForm = (): DealAdminForm => ({
   aiEnabled: '1',
   pinned: false,
   highlightAmountUsd: '',
+  rewardBadgeKind: 'cash',
+  recommendPriority: '',
   cardGuideBrief: '',
   cardExtraBrief: '',
 });
@@ -210,6 +216,8 @@ export function notionRowToAdminForm(row: NotionDealRow, fallbackId?: string): D
     aiEnabled: '1',
     pinned: false,
     highlightAmountUsd: '',
+    rewardBadgeKind: 'cash',
+    recommendPriority: '',
     cardGuideBrief: '',
     cardExtraBrief: '',
   };
@@ -262,6 +270,11 @@ export function programToAdminForm(
     highlightAmountUsd:
       program.highlightAmountUsd != null && Number.isFinite(program.highlightAmountUsd)
         ? String(program.highlightAmountUsd)
+        : '',
+    rewardBadgeKind: program.rewardBadgeKind || 'cash',
+    recommendPriority:
+      program.recommendPriority != null && Number.isFinite(program.recommendPriority)
+        ? String(program.recommendPriority)
         : '',
     cardGuideBrief: edition?.cardGuideBrief?.zh ?? '',
     cardExtraBrief: edition?.cardExtraBrief?.zh ?? '',
@@ -332,10 +345,21 @@ export function adminFormToProgram(
         (siteRebateUsd != null ? `$${siteRebateUsd} site cashback` : ''),
     },
     highlightAmountUsd: (() => {
+      const kind = (form.rewardBadgeKind || 'cash') as string;
+      if (kind === 'coupon' || kind === 'none') return null;
       const raw = form.highlightAmountUsd.trim();
       if (!raw) return null;
       const n = Number(raw);
       return Number.isFinite(n) && n > 0 ? n : null;
+    })(),
+    rewardBadgeKind: (['cash', 'credit', 'coupon', 'none'].includes(form.rewardBadgeKind)
+      ? form.rewardBadgeKind
+      : 'cash') as ReferralProgram['rewardBadgeKind'],
+    recommendPriority: (() => {
+      const raw = form.recommendPriority.trim();
+      if (!raw) return existing?.recommendPriority ?? null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
     })(),
     howToClaim: {
       zh: howToClaimZh,

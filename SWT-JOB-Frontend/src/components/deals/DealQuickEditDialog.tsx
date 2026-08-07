@@ -137,7 +137,29 @@ export default function DealQuickEditDialog({
             fullWidth
             value={form.highlightAmountUsd}
             onChange={(e) => setField('highlightAmountUsd', e.target.value)}
-            helperText="手动填写展示金额，不会自动把官方奖励和本站返现加总；留空则不显示角标"
+            helperText="只认这个字段，不会从奖励文案自动解析；优惠券类型请留空"
+          />
+          <TextField
+            select
+            label="角标类型"
+            size="small"
+            fullWidth
+            value={form.rewardBadgeKind || 'cash'}
+            onChange={(e) => setField('rewardBadgeKind', e.target.value)}
+            helperText="cash=可拿现金；credit=积分；coupon/none=不显示可拿金额（如 Weee）"
+          >
+            <MenuItem value="cash">cash · 可拿现金</MenuItem>
+            <MenuItem value="credit">credit · 交易积分</MenuItem>
+            <MenuItem value="coupon">coupon · 优惠券/折扣</MenuItem>
+            <MenuItem value="none">none · 不显示角标</MenuItem>
+          </TextField>
+          <TextField
+            label="推荐排序（越小越靠前）"
+            size="small"
+            fullWidth
+            value={form.recommendPriority}
+            onChange={(e) => setField('recommendPriority', e.target.value)}
+            helperText="例如 10 比 50 更靠前；高收益推荐项目填较小数字"
           />
           <TextField
             label="攻略简版（卡片字段一）"

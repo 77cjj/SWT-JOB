@@ -614,6 +614,7 @@ export const en = {
     escrowPitchTitle: 'Why escrow upfront?',
     escrowPitchBody: 'Sellers must fund their wallet before publishing. Escrow stays locked until completion is confirmed—reducing fake listings and walk-aways.',
     walletMovedHint: 'Wallet lives on your profile: deposit for marketplace escrow or buy AI chat credits.',
+    walletDisabledHint: 'Wallet is temporarily disabled on both marketplace and profile.',
     goProfileWallet: 'Open my wallet',
     editListing: 'Edit',
     resume: 'Resume',

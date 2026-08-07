@@ -513,27 +513,9 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
 
       {tab === 'wallet' ? (
         <Alert severity="info" sx={{ maxWidth: 560 }}>
-          <Typography fontWeight={600} sx={{ mb: 1 }}>
-            {t('marketplace.walletMovedHint')}
+          <Typography fontWeight={600}>
+            {t('marketplace.walletDisabledHint')}
           </Typography>
-          {authUser?.userId ? (
-            <Button
-              component={Link}
-              href={`/u/${authUser.userId}?tab=wallet`}
-              variant="contained"
-              size="small"
-            >
-              {t('marketplace.goProfileWallet')}
-            </Button>
-          ) : (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => useAuthStore.getState().openLoginDialog(t('marketplace.loginRequired'))}
-            >
-              {t('marketplace.loginRequired')}
-            </Button>
-          )}
         </Alert>
       ) : null}
 

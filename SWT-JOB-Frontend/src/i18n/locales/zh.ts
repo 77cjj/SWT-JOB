@@ -608,6 +608,7 @@ export const zh = {
     escrowPitchTitle: '为什么要预存押金？',
     escrowPitchBody: '发布者发布前须在钱包存入保证金；接单后资金由平台托管，完成条件并确认后才放款。押金让行动者放心参与，虚假/跑路成本更高。',
     walletMovedHint: '钱包已迁至个人主页：充值余额可用于市集保证金，也可购买 AI 问答次数。',
+    walletDisabledHint: '钱包功能暂未启用，市集与个人主页均已隐藏相关入口。',
     goProfileWallet: '打开我的钱包',
     editListing: '编辑',
     resume: '恢复上架',

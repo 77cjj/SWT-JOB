@@ -1,5 +1,6 @@
 import { RAGENT_API_BASE_URL } from '@/config/runtimeEnv';
 import { storage } from '@/utils/storage';
+import { parseRagentResultResponse } from '../api/parseJsonResponse';
 
 export type DealCommentRecord = {
   id: string;
@@ -26,11 +27,7 @@ function headers(): Record<string, string> {
 }
 
 async function parseResult<T>(res: Response): Promise<T> {
-  const json = (await res.json()) as { code?: number; data?: T; message?: string };
-  if (json.code === 0 || json.code === 200) {
-    return json.data as T;
-  }
-  throw new Error(json.message || `HTTP ${res.status}`);
+  return parseRagentResultResponse<T>(res);
 }
 
 export async function fetchPublicDealComments(dealId: string): Promise<DealCommentRecord[]> {

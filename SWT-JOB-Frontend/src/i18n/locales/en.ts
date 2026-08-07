@@ -105,7 +105,7 @@ export const en = {
     usernameUnset: '(not provided)',
     openingLogin: 'Opening sign-in…',
     openingRegister: 'Opening registration…',
-    openDialogHint: 'If no dialog appears, tap Sign in at the top right, or close it and keep browsing.',
+    openDialogHint: 'Enter username, email, and password to create your account.',
     backHome: 'Back to home',
     showPassword: 'Show or hide password',
     oauthHint: 'Google / Apple open an auth page; WeChat uses mobile QR scan',

@@ -36,4 +36,10 @@ public class GoogleOAuthProperties {
      * 例：https://swtjob.vercel.app/api/auth/google-tokeninfo
      */
     private String tokeninfoProxyUrl = "";
+
+    /**
+     * 可选：Vercel Deployment Protection Bypass 密钥。
+     * 代理 URL 若被保护，需在请求头带 x-vercel-protection-bypass。
+     */
+    private String tokeninfoProxyBypass = "";
 }

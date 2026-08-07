@@ -18,7 +18,6 @@ import {
   Typography,
 } from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import EditIcon from '@mui/icons-material/Edit';
 import DesktopLayout from '../../layout/desktop/Layout';
@@ -288,92 +287,163 @@ export default function UserProfilePage() {
   };
 
   const content = (
-    <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+    <Box
+      sx={{
+        position: 'relative',
+        minHeight: '70vh',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(900px 360px at 8% -8%, rgba(14,116,144,0.14), transparent 55%), radial-gradient(720px 300px at 92% 0%, rgba(180,83,9,0.10), transparent 50%), linear-gradient(180deg, #f6f3ee 0%, #eef2f4 38%, #f8fafb 100%)',
+        },
+      }}
+    >
+    <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 5 }, px: { xs: 2, sm: 3 } }}>
       {loading ? (
         <Typography color="text.secondary">加载中…</Typography>
       ) : !profile ? (
         <Alert severity="warning">无法加载该用户主页</Alert>
       ) : (
-        <Stack spacing={3}>
-          {/* 顶栏：头像 + 简介 */}
-          <Paper variant="outlined" sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 2 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ sm: 'center' }}>
-              <Avatar sx={{ width: 88, height: 88, bgcolor: 'primary.main', fontSize: 36, mx: { xs: 'auto', sm: 0 } }}>
+        <Stack spacing={3.5}>
+          {/* 顶栏：头像 + 简介（非卡片） */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'auto 1fr' },
+              gap: { xs: 2, sm: 3 },
+              alignItems: 'center',
+              pb: 1,
+              borderBottom: '1px solid',
+              borderColor: 'rgba(15,23,42,0.08)',
+            }}
+          >
+              <Avatar
+                sx={{
+                  width: { xs: 84, md: 104 },
+                  height: { xs: 84, md: 104 },
+                  bgcolor: '#0e7490',
+                  fontSize: { xs: 34, md: 42 },
+                  fontWeight: 700,
+                  mx: { xs: 'auto', sm: 0 },
+                  boxShadow: '0 18px 40px -24px rgba(14,116,144,0.85)',
+                }}
+              >
                 {(profile.displayName || '?').slice(0, 1).toUpperCase()}
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0, textAlign: { xs: 'center', sm: 'left' } }}>
-                <Typography variant="h4" fontWeight={800} gutterBottom>
+                <Typography
+                  variant="overline"
+                  sx={{ letterSpacing: '0.16em', color: 'rgba(14,116,144,0.85)', fontWeight: 700 }}
+                >
+                  SWT Profile
+                </Typography>
+                <Typography
+                  component="h1"
+                  sx={{
+                    fontFamily: 'var(--font-display, Georgia, "Noto Serif SC", serif)',
+                    fontWeight: 800,
+                    fontSize: { xs: '1.85rem', md: '2.4rem' },
+                    lineHeight: 1.15,
+                    color: '#0f172a',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {profile.displayName}
                 </Typography>
                 {(profile.showBio || isOwner) && (
-                  <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 720 }}>
+                  <Typography variant="body1" sx={{ mt: 1, maxWidth: 640, color: 'rgba(15,23,42,0.62)', lineHeight: 1.65 }}>
                     {profile.bio || (isOwner ? '完善简介，让其他用户更信任你。' : '暂无简介')}
                   </Typography>
                 )}
                 {isOwner ? (
                   <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'center', sm: 'flex-start' }}>
-                    <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => scrollTo('edit')}>
+                    <Button size="small" variant="contained" startIcon={<EditIcon />} onClick={() => scrollTo('edit')} sx={{ bgcolor: '#0e7490', '&:hover': { bgcolor: '#0f766e' } }}>
                       编辑资料
                     </Button>
-                    <Button size="small" variant="outlined" component={Link} href="/deals/market?tab=my_listings">
+                    <Button size="small" variant="outlined" component={Link} href="/deals/market?tab=my_listings" sx={{ borderColor: 'rgba(15,23,42,0.18)' }}>
                       我的帖子
                     </Button>
                     {authUser?.role === 'admin' ? (
-                      <Button size="small" variant="outlined" component={Link} href="/admin/dashboard">
+                      <Button size="small" variant="outlined" component={Link} href="/admin/dashboard" sx={{ borderColor: 'rgba(15,23,42,0.18)' }}>
                         管理后台
                       </Button>
                     ) : null}
                   </Stack>
                 ) : null}
+                {!isOwner ? (
+                  <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'center', sm: 'flex-start' }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<ChatBubbleOutlineIcon />}
+                      onClick={() => {
+                        const prefill = `想联系用户 ${profile.displayName}（${userId}）：\n`;
+                        if (!isAuthenticated) {
+                          openLoginDialog('登录后可留言联系该用户');
+                          return;
+                        }
+                        requestSupportOpen('human', prefill);
+                      }}
+                      sx={{ bgcolor: '#0e7490', '&:hover': { bgcolor: '#0f766e' } }}
+                    >
+                      联系 Ta
+                    </Button>
+                    {profile.showWechat && profile.wechat ? (
+                      <Button variant="outlined" onClick={() => void navigator.clipboard.writeText(profile.wechat)} sx={{ borderColor: 'rgba(15,23,42,0.18)' }}>
+                        复制微信
+                      </Button>
+                    ) : null}
+                    {profile.showEmail && profile.email ? (
+                      <Button variant="outlined" href={`mailto:${profile.email}`} sx={{ borderColor: 'rgba(15,23,42,0.18)' }}>
+                        发邮件
+                      </Button>
+                    ) : null}
+                  </Stack>
+                ) : null}
               </Box>
-            </Stack>
+          </Box>
 
-            {!isOwner ? (
-              <Stack direction="row" spacing={1} sx={{ mt: 2.5 }} flexWrap="wrap" useFlexGap justifyContent="center">
-                <Button
-                  variant="contained"
-                  startIcon={<ChatBubbleOutlineIcon />}
-                  onClick={() => {
-                    const prefill = `想联系用户 ${profile.displayName}（${userId}）：\n`;
-                    if (!isAuthenticated) {
-                      openLoginDialog('登录后可留言联系该用户');
-                      return;
-                    }
-                    requestSupportOpen('human', prefill);
-                  }}
-                >
-                  联系 Ta
-                </Button>
-                {profile.showWechat && profile.wechat ? (
-                  <Button variant="outlined" onClick={() => void navigator.clipboard.writeText(profile.wechat)}>
-                    复制微信
-                  </Button>
-                ) : null}
-                {profile.showEmail && profile.email ? (
-                  <Button variant="outlined" href={`mailto:${profile.email}`}>
-                    发邮件
-                  </Button>
-                ) : null}
-              </Stack>
-            ) : null}
-          </Paper>
-
-          {/* SWT 经历平铺卡片 */}
+          {/* SWT 经历平铺 */}
           {showExperiences ? (
             <Box>
-              <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+              <Typography
+                sx={{
+                  mb: 1.5,
+                  fontFamily: 'var(--font-display, Georgia, "Noto Serif SC", serif)',
+                  fontWeight: 700,
+                  fontSize: '1.25rem',
+                  color: '#0f172a',
+                }}
+              >
                 SWT 经历
               </Typography>
               <Box
                 sx={{
                   display: 'grid',
                   gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
-                  gap: 2,
+                  gap: 1.75,
                 }}
               >
                 {experiences.map((exp) => (
-                  <Paper key={exp.id} variant="outlined" sx={{ p: 2, height: '100%', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={700} color="primary.main" gutterBottom>
+                  <Box
+                    key={exp.id}
+                    sx={{
+                      p: 2,
+                      height: '100%',
+                      borderRadius: 2,
+                      border: '1px solid rgba(15,23,42,0.08)',
+                      background: 'linear-gradient(165deg, rgba(255,255,255,0.92), rgba(248,250,252,0.88))',
+                      transition: 'transform .2s ease, box-shadow .2s ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 16px 32px -28px rgba(15,23,42,0.55)',
+                      },
+                    }}
+                  >
+                      <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#0e7490' }} gutterBottom>
                         {exp.programYear ? `SWT ${exp.programYear}` : 'SWT 经历'}
                       </Typography>
                       <Typography variant="body2" fontWeight={600}>
@@ -382,7 +452,7 @@ export default function UserProfilePage() {
                       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
                         {[exp.workState, exp.city, exp.employerHint].filter(Boolean).join(' · ')}
                       </Typography>
-                    </Paper>
+                    </Box>
                 ))}
               </Box>
             </Box>
@@ -399,12 +469,29 @@ export default function UserProfilePage() {
             <Stack spacing={2}>
           {isOwner ? (
             <>
-              <Paper id="profile-edit" variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, scrollMarginTop: 88 }}>
+              <Paper
+                id="profile-edit"
+                elevation={0}
+                sx={{
+                  p: { xs: 2, md: 3 },
+                  borderRadius: 2.5,
+                  scrollMarginTop: 88,
+                  border: '1px solid rgba(15,23,42,0.08)',
+                  bgcolor: 'rgba(255,255,255,0.82)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
                 <SectionTitle
                   title="资料与隐私"
                   icon={<EditIcon fontSize="small" color="action" />}
                   action={
-                    <Button variant="contained" size="small" onClick={() => void saveProfile()} disabled={saving}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => void saveProfile()}
+                      disabled={saving}
+                      sx={{ bgcolor: '#0e7490', '&:hover': { bgcolor: '#0f766e' } }}
+                    >
                       {saving ? '保存中…' : '保存全部'}
                     </Button>
                   }
@@ -617,7 +704,18 @@ export default function UserProfilePage() {
                 </Stack>
               </Paper>
 
-              <Paper id="profile-password" variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, scrollMarginTop: 88 }}>
+              <Paper
+                id="profile-password"
+                elevation={0}
+                sx={{
+                  p: { xs: 2, md: 3 },
+                  borderRadius: 2.5,
+                  scrollMarginTop: 88,
+                  border: '1px solid rgba(15,23,42,0.08)',
+                  bgcolor: 'rgba(255,255,255,0.82)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
                 <SectionTitle title="修改密码" icon={<VpnKeyIcon fontSize="small" color="action" />} />
                 <Box sx={{ maxWidth: 480 }}>
                     <Stack spacing={2}>
@@ -678,6 +776,7 @@ export default function UserProfilePage() {
         </Stack>
       )}
     </Container>
+    </Box>
   );
 
   return isMobile ? (

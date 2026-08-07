@@ -137,15 +137,32 @@ export default function ProfileDealBoard({ userId, language, editable }: Profile
   };
 
   return (
-    <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 2, height: '100%' }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 2, md: 2.5 },
+        borderRadius: 2.5,
+        height: '100%',
+        border: '1px solid rgba(15,23,42,0.08)',
+        bgcolor: 'rgba(255,255,255,0.84)',
+        backdropFilter: 'blur(8px)',
+      }}
+    >
       <Stack spacing={1.5}>
         <Box>
-          <Typography variant="h6" fontWeight={800}>
+          <Typography
+            sx={{
+              fontFamily: 'var(--font-display, Georgia, "Noto Serif SC", serif)',
+              fontWeight: 800,
+              fontSize: '1.25rem',
+              color: '#0f172a',
+            }}
+          >
             {language === 'zh' ? '薅羊毛看板' : 'Deals board'}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'rgba(15,23,42,0.58)', mt: 0.5 }}>
             {language === 'zh'
-              ? '把感兴趣的项目拖到「想薅 / 进行中 / 已完成」，和列表页联动跟进。'
+              ? '把感兴趣的项目放到「想薅 / 进行中 / 已完成」，和列表页联动跟进。'
               : 'Track deals across Wishlist / In progress / Done — linked to the deals catalog.'}
           </Typography>
         </Box>
@@ -201,13 +218,19 @@ export default function ProfileDealBoard({ userId, language, editable }: Profile
             <Box
               key={col.id}
               sx={{
-                bgcolor: 'action.hover',
+                bgcolor:
+                  col.id === 'wishlist'
+                    ? 'rgba(14,116,144,0.06)'
+                    : col.id === 'doing'
+                      ? 'rgba(180,83,9,0.07)'
+                      : 'rgba(15,23,42,0.04)',
                 borderRadius: 2,
                 p: 1.25,
                 minHeight: 220,
+                border: '1px solid rgba(15,23,42,0.05)',
               }}
             >
-              <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1, px: 0.5 }}>
+              <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1, px: 0.5, color: '#0f172a' }}>
                 {language === 'zh' ? col.zh : col.en}
                 <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.75 }}>
                   {board[col.id].length}

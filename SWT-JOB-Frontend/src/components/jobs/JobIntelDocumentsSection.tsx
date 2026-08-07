@@ -41,8 +41,8 @@ function authHeaders(): Record<string, string> {
 async function fetchDocuments(jobId: string): Promise<JobIntelDocumentItem[]> {
   const base = RAGENT_API_BASE_URL.replace(/\/$/, '');
   const res = await fetch(`${base}/public/job-intel/jobs/${encodeURIComponent(jobId)}/documents`);
-  const json = (await res.json()) as { code?: number; data?: JobIntelDocumentItem[] };
-  if (json.code === 0 || json.code === 200) {
+  const json = (await res.json()) as { code?: number | string; data?: JobIntelDocumentItem[] };
+  if (json.code === 0 || json.code === 200 || json.code === '0' || json.code === '200') {
     return json.data ?? [];
   }
   return [];

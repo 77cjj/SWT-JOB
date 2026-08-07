@@ -89,14 +89,17 @@ public class GoogleOAuthService {
         String proxy = StrUtil.trimToEmpty(googleOAuthProperties.getTokeninfoProxyUrl());
         if (StrUtil.isNotBlank(proxy)) {
             try {
-                // 优先 POST：id_token 很长，GET query 易被网关截断/拒绝
                 return fetchTokenInfoViaProxy(proxy, idToken);
+            } catch (ClientException proxyEx) {
+                throw proxyEx;
             } catch (Exception proxyEx) {
-                log.error("Google tokeninfo 代理也失败 proxy={}", proxy, proxyEx);
+                log.error("Google tokeninfo 代理也失败 proxy={} directErr={}",
+                        proxy, directError == null ? "n/a" : directError.toString(), proxyEx);
                 throw new ClientException(
-                        "无法验证 Google 登录（代理校验失败）。请确认 ECS 能访问 "
+                        "无法验证 Google 登录（代理校验失败）。请确认：1) ECS 能访问 "
                                 + proxy
-                                + "，且 .env 中 GOOGLE_TOKENINFO_PROXY_URL 正确后重启后端"
+                                + " 2) 若 Vercel 开了 Deployment Protection，请配置 GOOGLE_TOKENINFO_PROXY_BYPASS "
+                                + "3) .env 中 GOOGLE_TOKENINFO_PROXY_URL 正确后重启后端"
                 );
             }
         }
@@ -106,28 +109,90 @@ public class GoogleOAuthService {
     }
 
     private String fetchTokenInfoViaProxy(String proxy, String idToken) {
+        Exception postError = null;
+        try {
+            return fetchTokenInfoViaProxyPost(proxy, idToken);
+        } catch (ClientException e) {
+            throw e;
+        } catch (Exception e) {
+            postError = e;
+            log.warn("Google tokeninfo 代理 POST 失败，尝试 GET: {}", e.toString());
+        }
+        try {
+            return fetchTokenInfoViaProxyGet(proxy, idToken);
+        } catch (ClientException e) {
+            throw e;
+        } catch (Exception getError) {
+            if (postError != null) {
+                log.warn("Google tokeninfo 代理 GET 也失败: {}", getError.toString());
+            }
+            throw getError instanceof RuntimeException re
+                    ? re
+                    : new IllegalStateException(getError);
+        }
+    }
+
+    private String fetchTokenInfoViaProxyPost(String proxy, String idToken) {
         String payload = JSONUtil.createObj().set("id_token", idToken).toString();
-        try (HttpResponse response = HttpRequest.post(proxy)
+        HttpRequest request = HttpRequest.post(proxy)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .body(payload)
-                .timeout(15000)
-                .execute()) {
-            int status = response.getStatus();
-            String body = StrUtil.nullToEmpty(response.body());
-            if (status == 401 || status == 403) {
-                throw new ClientException(
-                        "Google 代理被拒绝（HTTP " + status + "）。若 Vercel 开启了 Deployment Protection，请关闭或放行 ECS，或改用无保护的代理域名"
-                );
-            }
-            if (status >= 500) {
-                throw new IllegalStateException("proxy HTTP " + status + ": " + StrUtil.maxLength(body, 200));
-            }
-            if (StrUtil.isBlank(body)) {
-                throw new IllegalStateException("proxy empty body, HTTP " + status);
-            }
-            return body;
+                .timeout(15000);
+        applyProxyBypass(request);
+        try (HttpResponse response = request.execute()) {
+            return parseProxyResponse(response);
         }
+    }
+
+    private String fetchTokenInfoViaProxyGet(String proxy, String idToken) {
+        String separator = proxy.contains("?") ? "&" : "?";
+        String url = proxy + separator + "id_token=" + URLEncoder.encode(idToken, StandardCharsets.UTF_8);
+        HttpRequest request = HttpRequest.get(url)
+                .header("Accept", "application/json")
+                .timeout(15000);
+        applyProxyBypass(request);
+        try (HttpResponse response = request.execute()) {
+            return parseProxyResponse(response);
+        }
+    }
+
+    private void applyProxyBypass(HttpRequest request) {
+        String bypass = StrUtil.trimToEmpty(googleOAuthProperties.getTokeninfoProxyBypass());
+        if (StrUtil.isNotBlank(bypass)) {
+            request.header("x-vercel-protection-bypass", bypass);
+        }
+    }
+
+    private String parseProxyResponse(HttpResponse response) {
+        int status = response.getStatus();
+        String body = StrUtil.nullToEmpty(response.body());
+        if (status == 401 || status == 403) {
+            throw new ClientException(
+                    "Google 代理被拦截（HTTP " + status + "）。若 Vercel 开启了 Deployment Protection，"
+                            + "请在 Settings → Deployment Protection 创建 Protection Bypass for Automation，"
+                            + "并把密钥写入后端 .env：GOOGLE_TOKENINFO_PROXY_BYPASS=... 然后重启"
+            );
+        }
+        if (status >= 500) {
+            throw new IllegalStateException("proxy HTTP " + status + ": " + StrUtil.maxLength(body, 200));
+        }
+        if (status < 200 || status >= 300) {
+            throw new IllegalStateException("proxy HTTP " + status + ": " + StrUtil.maxLength(body, 200));
+        }
+        if (StrUtil.isBlank(body)) {
+            throw new IllegalStateException("proxy empty body, HTTP " + status);
+        }
+        JSONObject json = JSONUtil.parseObj(body);
+        if (json.containsKey("error") || json.containsKey("error_description")) {
+            throw new IllegalStateException("proxy error: " + StrUtil.maxLength(body, 200));
+        }
+        if (StrUtil.isBlank(json.getStr("aud"))
+                || StrUtil.isBlank(json.getStr("sub"))
+                || StrUtil.isBlank(json.getStr("email"))) {
+            throw new IllegalStateException("proxy unexpected payload: " + StrUtil.maxLength(body, 200));
+        }
+        return body;
     }
 
     public record VerifiedGoogleUser(String subject, String email, String name, String picture) {

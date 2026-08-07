@@ -15,15 +15,33 @@ export async function parseJsonResponse<T>(res: Response): Promise<T> {
   }
 }
 
+/** 后端 Result.code 可能是字符串 "0" 或数字 0 */
+export function isRagentSuccessCode(code: unknown): boolean {
+  return code === 0 || code === 200 || code === '0' || code === '200';
+}
+
 /** Ragent API 统一 Result 包装 */
 export function unwrapRagentResult<T>(body: unknown): T | null {
   if (!body || typeof body !== 'object') return null;
   const record = body as { code?: number | string; data?: T; message?: string };
-  if (record.code === 0 || record.code === 200 || record.code === '0') {
-    return record.data ?? null;
+  if (isRagentSuccessCode(record.code)) {
+    return (record.data ?? null) as T | null;
   }
   if ('userId' in (body as object)) {
     return body as T;
   }
   return null;
+}
+
+/** fetch Response → 解包 Result.data；失败抛出业务 message */
+export async function parseRagentResultResponse<T>(res: Response): Promise<T> {
+  const json = (await parseJsonResponse<{
+    code?: number | string;
+    data?: T;
+    message?: string;
+  }>(res)) as { code?: number | string; data?: T; message?: string };
+  if (isRagentSuccessCode(json.code)) {
+    return json.data as T;
+  }
+  throw new Error(json.message || (res.ok ? '请求失败' : `HTTP ${res.status}`));
 }

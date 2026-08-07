@@ -2,13 +2,7 @@ import type { MarketListing, MarketStoreData, MarketUser } from './types';
 import { computeSellerRating, defaultSellerStats } from './credit';
 import { displayName } from './auth';
 import { newId, readMarketStore, writeMarketStore } from './store';
-import {
-  calcListingEscrow,
-  calcPlatformFee,
-  getWallet,
-  lockFunds,
-  unlockFunds,
-} from './wallet';
+import { unlockFunds } from './wallet';
 
 export type CreateListingInput = {
   type: 'refer' | 'job_intel';
@@ -38,6 +32,9 @@ export type CreateListingInput = {
 function validateListingInput(input: CreateListingInput) {
   if (!input.title?.trim()) throw new Error('Title required');
   if (!input.description?.trim()) throw new Error('Description required');
+  if (!input.sellerContactHint?.trim()) {
+    throw new Error('请填写联系方式，方便对方联系你');
+  }
   const unlimited = Boolean(input.unlimitedSlots);
   const maxSlots = unlimited ? 0 : (input.maxSlots ?? 5);
   if (!unlimited && (maxSlots < 1 || maxSlots > 10000)) {
@@ -58,9 +55,9 @@ function validateListingInput(input: CreateListingInput) {
   if (input.type === 'job_intel') {
     if (!input.state?.trim()) throw new Error('State required');
     if (!input.jobTitle?.trim()) throw new Error('Job title required');
-    if (!input.intelFee || input.intelFee <= 0) throw new Error('Intel fee required');
-    if (!input.intelPreview?.trim()) throw new Error('Intel preview required');
-    if (!input.intelDetail?.trim()) throw new Error('Intel detail required');
+    if (input.intelFee != null && input.intelFee < 0) {
+      throw new Error('Intel fee invalid');
+    }
   }
 
   return { maxSlots, unlimited };
@@ -92,14 +89,10 @@ function attachSellerStats(store: MarketStoreData, listing: MarketListing): Mark
 function sanitizeListingForPublic(
   store: MarketStoreData,
   listing: MarketListing,
-  viewerId?: string,
+  _viewerId?: string,
 ): MarketListing {
-  let copy = attachSellerStats(store, listing);
-  if (listing.type === 'job_intel' && listing.sellerId !== viewerId) {
-    copy = { ...copy };
-    delete copy.intelDetail;
-  }
-  return copy;
+  // 联系方式自联模式：帖子字段对登录用户公开展示，不再按付款解锁情报正文
+  return attachSellerStats(store, listing);
 }
 
 export async function getMarketListing(id: string, viewerId?: string) {
@@ -112,23 +105,6 @@ export async function getMarketListing(id: string, viewerId?: string) {
 export async function createMarketListing(user: MarketUser, input: CreateListingInput) {
   const { maxSlots, unlimited } = validateListingInput(input);
   const store = await readMarketStore();
-
-  const payoutBase =
-    input.type === 'refer' ? (input.buyerCashback ?? 0) : (input.intelFee ?? 0);
-  // 无上限：仅锁定 1 个名额保证金；有限：按名额锁定
-  const escrowSlots = unlimited ? 1 : maxSlots;
-  const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
-    input.type,
-    payoutBase,
-    escrowSlots,
-  );
-
-  const wallet = getWallet(store, user.userId);
-  if (wallet.balance < totalLock) {
-    throw new Error(
-      `Insufficient balance. Need $${totalLock.toFixed(2)} escrow, have $${wallet.balance.toFixed(2)}`,
-    );
-  }
 
   const now = new Date().toISOString();
   const listing: MarketListing = {
@@ -155,8 +131,9 @@ export async function createMarketListing(user: MarketUser, input: CreateListing
     intelFee: input.intelFee,
     intelPreview: input.intelPreview?.trim(),
     intelDetail: input.intelDetail?.trim(),
-    escrowPerSlot,
-    buyerPayPerSlot,
+    // 联系方式自联：不再锁定平台担保金
+    escrowPerSlot: 0,
+    buyerPayPerSlot: 0,
     priceCurrency: 'USD',
     maxSlots: unlimited ? 0 : maxSlots,
     slotsUsed: 0,
@@ -166,7 +143,6 @@ export async function createMarketListing(user: MarketUser, input: CreateListing
     expiresAt: input.expiresAt,
   };
 
-  lockFunds(store, user.userId, totalLock, listing.id, `Listing escrow: ${listing.title}`);
   store.listings[listing.id] = listing;
   await writeMarketStore(store);
   return sanitizeListingForPublic(store, listing, user.userId);
@@ -206,24 +182,7 @@ export async function updateMarketListingStatus(
     }
   }
 
-  // 从关闭恢复上架：重新锁定剩余名额保证金
-  if (status === 'active' && prev === 'closed') {
-    const remainingSlots = listing.unlimitedSlots
-      ? 1
-      : Math.max(0, listing.maxSlots - listing.slotsUsed);
-    if (remainingSlots > 0 && listing.escrowPerSlot > 0) {
-      const relock = listing.escrowPerSlot * remainingSlots;
-      lockFunds(
-        store,
-        listing.sellerId,
-        relock,
-        listing.id,
-        `Resume listing escrow ${remainingSlots} slots`,
-      );
-    }
-  }
-
-  // 暂停不解锁；从暂停恢复仅改状态
+  // 联系方式自联模式：恢复上架不再重新锁定保证金
   listing.status = status;
   listing.updatedAt = new Date().toISOString();
   store.listings[listingId] = listing;
@@ -284,21 +243,8 @@ export async function updateMarketListing(
       const cashback = Number(input.buyerCashback);
       if (!cashback || cashback <= 0) throw new Error('Buyer cashback required');
       listing.buyerCashback = cashback;
-      const escrowSlots = listing.unlimitedSlots ? 1 : listing.maxSlots;
-      const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
-        'refer',
-        cashback,
-        escrowSlots,
-      );
-      const prevLock = listing.escrowPerSlot * escrowSlots;
-      const delta = totalLock - prevLock;
-      if (delta > 0) {
-        lockFunds(store, listing.sellerId, delta, listing.id, 'Edit listing extra escrow');
-      } else if (delta < 0) {
-        unlockFunds(store, listing.sellerId, -delta, listing.id, 'Edit listing escrow refund');
-      }
-      listing.escrowPerSlot = escrowPerSlot;
-      listing.buyerPayPerSlot = buyerPayPerSlot;
+      listing.escrowPerSlot = 0;
+      listing.buyerPayPerSlot = 0;
     }
   }
 
@@ -317,23 +263,10 @@ export async function updateMarketListing(
     }
     if (canChangeMoney && input.intelFee !== undefined) {
       const fee = Number(input.intelFee);
-      if (!fee || fee <= 0) throw new Error('Intel fee required');
-      listing.intelFee = fee;
-      const escrowSlots = listing.unlimitedSlots ? 1 : listing.maxSlots;
-      const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
-        'job_intel',
-        fee,
-        escrowSlots,
-      );
-      const prevLock = listing.escrowPerSlot * escrowSlots;
-      const delta = totalLock - prevLock;
-      if (delta > 0) {
-        lockFunds(store, listing.sellerId, delta, listing.id, 'Edit listing extra escrow');
-      } else if (delta < 0) {
-        unlockFunds(store, listing.sellerId, -delta, listing.id, 'Edit listing escrow refund');
-      }
-      listing.escrowPerSlot = escrowPerSlot;
-      listing.buyerPayPerSlot = buyerPayPerSlot;
+      if (Number.isFinite(fee) && fee < 0) throw new Error('Intel fee invalid');
+      listing.intelFee = Number.isFinite(fee) ? fee : undefined;
+      listing.escrowPerSlot = 0;
+      listing.buyerPayPerSlot = 0;
     }
   }
 
@@ -346,25 +279,10 @@ export async function updateMarketListing(
     if (!Number.isFinite(maxSlots) || maxSlots < 1 || maxSlots > 10000) {
       throw new Error('名额须为 1–10000，或选择无上限');
     }
-    const payoutBase =
-      type === 'refer' ? (listing.buyerCashback ?? 0) : (listing.intelFee ?? 0);
-    const { escrowPerSlot, buyerPayPerSlot, totalLock } = calcListingEscrow(
-      type,
-      payoutBase,
-      maxSlots,
-    );
-    const prevSlots = listing.unlimitedSlots ? 1 : listing.maxSlots;
-    const prevLock = listing.escrowPerSlot * prevSlots;
-    const delta = totalLock - prevLock;
-    if (delta > 0) {
-      lockFunds(store, listing.sellerId, delta, listing.id, 'Edit listing slots escrow');
-    } else if (delta < 0) {
-      unlockFunds(store, listing.sellerId, -delta, listing.id, 'Edit listing slots refund');
-    }
     listing.maxSlots = maxSlots;
     listing.unlimitedSlots = false;
-    listing.escrowPerSlot = escrowPerSlot;
-    listing.buyerPayPerSlot = buyerPayPerSlot;
+    listing.escrowPerSlot = 0;
+    listing.buyerPayPerSlot = 0;
   }
 
   listing.updatedAt = new Date().toISOString();
@@ -418,5 +336,3 @@ export function getIntelDetailForBuyer(
   if (!hasCompleted) return null;
   return listing.intelDetail ?? null;
 }
-
-export { calcPlatformFee };

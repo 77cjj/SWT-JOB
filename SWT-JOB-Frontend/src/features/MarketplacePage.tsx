@@ -36,7 +36,7 @@ import {
   Gavel,
   Storefront,
   VerifiedUser,
-  Shield,
+  ContentCopy,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -51,7 +51,8 @@ import type {
   OrderStatus,
   UserMarketStats,
 } from '../lib/marketplace/types';
-import { getSellerCreditTier, listingTotalEscrow, type SellerCreditTier } from '../lib/marketplace/credit';
+import { getSellerCreditTier, type SellerCreditTier } from '../lib/marketplace/credit';
+import { toast } from 'sonner';
 import { US_STATE_OPTIONS } from '../lib/member/profile';
 import { referralPrograms } from '../data/referralDeals';
 import { formatFetchError } from '../lib/formatFetchError';
@@ -156,7 +157,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     updateListingStatus,
     updateListingSlotsUsed,
     updateListing,
-    claimOrder,
     orderAction,
   } = useMarketplaceApi();
 
@@ -177,7 +177,7 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   });
 
   const [form, setForm] = useState<ListingFormState>(emptyListingForm);
-  const [referSort, setReferSort] = useState<'newest' | 'cashback' | 'rating' | 'escrow'>('newest');
+  const [referSort, setReferSort] = useState<'newest' | 'cashback' | 'rating'>('newest');
   const [filterSsn, setFilterSsn] = useState<'all' | 'yes' | 'no'>('all');
   const [filterMinDeposit, setFilterMinDeposit] = useState('');
   const [filterBrand, setFilterBrand] = useState<string | null>(null);
@@ -298,9 +298,10 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           city: form.city,
           jobTitle: form.jobTitle,
           employerHint: form.employerHint,
-          intelFee: Number(form.intelFee),
+          intelFee: form.intelFee ? Number(form.intelFee) : undefined,
           intelPreview: form.intelPreview,
           intelDetail: form.intelDetail,
+          sellerContactHint: form.sellerContactHint || undefined,
           unlimitedSlots: form.unlimitedSlots,
           maxSlots: form.unlimitedSlots ? undefined : Number(form.maxSlots),
         };
@@ -308,6 +309,10 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   const handleCreate = async () => {
     if (!requireLogin()) return;
     try {
+      if (!form.sellerContactHint.trim()) {
+        setSnack({ open: true, message: t('marketplace.needSellerContact'), severity: 'error' });
+        return;
+      }
       if (!form.unlimitedSlots) {
         const slots = Number(form.maxSlots);
         if (!Number.isFinite(slots) || slots < 1 || slots > 10000) {
@@ -341,20 +346,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     setCreateType(item.type);
     setForm(listingToForm(item));
     setCreateOpen(true);
-  };
-
-  const handleClaim = async (listingId: string) => {
-    if (!requireLogin()) return;
-    try {
-      const order = await claimOrder(listingId);
-      setSnack({ open: true, message: t('marketplace.claimSuccess'), severity: 'success' });
-      setOrderDialog(order);
-      setTab('orders');
-      await refreshOrders();
-      await refreshWallet();
-    } catch (e) {
-      setSnack({ open: true, message: formatFetchError(e, t('common.networkError')), severity: 'error' });
-    }
   };
 
   const handleOrderAction = async (
@@ -422,8 +413,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
         items.sort(
           (a, b) => (b.sellerStats?.rating ?? 5) - (a.sellerStats?.rating ?? 5),
         );
-      } else if (referSort === 'escrow') {
-        items.sort((a, b) => listingTotalEscrow(b) - listingTotalEscrow(a));
       } else {
         items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       }
@@ -450,9 +439,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           <Box>
             <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
               {t('marketplace.title')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t('marketplace.subtitleShort')}
             </Typography>
           </Box>
           <Button
@@ -487,13 +473,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           </Button>
         </Box>
       )}
-
-      <Alert severity="info" sx={{ mb: 2 }}>
-        <Typography fontWeight={700} sx={{ mb: 0.5 }}>
-          {t('marketplace.escrowPitchTitle')}
-        </Typography>
-        <Typography variant="body2">{t('marketplace.escrowPitchBody')}</Typography>
-      </Alert>
 
       <Tabs
         data-tour="market-tabs"
@@ -536,12 +515,11 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
                 <Select
                   label={t('marketplace.sortBy')}
                   value={referSort}
-                  onChange={(e) => setReferSort(e.target.value as 'newest' | 'cashback' | 'rating' | 'escrow')}
+                  onChange={(e) => setReferSort(e.target.value as 'newest' | 'cashback' | 'rating')}
                 >
                   <MenuItem value="newest">{t('marketplace.sortNewest')}</MenuItem>
                   <MenuItem value="cashback">{t('marketplace.sortCashback')}</MenuItem>
                   <MenuItem value="rating">{t('marketplace.sortRating')}</MenuItem>
-                  <MenuItem value="escrow">{t('marketplace.sortEscrow')}</MenuItem>
                 </Select>
               </FormControl>
               <Autocomplete
@@ -596,7 +574,6 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
           <ListingsGrid
             listings={visibleListings}
             tab={tab}
-            onClaim={handleClaim}
             onOpenDetail={setDetailListing}
             onEdit={openEditListing}
             onPause={async (id) => {
@@ -684,22 +661,30 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
                     {t('marketplace.fieldCriteria')}: {detailListing.completionCriteria}
                   </Typography>
                 ) : null}
-                <Alert severity="success" variant="outlined" sx={{ mt: 1.5 }}>
-                  <Typography variant="body2" fontWeight={700}>
-                    {t('marketplace.escrowLocked')}: {fmtUsd(listingTotalEscrow(detailListing))}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {tWithParams('marketplace.escrowDetailHint', {
-                      perSlot: fmtUsd(detailListing.escrowPerSlot),
-                    })}
-                  </Typography>
-                </Alert>
                 {detailListing.requiresSsn ? <Chip size="small" label="SSN" sx={{ mt: 1, mr: 0.5 }} /> : null}
                 {detailListing.minDepositUsd ? (
                   <Chip size="small" label={`≥$${detailListing.minDepositUsd}`} sx={{ mt: 1 }} />
                 ) : null}
               </Box>
-            ) : null}
+            ) : (
+              <Box sx={{ mb: 2 }}>
+                {detailListing.intelFee != null ? (
+                  <Typography variant="body2">
+                    {t('marketplace.intelFee')}: {fmtUsd(detailListing.intelFee)}
+                  </Typography>
+                ) : null}
+                {detailListing.intelPreview ? (
+                  <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
+                    {detailListing.intelPreview}
+                  </Typography>
+                ) : null}
+                {detailListing.intelDetail ? (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {detailListing.intelDetail}
+                  </Typography>
+                ) : null}
+              </Box>
+            )}
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" gutterBottom>
               {t('marketplace.publisher')}
@@ -718,27 +703,46 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
                 })}
               </Typography>
             ) : null}
-            {detailListing.sellerContactHint ? (
-              <Typography variant="body2" sx={{ mt: 1.5 }}>
-                {t('marketplace.fieldSellerContact')}: {detailListing.sellerContactHint}
+            <Box sx={{ mt: 2, p: 1.5, borderRadius: 1.5, bgcolor: 'action.hover' }}>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                {t('marketplace.fieldSellerContact')}
               </Typography>
-            ) : (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                {t('marketplace.contactViaProfile')}
-              </Typography>
-            )}
-            <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
-              {!isSoldOut(detailListing) && detailListing.status === 'active' ? (
+              {isAuthenticated ? (
+                detailListing.sellerContactHint ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="body1" fontWeight={600} sx={{ wordBreak: 'break-all' }}>
+                      {detailListing.sellerContactHint}
+                    </Typography>
+                    <Button
+                      size="small"
+                      startIcon={<ContentCopy />}
+                      onClick={() => {
+                        void navigator.clipboard.writeText(detailListing.sellerContactHint || '');
+                        toast.success(t('marketplace.contactCopied'));
+                      }}
+                    >
+                      {t('marketplace.copyContact')}
+                    </Button>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('marketplace.contactViaProfile')}
+                  </Typography>
+                )
+              ) : (
                 <Button
+                  size="small"
                   variant="contained"
-                  onClick={() => {
-                    setDetailListing(null);
-                    void handleClaim(detailListing.id);
-                  }}
+                  onClick={() => useAuthStore.getState().openLoginDialog(t('marketplace.loginToViewContact'))}
                 >
-                  {detailListing.type === 'refer' ? t('marketplace.useRefer') : t('marketplace.buyIntel')}
+                  {t('marketplace.loginToViewContact')}
                 </Button>
-              ) : null}
+              )}
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                {t('marketplace.contactSelfServeHint')}
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
               <Button onClick={() => setDetailListing(null)}>{t('common.close')}</Button>
             </Box>
           </Box>
@@ -816,7 +820,6 @@ function SellerCreditChip({
 function ListingsGrid({
   listings,
   tab,
-  onClaim,
   onOpenDetail,
   onEdit,
   onPause,
@@ -828,7 +831,6 @@ function ListingsGrid({
 }: {
   listings: MarketListing[];
   tab: MainTab;
-  onClaim: (id: string) => void;
   onOpenDetail: (item: MarketListing) => void;
   onEdit: (item: MarketListing) => void;
   onPause: (id: string) => Promise<void>;
@@ -862,7 +864,6 @@ function ListingsGrid({
             : item.intelFee ?? 0;
         const left = slotsRemaining(item);
         const low = slotsLow(item);
-        const totalEscrow = item.type === 'refer' ? listingTotalEscrow(item) : item.escrowPerSlot * (item.maxSlots || 1);
         return (
           <Card
             key={item.id}
@@ -924,46 +925,32 @@ function ListingsGrid({
                     {t('marketplace.cashback')}: <strong>{fmtUsd(item.buyerCashback ?? 0)}</strong>
                     {item.platformReward ? ` + ${t('marketplace.platformReward')} ${fmtUsd(item.platformReward)}` : ''}
                   </Typography>
-                  <Box
-                    sx={{
-                      mt: 1,
-                      p: 1,
-                      borderRadius: 1,
-                      bgcolor: 'success.50',
-                      border: '1px solid',
-                      borderColor: 'success.200',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.75,
-                    }}
-                  >
-                    <Shield sx={{ fontSize: 18, color: 'success.main' }} />
-                    <Box>
-                      <Typography variant="caption" color="success.dark" fontWeight={700} display="block">
-                        {t('marketplace.escrowLocked')}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700}>
-                        {fmtUsd(totalEscrow)}
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                          ({tWithParams('marketplace.escrowPerSlot', { amount: fmtUsd(item.escrowPerSlot) })})
-                        </Typography>
-                      </Typography>
-                    </Box>
-                  </Box>
                   {item.brand ? (
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
                       {item.brand}
                     </Typography>
                   ) : null}
+                  {item.sellerContactHint ? (
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
+                      {t('marketplace.hasContactHint')}
+                    </Typography>
+                  ) : null}
                 </>
               ) : (
                 <>
-                  <Typography variant="body2">
-                    {t('marketplace.intelFee')}: <strong>{fmtUsd(item.intelFee ?? 0)}</strong>
-                  </Typography>
+                  {item.intelFee != null ? (
+                    <Typography variant="body2">
+                      {t('marketplace.intelFee')}: <strong>{fmtUsd(item.intelFee)}</strong>
+                    </Typography>
+                  ) : null}
                   <Typography variant="caption" color="text.secondary" display="block">
-                    {item.state} · {item.jobTitle}
+                    {[item.state, item.jobTitle].filter(Boolean).join(' · ')}
                   </Typography>
+                  {item.sellerContactHint ? (
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
+                      {t('marketplace.hasContactHint')}
+                    </Typography>
+                  ) : null}
                 </>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.25, flexWrap: 'wrap' }}>
@@ -1049,13 +1036,9 @@ function ListingsGrid({
                     }}
                   />
                 </>
-              ) : !soldOut && item.status === 'active' ? (
-                <Button size="small" variant="contained" onClick={() => onClaim(item.id)}>
-                  {item.type === 'refer' ? t('marketplace.useRefer') : t('marketplace.buyIntel')}
-                </Button>
               ) : (
-                <Button size="small" onClick={() => onOpenDetail(item)}>
-                  {t('marketplace.viewDetail')}
+                <Button size="small" variant="contained" onClick={() => onOpenDetail(item)}>
+                  {t('marketplace.viewContact')}
                 </Button>
               )}
             </CardActions>
@@ -1141,7 +1124,7 @@ function CreateListingDialog({
           <Tab value="job_intel" label={t('marketplace.typeJobIntel')} disabled={Boolean(editing)} />
         </Tabs>
         {editing ? (
-          <Alert severity="info">已有成交后不可改金额与名额（避免破坏保证金）；文案与条件可随时改。</Alert>
+          <Alert severity="info">{t('marketplace.editListingHint')}</Alert>
         ) : null}
         <TextField label={t('marketplace.fieldTitle')} value={form.title} onChange={(e) => set('title', e.target.value)} size="small" fullWidth />
         <TextField label={t('marketplace.fieldDesc')} value={form.description} onChange={(e) => set('description', e.target.value)} size="small" fullWidth multiline minRows={2} />
@@ -1199,8 +1182,16 @@ function CreateListingDialog({
               label={t('marketplace.requiresSsn')}
             />
             <TextField label={t('marketplace.fieldMinDeposit')} value={form.minDepositUsd} onChange={(e) => set('minDepositUsd', e.target.value)} size="small" type="number" />
-            <TextField label={t('marketplace.fieldSellerContact')} value={form.sellerContactHint} onChange={(e) => set('sellerContactHint', e.target.value)} size="small" fullWidth helperText={t('marketplace.fieldSellerContactHint')} />
-            <Alert severity="info">{t('marketplace.referEscrowHint')}</Alert>
+            <TextField
+              label={t('marketplace.fieldSellerContact')}
+              value={form.sellerContactHint}
+              onChange={(e) => set('sellerContactHint', e.target.value)}
+              size="small"
+              fullWidth
+              required
+              helperText={t('marketplace.fieldSellerContactHint')}
+            />
+            <Alert severity="info">{t('marketplace.referContactHint')}</Alert>
           </>
         ) : (
           <>
@@ -1215,10 +1206,19 @@ function CreateListingDialog({
             <TextField label={t('marketplace.fieldCity')} value={form.city} onChange={(e) => set('city', e.target.value)} size="small" fullWidth />
             <TextField label={t('marketplace.fieldJobTitle')} value={form.jobTitle} onChange={(e) => set('jobTitle', e.target.value)} size="small" fullWidth />
             <TextField label={t('marketplace.fieldEmployerHint')} value={form.employerHint} onChange={(e) => set('employerHint', e.target.value)} size="small" fullWidth />
-            <TextField label={t('marketplace.fieldIntelFee')} value={form.intelFee} onChange={(e) => set('intelFee', e.target.value)} size="small" type="number" />
+            <TextField label={t('marketplace.fieldIntelFee')} value={form.intelFee} onChange={(e) => set('intelFee', e.target.value)} size="small" type="number" helperText={t('marketplace.fieldIntelFeeHint')} />
             <TextField label={t('marketplace.fieldIntelPreview')} value={form.intelPreview} onChange={(e) => set('intelPreview', e.target.value)} size="small" fullWidth multiline minRows={2} />
             <TextField label={t('marketplace.fieldIntelDetail')} value={form.intelDetail} onChange={(e) => set('intelDetail', e.target.value)} size="small" fullWidth multiline minRows={3} helperText={t('marketplace.intelDetailHint')} />
-            <Alert severity="info">{t('marketplace.jobEscrowHint')}</Alert>
+            <TextField
+              label={t('marketplace.fieldSellerContact')}
+              value={form.sellerContactHint}
+              onChange={(e) => set('sellerContactHint', e.target.value)}
+              size="small"
+              fullWidth
+              required
+              helperText={t('marketplace.fieldSellerContactHint')}
+            />
+            <Alert severity="info">{t('marketplace.jobContactHint')}</Alert>
           </>
         )}
       </DialogContent>

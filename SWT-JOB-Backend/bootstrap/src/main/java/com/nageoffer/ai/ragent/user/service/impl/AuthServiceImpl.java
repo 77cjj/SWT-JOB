@@ -35,6 +35,7 @@ import com.nageoffer.ai.ragent.user.service.WeChatOAuthService;
 import com.nageoffer.ai.ragent.user.service.WeChatOAuthService.VerifiedWeChatUser;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import com.nageoffer.ai.ragent.user.service.UserSchemaService;
+import com.nageoffer.ai.ragent.user.util.PasswordHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -65,20 +66,25 @@ public class AuthServiceImpl implements AuthService {
         }
         if (isDevBypass(username, password)) {
             StpUtil.login(DEV_BYPASS_LOGIN_ID);
-            return new LoginVO(DEV_BYPASS_LOGIN_ID, "admin", StpUtil.getTokenValue(), DEFAULT_AVATAR_URL);
+            return LoginVO.builder()
+                    .userId(DEV_BYPASS_LOGIN_ID)
+                    .username(StrUtil.trim(username))
+                    .role("admin")
+                    .token(StpUtil.getTokenValue())
+                    .avatar(DEFAULT_AVATAR_URL)
+                    .build();
         }
         userSchemaService.ensureUserColumns();
         UserDO user = findByUsername(username);
-        if (user == null || !passwordMatches(password, user.getPassword())) {
+        if (user == null || !PasswordHasher.matches(password, user.getPassword())) {
             throw new ClientException("用户名或密码错误");
         }
+        ensureAccountActive(user);
         if (user.getId() == null) {
             throw new ClientException("用户信息异常");
         }
-        String loginId = user.getId().toString();
-        StpUtil.login(loginId);
-        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
-        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+        upgradePasswordIfNeeded(user, password);
+        return finishLogin(user);
     }
 
     @Override
@@ -106,9 +112,10 @@ public class AuthServiceImpl implements AuthService {
         }
         UserDO user = UserDO.builder()
                 .username(username)
-                .password(password)
+                .password(PasswordHasher.hash(password))
                 .role("user")
                 .avatar(DEFAULT_AVATAR_URL)
+                .accountStatus("active")
                 .freeChatRemaining(Math.max(0, authProperties.getNewUserFreeChatQuota()))
                 .build();
         userMapper.insert(user);
@@ -163,12 +170,25 @@ public class AuthServiceImpl implements AuthService {
                     .password("oauth:" + UUID.randomUUID())
                     .role("user")
                     .avatar(StrUtil.blankToDefault(avatar, DEFAULT_AVATAR_URL))
+                    .accountStatus("active")
                     .freeChatRemaining(Math.max(0, authProperties.getNewUserFreeChatQuota()))
                     .build();
+            if (StrUtil.isNotBlank(displayHint)) {
+                user.setDisplayName(displayHint);
+            }
             userMapper.insert(user);
-        } else if (StrUtil.isNotBlank(avatar) && StrUtil.isBlank(user.getAvatar())) {
-            user.setAvatar(avatar);
-            userMapper.updateById(user);
+        } else {
+            // 已有本地密码账号：禁止 OAuth 直接接管，避免邮箱抢注后被第三方登录劫持
+            String stored = user.getPassword();
+            boolean oauthOnly = StrUtil.isNotBlank(stored) && stored.startsWith("oauth:");
+            if (!oauthOnly && StrUtil.isNotBlank(stored)) {
+                throw new ClientException("该账号已使用密码注册，请先用密码登录");
+            }
+            ensureAccountActive(user);
+            if (StrUtil.isNotBlank(avatar) && StrUtil.isBlank(user.getAvatar())) {
+                user.setAvatar(avatar);
+                userMapper.updateById(user);
+            }
         }
         if (user.getId() == null) {
             throw new ClientException("登录失败：用户创建异常");
@@ -177,10 +197,35 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private LoginVO finishLogin(UserDO user) {
+        ensureAccountActive(user);
         String loginId = user.getId().toString();
         StpUtil.login(loginId);
         String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
-        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+        return LoginVO.builder()
+                .userId(loginId)
+                .username(user.getUsername())
+                .role(user.getRole())
+                .token(StpUtil.getTokenValue())
+                .avatar(avatar)
+                .build();
+    }
+
+    private void ensureAccountActive(UserDO user) {
+        String status = StrUtil.blankToDefault(user.getAccountStatus(), "active");
+        if ("banned".equalsIgnoreCase(status)) {
+            throw new ClientException("账号已被封禁，无法登录");
+        }
+        if ("restricted".equalsIgnoreCase(status)) {
+            throw new ClientException("账号已被限制登录，请联系站长");
+        }
+    }
+
+    private void upgradePasswordIfNeeded(UserDO user, String rawPassword) {
+        if (!PasswordHasher.needsUpgrade(user.getPassword())) {
+            return;
+        }
+        user.setPassword(PasswordHasher.hash(rawPassword));
+        userMapper.updateById(user);
     }
 
     private UserDO findByUsername(String username) {
@@ -192,13 +237,6 @@ public class AuthServiceImpl implements AuthService {
                         .eq(UserDO::getUsername, username)
                         .eq(UserDO::getDeleted, 0)
         );
-    }
-
-    private boolean passwordMatches(String input, String stored) {
-        if (stored == null) {
-            return input == null;
-        }
-        return stored.equals(input);
     }
 
     private boolean isDevBypass(String username, String password) {

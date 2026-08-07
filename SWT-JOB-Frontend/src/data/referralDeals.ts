@@ -34,6 +34,10 @@ export interface DealEdition {
   validUntil: string | null;
   reward: BilingualText;
   summary: BilingualText;
+  /** 卡片字段一：攻略简版（列表卡片展示；缺省回退 summary） */
+  cardGuideBrief?: BilingualText;
+  /** 卡片字段二：本站权益/补充简版（缺省回退 siteRebateLabel） */
+  cardExtraBrief?: BilingualText;
   requirements: BilingualList;
   /** 仅 refer 类项目配置；开户奖励类勿填占位链接 */
   referralUrl?: string;
@@ -67,6 +71,11 @@ export interface ReferralProgram {
   siteRebateUsd?: number | null;
   /** 本站返现展示文案 */
   siteRebateLabel?: BilingualText;
+  /**
+   * 卡片右上角展示金额（USD，管理员单独配置）。
+   * 仅配置后显示；不会自动把官方奖励与本站返现加总。
+   */
+  highlightAmountUsd?: number | null;
 }
 
 export const dealCategoryOrder: DealCategory[] = ['bank', 'other'];
@@ -79,6 +88,8 @@ export const referralPrograms: ReferralProgram[] = [
     offerKind: 'refer',
     pinned: true,
     brandName: { zh: 'Kalshi 预测市场', en: 'Kalshi' },
+    highlightAmountUsd: 20,
+    siteRebateUsd: 7.5,
     siteRebateLabel: {
       zh: '保底返现 $7.5（预测）+ 最高 $12.5（加密）',
       en: 'From $7.5 (predictions) + up to $12.5 (crypto)',
@@ -90,16 +101,36 @@ export const referralPrograms: ReferralProgram[] = [
         validUntil: null,
         reward: { zh: '最高约 $20 奖励', en: 'Up to ~$20 bonus' },
         summary: {
-          zh: '用邀请链接注册 → 下载 App → 护照 KYC → 预测市场成交 $25 + 加密市场成交 $50 领取奖励（条款以 Kalshi 为准）。',
-          en: 'Sign up via referral, verify with passport, trade $25 on predictions and $50 on crypto markets (verify official terms).',
+          zh: '用邀请链接注册 → 下载 App → 完成 KYC → 按 App Rewards 所示成交门槛领取邀请积分（条款以 Kalshi 为准）。',
+          en: 'Sign up via referral, complete KYC, then meet the trading requirement shown in App Rewards (official Kalshi terms apply).',
+        },
+        cardGuideBrief: {
+          zh: '邀请链接注册 → KYC → 按 App 显示成交门槛领取积分（常见约预测 $25）。',
+          en: 'Referral signup → KYC → meet App Rewards volume (often ~$25 predictions).',
+        },
+        cardExtraBrief: {
+          zh: '本站：预测保底 $7.5，加密方向最高另返 $12.5（人工确认）。',
+          en: 'Site: from $7.5 (predictions) + up to $12.5 (crypto), manual payout.',
         },
         requirements: {
-          zh: ['美国境外可用护照注册', '需完成 KYC', '预测市场累计成交 $25', '加密货币市场累计成交 $50'],
-          en: ['Passport signup', 'KYC', '$25 prediction volume', '$50 crypto volume'],
+          zh: [
+            '必须通过邀请链接注册，或注册后 72 小时内、首次入金前绑定有效邀请码（以官方 FAQ 为准）',
+            '账号须完成 KYC 身份验证',
+            '成交门槛与奖励金额以 App「Rewards / Referrals」当前展示为准（活动会变）',
+            '邀请积分通常为交易额度、非直接可提现现金；常见约 7 天未使用作废',
+            '存在终身邀请收益上限；资格与地区限制以 Kalshi 审核为准',
+          ],
+          en: [
+            'Sign up via referral link, or bind a valid code within 72 hours before first deposit (per Kalshi FAQ)',
+            'Account must complete KYC',
+            'Trading requirement and bonus amount are shown in App Rewards / Referrals (offers change)',
+            'Referral credits are typically trading credits, not withdrawable cash; unused credits often expire in ~7 days',
+            'Lifetime referral earnings cap and geo eligibility apply per Kalshi',
+          ],
         },
         referralUrl:
           'https://kalshi.com/sign-up/?referral=bc97e675-c6f7-4911-9de8-5dde19652db1&m=true&utm_source=mobile_app&utm_medium=copy&utm_campaign=referral&utm_content=referral_qr_sheet',
-        officialUrl: 'https://kalshi.com/',
+        officialUrl: 'https://help.kalshi.com/en/articles/13823783-kalshi-referral-program-faq',
         tags: { zh: ['置顶', '预测市场'], en: ['Pinned', 'Predictions'] },
       },
     ],
@@ -107,30 +138,35 @@ export const referralPrograms: ReferralProgram[] = [
       zh: [
         '点击本站「打开邀请链接」进入 Kalshi 注册页（务必用本链接，否则不计 refer）。',
         '下载 Kalshi 手机 App 并用同一账号登录。',
-        '使用护照完成身份验证（非美国居民可用护照，具体以 Kalshi 审核为准）。',
-        '在「预测市场」累计成交至少 $25（按平台规则计入的有效成交）。',
-        '在「加密货币相关市场」累计成交至少 $50。',
-        '奖励发放时间与形式以 Kalshi 官方通知为准；本站另承诺预测方向保底返现 $7.5、加密方向最高 $12.5（由管理员人工确认发放）。',
+        '完成身份验证（KYC）；材料与是否支持护照以 Kalshi 审核为准。',
+        '打开 App「Rewards / Referrals」查看你账号当前的成交门槛与奖励金额。',
+        '完成所示有效成交后，按官方指引领取邀请积分；积分用途与过期规则以官方为准。',
+        '本站另承诺预测方向保底返现 $7.5、加密方向最高 $12.5（由管理员人工确认发放，与官方积分分开）。',
       ],
       en: [
         'Open the referral link and create an account.',
         'Install the app and sign in.',
-        'Complete KYC with passport if eligible.',
-        'Reach $25 traded volume on prediction markets.',
-        'Reach $50 on crypto markets per program rules.',
+        'Complete KYC as required by Kalshi.',
+        'Check App Rewards / Referrals for your current volume and bonus.',
+        'Meet the shown trading requirement, then claim credits per Kalshi.',
+        'Site cashback (from $7.5 / up to $12.5 crypto) is separate and paid after admin confirmation.',
       ],
     },
     practicalSteps: {
       zh: [
-        '先用小金额熟悉下单与结算规则，再加仓满足 $25 / $50 门槛。',
-        '预测与加密可能是不同账户模块，确认成交量分别统计。',
-        '奖励、税务与合规风险自负；勿用超出承受能力的资金投机。',
+        '奖励金额、成交门槛会随账号与活动变化——以 App 内展示为准，不要只看第三方攻略数字。',
+        '邀请积分多为交易 credit：通常不可直接提现，未使用可能约 7 天作废（见官方 FAQ）。',
+        '先用小金额熟悉下单与结算规则，再满足门槛；税务与合规风险自负。',
       ],
-      en: ['Start small', 'Confirm volume buckets', 'Only risk what you can afford'],
+      en: [
+        'Bonus amounts and volume requirements vary—always trust the in-app Rewards screen.',
+        'Referral credits are usually trading credits and may expire (~7 days) if unused.',
+        'Start small; only risk what you can afford.',
+      ],
     },
     officialDetail: {
-      zh: '本站置顶推荐；官方奖励 + 本站额外返现文案可在管理后台调整。',
-      en: 'Pinned on SWT; site rebate configurable in admin.',
+      zh: '官方条款摘要（来源：Kalshi Help Center「Referral Program FAQ」）：须邀请链接/码 + KYC + App 所示成交门槛；积分非现金、常约 7 天有效；有终身邀请上限。地区与资格以 Kalshi 为准。本站返现为额外承诺，不构成官方保证。',
+      en: 'Official summary (Kalshi Referral Program FAQ): referral link/code + KYC + in-app trading requirement; credits are not cash and often expire in ~7 days; lifetime referral cap applies. Site rebate is separate from Kalshi.',
     },
   },
   {
@@ -139,6 +175,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'promo-other',
     offerKind: 'refer',
     brandName: { zh: 'Moomoo 富途', en: 'Moomoo' },
+    highlightAmountUsd: 75,
     siteRebateLabel: {
       zh: '平台奖励发放后返现一半（约 $5–75）',
       en: '50% cashback after platform payout (~$5–75)',
@@ -153,17 +190,25 @@ export const referralPrograms: ReferralProgram[] = [
           zh: '7 月 31 日前通过邀请链接或 Refer Code M69D3EMM 开户；平台奖励发放后本站承诺返现一半（约 $5–75 浮动，以实际发放为准）。',
           en: 'Sign up via link or code M69D3EMM by Jul 31; site rebates 50% after platform pays (~$5–75, varies).',
         },
+        cardGuideBrief: {
+          zh: '7/31 前用邀请链接或码 M69D3EMM 开户，完成官方任务领平台奖。',
+          en: 'By Jul 31: sign up via link/code M69D3EMM and finish Moomoo tasks.',
+        },
+        cardExtraBrief: {
+          zh: '本站：平台奖励到账后返一半（约 $5–75，浮动）。',
+          en: 'Site: 50% cashback after platform payout (~$5–75).',
+        },
         requirements: {
           zh: [
             '邀请链接：https://j.moomoo.com/0ER7nH',
             'Refer Code：M69D3EMM（7/31 前有效）',
-            '完成 Moomoo 官方开户/邀请任务并领取平台奖励',
+            '完成 Moomoo 官方开户/邀请任务并领取平台奖励（入金/交易门槛以 App 活动页为准）',
             '本站于平台奖励到账后返现一半（约 $5–75，浮动）',
           ],
           en: [
             'Referral: https://j.moomoo.com/0ER7nH',
             'Code M69D3EMM (valid through Jul 31)',
-            'Complete official Moomoo offer and receive platform reward',
+            'Complete official Moomoo offer and receive platform reward (deposit/trade rules in-app)',
             'Site pays 50% cashback after platform payout (~$5–75)',
           ],
         },
@@ -191,26 +236,47 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'bank-neobank',
     offerKind: 'refer',
     brandName: { zh: 'Chime', en: 'Chime' },
+    highlightAmountUsd: 100,
     editions: [
       {
         id: 'chime-2026',
         validFrom: '2026-01-01',
         validUntil: null,
-        reward: { zh: '最高 $100', en: 'Up to $100' },
+        reward: { zh: '被邀请人 $100', en: '$100 for referee' },
         summary: {
-          zh: '45 天内收到单笔 ≥$200 合规 Direct Deposit，14 天内激活实体借记卡。',
-          en: 'Qualifying direct deposit of $200+ within 45 days; activate physical debit card within 14 days after.',
+          zh: '邀请链接开 Checking → 开户后 45 天内单笔合规 DD ≥$200 → 该笔 DD 后 14 天内激活实体卡。',
+          en: 'Open Checking via referral → one qualifying DD ≥$200 within 45 days → activate physical card within 14 days of that DD.',
+        },
+        cardGuideBrief: {
+          zh: '邀请链接开户 → 45 天内单笔合规 DD≥$200 → 14 天内激活实体卡。',
+          en: 'Referral signup → $200+ qualifying DD in 45 days → activate card in 14 days.',
+        },
+        cardExtraBrief: {
+          zh: '被邀请人通常得 $100；邀请人奖金以 App 当前 offer 为准。本站返现待公布。',
+          en: 'Referee typically gets $100; referrer amount follows active offer. Site rebate TBD.',
         },
         requirements: {
-          zh: ['线上开户', '需 SSN', 'Direct Deposit 达标', '激活实体卡'],
-          en: ['Online opening', 'SSN required', 'Qualifying DD', 'Activate physical card'],
+          zh: [
+            '必须通过邀请人专属链接注册并成功开立 Chime Checking',
+            '开户后 45 天内收到单笔 ≥$200 的 Qualifying Direct Deposit（多笔小额不合并）',
+            '合规 DD 通常来自雇主工资、政府福利等 ACH；银行互转 / Venmo / PayPal 等 P2P 一般不计',
+            '收到该笔合规 DD 后 14 个日历日内激活实体 Chime 卡',
+            '三项均完成后双方才可能获奖励；邀请人金额可能随其当前活动变化',
+          ],
+          en: [
+            'Must open a Chime Checking account via the unique referral link',
+            'Receive a single qualifying direct deposit of $200+ within 45 days of opening',
+            'Qualifying DD is typically payroll/benefits ACH; bank transfers and P2P usually do not count',
+            'Activate the physical Chime card within 14 calendar days after that qualifying DD',
+            'All three steps required; referrer bonus may vary by their active offer',
+          ],
         },
         referralUrl: 'https://chime.com/r/your-referral-code',
-        officialUrl: 'https://help.chime.com/how-does-my-friends-chime-referral-link-work-5bb2ea50',
+        officialUrl: 'https://help.chime.com/what-is-chimes-standard-referral-program-eca42e30',
         tags: { zh: ['线上', '新手友好'], en: ['Online', 'Beginner-friendly'] },
         changeNote: {
-          zh: '2026 年 refer 奖励维持 $100，DD 门槛仍为 $200。',
-          en: '2026 referral bonus remains $100; DD threshold still $200.',
+          zh: '已按 Chime Help Center 标准推荐计划更新：被邀请人 $100；DD $200 / 45 天；实体卡 14 天。',
+          en: 'Updated from Chime Help Center: $100 for referee; $200 DD / 45 days; physical card in 14 days.',
         },
       },
       {
@@ -255,23 +321,35 @@ export const referralPrograms: ReferralProgram[] = [
     ],
     howToClaim: {
       zh: [
-        '通过本站或邀请链接打开 Chime 官网并完成注册',
-        '在 45 天内设置 Direct Deposit，单笔到账 ≥ $200',
-        '收到实体借记卡后 14 天内激活',
-        '等待官方 refer 奖励入账（通常数周内，以 App 通知为准）',
-        '达标后联系本站客服登记，领取本站额外返现',
+        '通过本站邀请链接打开 Chime 并完成 Checking 注册（必须用专属链接）。',
+        '开户后 45 天内安排单笔 ≥$200 的合规 Direct Deposit（工资/福利等；P2P 通常不计）。',
+        '合规 DD 到账后，在 14 个日历日内激活实体借记卡。',
+        '三项完成后等待官方奖励入账（被邀请人通常 $100；邀请人金额看其当前 offer）。',
+        '若本站有额外返现，达标后联系客服登记领取。',
       ],
       en: [
-        'Open Chime via our referral link and complete signup',
-        'Set up direct deposit of $200+ within 45 days',
-        'Activate your physical debit card within 14 days',
-        'Wait for the official referral bonus to post',
-        'Contact us after qualifying to claim our site rebate',
+        'Open Chime Checking via our unique referral link.',
+        'Receive one qualifying DD of $200+ within 45 days of opening.',
+        'Activate the physical debit card within 14 calendar days after that DD.',
+        'Wait for official bonuses (referee typically $100).',
+        'Contact us if a site rebate is published for this deal.',
       ],
     },
     practicalSteps: {
-      zh: ['提前准备 SSN 与美国手机号', 'DD 可用雇主工资或部分转账服务（需自行确认是否算合规 DD）', '奖励条款以 Chime 官网为准'],
-      en: ['Have SSN and US phone ready', 'Confirm what counts as qualifying direct deposit', 'Official terms always prevail'],
+      zh: [
+        '提前准备 SSN 与美国手机号。',
+        '多笔小额 DD 不会合并到 $200——必须单笔达标。',
+        '条款以 Chime Help Center「Standard Referral Program」为准，活动可能调整。',
+      ],
+      en: [
+        'Have SSN and a US phone ready.',
+        'Multiple smaller deposits do not combine to $200.',
+        'Official Chime Help Center terms prevail; offers can change.',
+      ],
+    },
+    officialDetail: {
+      zh: '官方条款摘要（Chime Help Center）：①专属邀请链接开 Checking；②开户后 45 天内单笔合规 DD≥$200；③该笔 DD 后 14 天内激活实体卡。被邀请人奖励常见为 $100；邀请人奖金随其 active offer 变化。银行互转与 P2P 一般不算合规 DD。',
+      en: 'Official summary (Chime Help Center): unique link + Checking; single qualifying DD ≥$200 within 45 days; activate physical card within 14 days of that DD. Referee bonus commonly $100; referrer amount varies. Bank transfers/P2P usually do not qualify.',
     },
     siteRebateUsd: null,
     siteRebateLabel: { zh: '本站返现待公布', en: 'Site rebate TBD' },
@@ -282,49 +360,74 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'bank-neobank',
     offerKind: 'refer',
     brandName: { zh: 'SoFi', en: 'SoFi' },
+    highlightAmountUsd: 50,
     editions: [
       {
-        id: 'sofi-2026-s1',
+        id: 'sofi-2026-bank-referral',
         validFrom: '2026-01-01',
-        validUntil: '2026-06-30',
-        reward: { zh: '最高 $400', en: 'Up to $400' },
+        validUntil: '2026-09-30',
+        reward: { zh: '被邀请人约 $50', en: '~$50 for referee' },
         summary: {
-          zh: '25 天内 DD $1,000 得 $50；DD $5,000 得 $400。奖励约 7 天内到账。',
-          en: '$1,000 DD within 25 days → $50; $5,000 → $400. Bonus ~7 days.',
+          zh: '通过银行推荐链接开 SoFi Checking & Savings（须为首个 SoFi 产品）→ 在条款规定窗口内完成合资格入金（金额与窗口以官网当前条款为准，常见约 21 天）。',
+          en: 'Open SoFi Checking & Savings via bank referral as your first SoFi product, then make eligible deposits within the window shown on SoFi’s current terms (often ~21 days).',
+        },
+        cardGuideBrief: {
+          zh: '邀请链接开 Checking&Savings → 按官网窗口完成合资格入金 → 领约 $50。',
+          en: 'Open Checking & Savings via referral → eligible deposits in-window → ~$50.',
+        },
+        cardExtraBrief: {
+          zh: '条款常变（入金门槛曾调整）；以 sofi.com/offers/bank-referral 为准。',
+          en: 'Terms change often (deposit minimums have moved); follow sofi.com/offers/bank-referral.',
         },
         requirements: {
-          zh: ['25 天内完成 Direct Deposit', '金额分档累进', '以官网条款为准'],
-          en: ['DD within 25 days', 'Tiered amounts', 'Official terms apply'],
+          zh: [
+            '须点击好友银行推荐链接，成功开通 SoFi Checking and Savings，且通常须为第一个 SoFi 产品',
+            '在官方规定日历窗口内完成合资格入金并 settle（窗口与最低金额以当前条款为准；常见约 21 天）',
+            '合资格入金通常包括 ACH、Direct Deposit、部分 Instant Transfer / 支票 / 电汇等；Venmo、Zelle、PayPal 等 P2P 一般排除',
+            '被邀请人标准奖金常见约 $50；邀请人奖金可能按 SoFi Plus / DD / 入金档位变化（约 $75–$100 等，以官网为准）',
+            '促销期与细则会更新，开户前务必阅读当前官方条款页',
+          ],
+          en: [
+            'Open SoFi Checking and Savings via the bank referral link as a first SoFi product (per current rules)',
+            'Eligible deposits must settle within the official calendar window (often ~21 days; confirm live terms)',
+            'Eligible deposits typically include ACH, direct deposit, some instant/check/wire methods; P2P (Venmo/Zelle/PayPal etc.) is usually excluded',
+            'Referee standard bonus is commonly about $50; referrer amounts may vary with SoFi Plus / DD tiers',
+            'Promotion windows change—read the live SoFi bank referral terms before applying',
+          ],
         },
         referralUrl: 'https://www.sofi.com/invite/your-code',
-        officialUrl: 'https://www.sofi.com/legal/banking/referral-program-terms/',
-        tags: { zh: ['线上', '高奖励'], en: ['Online', 'High reward'] },
+        officialUrl: 'https://www.sofi.com/offers/bank-referral/',
+        tags: { zh: ['线上', '条款常变'], en: ['Online', 'Terms change'] },
         changeNote: {
-          zh: '2026 上半年维持 2025 末档奖励结构。',
-          en: 'H1 2026 kept the same tier structure as late 2025.',
+          zh: '已按 SoFi Bank Referral 官方页改写：被邀请人约 $50 + 合资格入金窗口；不再沿用旧版 DD $1k/$5k→$50/$400 混写。',
+          en: 'Rewritten from SoFi Bank Referral page: ~$50 referee + eligible deposit window; removed outdated $1k/$5k→$50/$400 mix-up.',
         },
       },
       {
         id: 'sofi-2025',
         validFrom: '2025-06-01',
         validUntil: '2025-12-31',
-        reward: { zh: '最高 $300', en: 'Up to $300' },
+        reward: { zh: '被邀请人约 $50', en: '~$50 for referee' },
         summary: {
-          zh: '25 天内 DD $1,000 得 $50；DD $4,000 得 $300。',
-          en: '$1,000 DD → $50; $4,000 DD → $300 within 25 days.',
+          zh: '历史档：银行推荐开户 + 合资格入金；细则以当时官网为准。',
+          en: 'Historical: bank referral signup + eligible deposits under then-current terms.',
         },
         requirements: {
-          zh: ['25 天内 DD', '分档奖励', '需 SSN'],
-          en: ['DD within 25 days', 'Tiered bonus', 'SSN required'],
+          zh: ['邀请链接开户', '合资格入金', '以当时官网为准'],
+          en: ['Referral signup', 'Eligible deposits', 'Then-current official terms'],
         },
         referralUrl: 'https://www.sofi.com/invite/your-code',
-        officialUrl: 'https://www.sofi.com/legal/banking/referral-program-terms/',
+        officialUrl: 'https://www.sofi.com/offers/bank-referral/',
         changeNote: {
-          zh: '最高档从 $300 上调至 2026 年的 $400。',
-          en: 'Top tier raised from $300 to $400 in 2026.',
+          zh: '归档：旧数据曾误写高档 DD 开户奖，已与银行推荐计划区分。',
+          en: 'Archived: older copy mixed in separate DD bonuses; now separated from bank referral.',
         },
       },
     ],
+    officialDetail: {
+      zh: '官方条款摘要（SoFi Bank Referral Program，sofi.com/offers/bank-referral）：被邀请人通过推荐链接开通 Checking & Savings（通常为首个 SoFi 产品），并在条款窗口内完成合资格入金后，可获标准奖金（常见约 $50）。入金方式与 P2P 排除规则、邀请人档位奖金、促销截止日期均以官网当前条款为准，近年曾调整最低入金门槛与促销期。',
+      en: 'Official summary (SoFi Bank Referral): open Checking & Savings via referral (typically first SoFi product) and complete eligible deposits in-window for a standard bonus (commonly ~$50). Deposit methods, P2P exclusions, referrer tiers, and promo end dates follow live SoFi terms.',
+    },
   },
   {
     id: 'revolut',
@@ -332,6 +435,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'bank-neobank',
     offerKind: 'refer',
     brandName: { zh: 'Revolut', en: 'Revolut' },
+    highlightAmountUsd: 40,
     siteRebateUsd: 40,
     siteRebateLabel: {
       zh: '本站返现 $40',
@@ -347,33 +451,41 @@ export const referralPrograms: ReferralProgram[] = [
           zh: '通过邀请链接注册，Residence 选美国，充值 $40，订购 $2.99 实体卡并完成 3 笔 ≥$10 消费；官方奖励约 2 天到账，达标后联系本站领取 $40 返现。',
           en: 'Sign up via referral, select US residence, deposit $40, order the $2.99 card, and complete 3 purchases of $10+ each. Official reward ~2 days; contact us for $40 site cashback after qualifying.',
         },
+        cardGuideBrief: {
+          zh: '邀请链接注册（美区）→ 充值 $40 → 订 $2.99 实体卡 → 3 笔 ≥$10 消费。',
+          en: 'US referral signup → deposit $40 → $2.99 card → 3× $10+ purchases.',
+        },
+        cardExtraBrief: {
+          zh: '本站达标后返现 $40（与官方奖励分开领取）。',
+          en: 'Site pays $40 after you qualify (separate from Revolut’s bonus).',
+        },
         requirements: {
           zh: [
-            '须通过本站邀请链接注册',
-            'Residence 选择美国',
+            '须通过本站邀请链接注册（活动码/campaign 以链接内参数为准）',
+            'Residence 选择美国；须为符合当地 Revolut 服务的新用户',
             '充值至少 $40',
             '订购 $2.99 实体借记卡',
-            '完成 3 笔单笔 ≥ $10 的消费',
-            '官方奖励约 2 个工作日到账',
+            '完成 3 笔单笔 ≥ $10 的真实刷卡消费（转账、部分礼品卡/排除类交易可能不计，以 App 活动条款为准）',
+            '官方邀请奖励到账时间以 Revolut 通知为准（社区常见约数个工作日）',
             '达标后联系站长领取本站 $40 返现',
           ],
           en: [
-            'Sign up via our referral link',
-            'Select United States as residence',
+            'Sign up via our referral link (campaign terms are embedded in the invite)',
+            'Select United States residence; must be a new eligible Revolut user',
             'Deposit at least $40',
             'Order the $2.99 physical debit card',
-            'Complete 3 transactions of $10+ each',
-            'Official reward posts in ~2 business days',
-            'Contact site owner for $40 cashback after qualifying',
+            'Complete 3 genuine card purchases of $10+ each (transfers / some gift cards may be excluded—check in-app terms)',
+            'Official reward timing follows Revolut notices',
+            'Contact the site owner for $40 site cashback after qualifying',
           ],
         },
         referralUrl:
           'https://revolut.com/referral/?referral-code=jiajun_7r_l4pt!JUL2-26-AR-US-H1-REFBLOCK-AE&geo-redirect',
-        officialUrl: 'https://www.revolut.com/',
+        officialUrl: 'https://www.revolut.com/legal/refer/',
         tags: { zh: ['线上', '需消费'], en: ['Online', 'Spending required'] },
         changeNote: {
-          zh: '新增 Revolut 邀请：充值 $40 + 三笔 $10+ 消费，本站额外返现 $40。',
-          en: 'Added Revolut refer: $40 deposit + three $10+ purchases; $40 site cashback.',
+          zh: '补充官方 refer 注意：须真实刷卡、排除类交易以 App 为准；本站返现 $40 单独配置展示金额。',
+          en: 'Clarified official refer: genuine card spend; exclusions per in-app terms; site $40 is a manual highlight amount.',
         },
       },
     ],
@@ -411,6 +523,10 @@ export const referralPrograms: ReferralProgram[] = [
         'Official reward and site cashback are separate—claim site rebate after you qualify.',
       ],
     },
+    officialDetail: {
+      zh: '官方条款提示（Revolut Refer）：奖励与任务以 App 内当前邀请活动 / legal refer 页为准，常要求真实刷卡消费；账户转账、部分礼品卡或排除商户可能不计。地区、截止日与奖金随 campaign 变化。本站 $40 为额外返现，右上角金额为管理员配置，不等于官方奖金自动加总。',
+      en: 'Official note (Revolut Refer): tasks and rewards follow the in-app invite / legal refer terms; genuine card spend is usually required, while transfers or some gift cards may be excluded. Campaigns vary by geo and date. The $40 site cashback and card highlight amount are admin-configured, not an auto-sum of official bonuses.',
+    },
   },
   {
     id: 'capital-one-360',
@@ -418,6 +534,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'bank-national',
     offerKind: 'refer',
     brandName: { zh: 'Capital One 360', en: 'Capital One 360' },
+    highlightAmountUsd: 300,
     editions: [
       {
         id: 'cap1-2026',
@@ -427,6 +544,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '75 天内完成两笔 ≥$500 的 Direct Deposit（ACH 可能计入，以条款为准）。',
           en: 'Two $500+ direct deposits within 75 days (ACH may qualify).',
+        },
+        cardGuideBrief: {
+          zh: '75 天内两笔 ≥$500 DD；奖励约 $300。',
+          en: 'Two $500+ DD within 75 days; ~$300 bonus.',
+        },
+        cardExtraBrief: {
+          zh: '到账周期较长，建议先读官方 Refer 页。',
+          en: 'Longer posting window—read Capital One refer page.',
         },
         requirements: {
           zh: ['建议先申信用卡再开 checking', '到账周期 45–67 天', '需 SSN'],
@@ -466,6 +591,7 @@ export const referralPrograms: ReferralProgram[] = [
     category: 'bank',
     offerKind: 'signup_bonus',
     brandName: { zh: 'Bank of America', en: 'Bank of America' },
+    highlightAmountUsd: 500,
     editions: [
       {
         id: 'bofa-2026',
@@ -475,6 +601,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '新 checking 客户：90 天内 Qualifying Direct Deposit 达标，分 $100 / $300 / $500 三档。无公开 refer 邀请计划。',
           en: 'New checking customers: tiered bonus with qualifying direct deposits within 90 days. No public refer-a-friend for checking.',
+        },
+        cardGuideBrief: {
+          zh: '新 checking：90 天内 DD 分档，最高约 $500（无公开 refer）。',
+          en: 'New checking: tiered DD in 90 days, up to ~$500 (no public refer).',
+        },
+        cardExtraBrief: {
+          zh: '以 promotions.bankofamerica.com 当前活动页为准。',
+          en: 'Follow the live Bank of America promotions page.',
         },
         requirements: {
           zh: ['须为 12 个月内未持有过 BofA checking 的新客户', '通过官网活动页开户', '90 天内 DD 达标', '线下/线上视活动页说明'],
@@ -514,6 +648,7 @@ export const referralPrograms: ReferralProgram[] = [
     category: 'bank',
     offerKind: 'signup_bonus',
     brandName: { zh: 'Chase Secure Checking', en: 'Chase Secure Checking' },
+    highlightAmountUsd: 400,
     editions: [
       {
         id: 'chase-2026',
@@ -523,6 +658,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '90 天内 DD $1,000，奖励约 15 天内发放。',
           en: '$1,000 DD within 90 days; bonus ~15 days.',
+        },
+        cardGuideBrief: {
+          zh: '线下开 Secure Checking：90 天内 DD $1,000 → 约 $400。',
+          en: 'In-branch Secure Checking: $1,000 DD in 90 days → ~$400.',
+        },
+        cardExtraBrief: {
+          zh: '需 DS-2019 + 护照 + SSN；24 岁以下常见免月费。',
+          en: 'Bring DS-2019 + passport + SSN; fee waiver often under 24.',
         },
         requirements: {
           zh: ['线下开户', 'DS-2019 + 护照 + SSN', '24 岁以下免月费'],
@@ -563,6 +706,7 @@ export const referralPrograms: ReferralProgram[] = [
     category: 'bank',
     offerKind: 'signup_bonus',
     brandName: { zh: 'Citi Bank Checking', en: 'Citi Bank Checking' },
+    highlightAmountUsd: 325,
     editions: [
       {
         id: 'citi-2025-winter',
@@ -572,6 +716,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '60 天内完成 qualifying activities；需国内地址证明等材料。',
           en: 'Qualifying activities within 60 days; proof of address may be required.',
+        },
+        cardGuideBrief: {
+          zh: '60 天内完成 qualifying activities，奖励约 $325。',
+          en: 'Qualifying activities within 60 days; ~$325 bonus.',
+        },
+        cardExtraBrief: {
+          zh: '常需地址证明与实体 SSN；活动季更替快。',
+          en: 'Address proof / physical SSN often needed; offers rotate.',
         },
         requirements: {
           zh: ['线下/线上视活动而定', '国内驾照等地址证明', '带实体 SSN'],
@@ -611,6 +763,7 @@ export const referralPrograms: ReferralProgram[] = [
     category: 'bank',
     offerKind: 'signup_bonus',
     brandName: { zh: 'Wells Fargo Checking', en: 'Wells Fargo Checking' },
+    highlightAmountUsd: 325,
     editions: [
       {
         id: 'wf-2026',
@@ -620,6 +773,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '90 天内 DD $1,000，奖励约 30 天内到账。24 岁以下免月费。官方活动页可查阅条款，但须线下开户。',
           en: '$1,000 DD within 90 days; bonus ~30 days. Fee waiver under 24. Official offer page for terms; in-branch opening required.',
+        },
+        cardGuideBrief: {
+          zh: '线下开户：90 天内 DD $1,000 → 约 $325。',
+          en: 'In-branch: $1,000 DD in 90 days → ~$325.',
+        },
+        cardExtraBrief: {
+          zh: '官方活动页可查条款，但通常须柜台开户。',
+          en: 'Offer page for terms; opening is typically in-branch.',
         },
         requirements: {
           zh: [
@@ -665,6 +826,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'cashback',
     offerKind: 'refer',
     brandName: { zh: 'Rakuten', en: 'Rakuten' },
+    highlightAmountUsd: 30,
     editions: [
       {
         id: 'rakuten-2026',
@@ -674,6 +836,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '网购跳转 Rakuten 再下单，Nike、Adidas 等品牌常有高返现。',
           en: 'Shop via Rakuten for 2–15% back at Nike, Adidas, and more.',
+        },
+        cardGuideBrief: {
+          zh: '注册后经 Rakuten 跳转下单；新人欢迎奖约 $30。',
+          en: 'Shop via Rakuten after signup; welcome ~$30.',
+        },
+        cardExtraBrief: {
+          zh: '日常返现 2–15% 随商家变动。',
+          en: 'Everyday cash back 2–15% varies by merchant.',
         },
         requirements: {
           zh: ['注册账号', '通过 Rakuten 链接跳转下单', '按商家条款结算'],
@@ -714,6 +884,7 @@ export const referralPrograms: ReferralProgram[] = [
     category: 'other',
     offerKind: 'refer',
     brandName: { zh: 'Weee!', en: 'Weee!' },
+    highlightAmountUsd: 20,
     editions: [
       {
         id: 'weee-2026',
@@ -723,6 +894,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '华人亚超生鲜配送。新人前两单各减 $10；被邀请人 14 天 / 30 天内各完成一单 >$10 配送，邀请人各得 $10 积分。细则见饮食指南。',
           en: 'Asian grocery delivery. New users get $10 off first two orders; referrer earns $10 credit after invitee’s qualifying orders within 14 and 30 days. See food guide for full terms.',
+        },
+        cardGuideBrief: {
+          zh: '邀请链接注册：新人前两单各减 $10；邀请人最高 $20 积分。',
+          en: 'Referral signup: $10 off first two orders; referrer up to $20 credit.',
+        },
+        cardExtraBrief: {
+          zh: '被邀请人需在 14/30 天内完成合格配送单。',
+          en: 'Invitee must place qualifying deliveries within 14/30 days.',
         },
         requirements: {
           zh: [
@@ -759,6 +938,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'promo-other',
     offerKind: 'promo',
     brandName: { zh: 'Total Wireless', en: 'Total Wireless' },
+    highlightAmountUsd: 50,
     editions: [
       {
         id: 'tw-iphone13-2025',
@@ -768,6 +948,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '转网 + $50/月套餐，首月总成本约 $100。激活约 60 天后可能解锁。',
           en: 'Port-in + $50/mo plan; ~$100 first month. May unlock after ~60 days.',
+        },
+        cardGuideBrief: {
+          zh: '转网 + 指定套餐购 iPhone 13，首月成本约 $100。',
+          en: 'Port-in + eligible plan for iPhone 13; ~$100 first month.',
+        },
+        cardExtraBrief: {
+          zh: '解锁政策以运营商官网为准。',
+          en: 'Unlock policy follows carrier terms.',
         },
         requirements: {
           zh: ['转入新号码', '购买指定套餐', '解锁政策以官网为准'],
@@ -807,6 +995,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'ny-study',
     offerKind: 'refer',
     brandName: { zh: 'Utest 智能手环测试 ①', en: 'Utest Wearable Band Study 1' },
+    highlightAmountUsd: 150,
     editions: [
       {
         id: 'utest-wearable-150-2026',
@@ -816,6 +1005,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '佩戴智能手环完成指定动作，约 3 小时；无需口语能力，操作较简单。建议先用注册链接创建 Utest 账号并拿到 Utest ID。',
           en: 'Wear a smart band and complete assigned movements for about 3 hours. Minimal speaking required. Create a Utest account first to get a Utest ID.',
+        },
+        cardGuideBrief: {
+          zh: '先注册拿 Utest ID，再报名约 3 小时手环测试，报酬约 $150。',
+          en: 'Create Utest ID first, then apply for ~3h band study (~$150).',
+        },
+        cardExtraBrief: {
+          zh: '建议提前 10–15 天申请；来源填朋友介绍。',
+          en: 'Apply 10–15 days ahead; source = friend referral.',
         },
         requirements: {
           zh: [
@@ -849,6 +1046,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'ny-study',
     offerKind: 'promo',
     brandName: { zh: '手环测试 ②', en: 'Wearable Band Study 2' },
+    highlightAmountUsd: 225,
     editions: [
       {
         id: 'wearable-study-225-2026',
@@ -858,6 +1056,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '智能手环相关线下测试，约 3 小时；报名后可能需要用美国电话确认预约。',
           en: 'In-person wearable band study, about 3 hours. A US phone verification call may be required after applying.',
+        },
+        cardGuideBrief: {
+          zh: '线下手环测试约 3 小时，报酬约 $225；可能需电话确认。',
+          en: 'In-person ~3h band study (~$225); phone confirmation may be required.',
+        },
+        cardExtraBrief: {
+          zh: '留意陌生来电确认预约。',
+          en: 'Watch for confirmation calls after applying.',
         },
         requirements: {
           zh: [
@@ -891,6 +1097,7 @@ export const referralPrograms: ReferralProgram[] = [
     displayGroup: 'ny-study',
     offerKind: 'promo',
     brandName: { zh: '纽约测试（站内演示）', en: 'NYC Test (demo)' },
+    highlightAmountUsd: 50,
     siteRebateUsd: 5,
     siteRebateLabel: { zh: '约 $5 演示返现', en: 'About $5 demo rebate' },
     howToClaim: {
@@ -910,6 +1117,14 @@ export const referralPrograms: ReferralProgram[] = [
         summary: {
           zh: '纽约地区线下测试占位项目，与 Utest / 手环测试等同组展示。',
           en: 'Placeholder NYC in-person study; grouped with Utest / wearable studies.',
+        },
+        cardGuideBrief: {
+          zh: '纽约线下测试占位演示卡片。',
+          en: 'Placeholder NYC study demo card.',
+        },
+        cardExtraBrief: {
+          zh: '约 $5 演示返现；非真实开户。',
+          en: 'About $5 demo rebate; not a real signup.',
         },
         requirements: {
           zh: ['演示数据', '联系站长获取真实测试档期'],

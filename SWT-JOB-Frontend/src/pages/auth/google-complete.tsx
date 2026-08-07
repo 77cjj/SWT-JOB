@@ -58,7 +58,14 @@ export default function GoogleCompletePage() {
         loginDialogOpen: false,
         loginDialogReason: null,
       });
-      void router.replace("/chat");
+      void useAuthStore
+        .getState()
+        .fetchCurrentUser()
+        .catch(() => null)
+        .finally(() => {
+          void router.replace("/chat");
+        });
+      return;
     } catch {
       useAuthStore.getState().openLoginDialog("Google 登录未完成，请重试");
       void router.replace("/chat");

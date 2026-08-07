@@ -41,6 +41,12 @@ export interface DealAdminForm {
   /** 1=纳入 AI 问答知识库 */
   aiEnabled: string;
   pinned: boolean;
+  /** 卡片右上角金额（USD，手动配置，不自动加总） */
+  highlightAmountUsd: string;
+  /** 卡片字段一：攻略简版 */
+  cardGuideBrief: string;
+  /** 卡片字段二：本站权益简版 */
+  cardExtraBrief: string;
 }
 
 /** Notion 数据库 data source ID */
@@ -100,6 +106,9 @@ export const emptyDealAdminForm = (): DealAdminForm => ({
   sortOrder: '0',
   aiEnabled: '1',
   pinned: false,
+  highlightAmountUsd: '',
+  cardGuideBrief: '',
+  cardExtraBrief: '',
 });
 
 function linesToList(text: string): string[] {
@@ -200,6 +209,9 @@ export function notionRowToAdminForm(row: NotionDealRow, fallbackId?: string): D
     sortOrder: '0',
     aiEnabled: '1',
     pinned: false,
+    highlightAmountUsd: '',
+    cardGuideBrief: '',
+    cardExtraBrief: '',
   };
 }
 
@@ -247,6 +259,12 @@ export function programToAdminForm(
     sortOrder: String(meta?.sortOrder ?? 0),
     aiEnabled: String(meta?.aiEnabled ?? 1),
     pinned: Boolean(program.pinned),
+    highlightAmountUsd:
+      program.highlightAmountUsd != null && Number.isFinite(program.highlightAmountUsd)
+        ? String(program.highlightAmountUsd)
+        : '',
+    cardGuideBrief: edition?.cardGuideBrief?.zh ?? '',
+    cardExtraBrief: edition?.cardExtraBrief?.zh ?? '',
   };
 }
 
@@ -313,6 +331,12 @@ export function adminFormToProgram(
         existing?.siteRebateLabel?.en ||
         (siteRebateUsd != null ? `$${siteRebateUsd} site cashback` : ''),
     },
+    highlightAmountUsd: (() => {
+      const raw = form.highlightAmountUsd.trim();
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })(),
     howToClaim: {
       zh: howToClaimZh,
       en: existing?.howToClaim?.en?.length ? existing.howToClaim.en : howToClaimZh,
@@ -334,6 +358,18 @@ export function adminFormToProgram(
           zh: summaryZh,
           en: existing?.editions?.[0]?.summary.en || summaryZh,
         },
+        cardGuideBrief: form.cardGuideBrief.trim()
+          ? {
+              zh: form.cardGuideBrief.trim(),
+              en: currentEdition?.cardGuideBrief?.en || form.cardGuideBrief.trim(),
+            }
+          : currentEdition?.cardGuideBrief,
+        cardExtraBrief: form.cardExtraBrief.trim()
+          ? {
+              zh: form.cardExtraBrief.trim(),
+              en: currentEdition?.cardExtraBrief?.en || form.cardExtraBrief.trim(),
+            }
+          : currentEdition?.cardExtraBrief,
         requirements: {
           zh: requirementsZh,
           en:

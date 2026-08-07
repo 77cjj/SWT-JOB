@@ -132,6 +132,34 @@ export default function DealQuickEditDialog({
             helperText="如 10刀 / 40"
           />
           <TextField
+            label="卡片右上角金额（USD）"
+            size="small"
+            fullWidth
+            value={form.highlightAmountUsd}
+            onChange={(e) => setField('highlightAmountUsd', e.target.value)}
+            helperText="手动填写展示金额，不会自动把官方奖励和本站返现加总；留空则不显示角标"
+          />
+          <TextField
+            label="攻略简版（卡片字段一）"
+            size="small"
+            fullWidth
+            multiline
+            minRows={2}
+            value={form.cardGuideBrief}
+            onChange={(e) => setField('cardGuideBrief', e.target.value)}
+            helperText="列表卡片「攻略简版」；留空则回退到 summary"
+          />
+          <TextField
+            label="本站权益简版（卡片字段二）"
+            size="small"
+            fullWidth
+            multiline
+            minRows={2}
+            value={form.cardExtraBrief}
+            onChange={(e) => setField('cardExtraBrief', e.target.value)}
+            helperText="列表卡片「本站权益」；留空则在有返现时显示本站返现文案"
+          />
+          <TextField
             label="邀请链接"
             size="small"
             fullWidth

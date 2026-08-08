@@ -29,7 +29,7 @@ SWT-JOB is organized as a monorepo with separate frontend and backend projects.
 
 机制：`cursor/*` 分支开出的 PR 会自动贴 `automerge` 标签；当 Frontend Build / Backend Compile 通过且无冲突时，Actions 会 **squash 合入 `master`** 并尝试删分支。
 
-- 想阻止某 PR 自动合入：去掉 `automerge` 标签（或保持 draft）。
+- 想阻止某 PR 自动合入：加 `no-automerge` 标签，或保持 draft（去掉 `automerge` 在 cursor 分支上可能被下次 push 重新贴上）。
 - 非 cursor 分支：手动加 `automerge` 标签即可走同一套流程。
 - 仓库 Settings 建议开启：**Allow auto-merge**、**Automatically delete head branches**（本 workflow 也会尝试删分支）。
 

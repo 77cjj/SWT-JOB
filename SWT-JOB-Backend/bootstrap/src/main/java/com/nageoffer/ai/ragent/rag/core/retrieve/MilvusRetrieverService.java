@@ -50,14 +50,16 @@ public class MilvusRetrieverService implements RetrieverService {
 
     @Override
     public List<RetrievedChunk> retrieve(RetrieveRequest retrieveParam) {
-        List<Float> emb = StringUtils.hasText(retrieveParam.getEmbeddingModel())
-                ? embeddingService.embed(retrieveParam.getQuery(), retrieveParam.getEmbeddingModel())
-                : embeddingService.embed(retrieveParam.getQuery());
-        float[] vec = toArray(emb);
-
-        float[] norm = normalize(vec);
-
+        float[] norm = embedAndNormalize(retrieveParam.getQuery(), retrieveParam.getEmbeddingModel());
         return retrieveByVector(norm, retrieveParam);
+    }
+
+    @Override
+    public float[] embedAndNormalize(String query, String embeddingModel) {
+        List<Float> emb = StringUtils.hasText(embeddingModel)
+                ? embeddingService.embed(query, embeddingModel)
+                : embeddingService.embed(query);
+        return normalize(toArray(emb));
     }
 
     @Override

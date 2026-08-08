@@ -28,20 +28,26 @@ import com.nageoffer.ai.ragent.rag.core.retrieve.channel.AbstractParallelRetriev
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
  * 意图并行检索器
- * 继承模板类，实现意图特定的检索逻辑
+ * <p>
+ * 按知识库 embedding 模型分组后复用 Query Embedding
  */
 @Slf4j
 public class IntentParallelRetriever extends AbstractParallelRetriever<IntentParallelRetriever.IntentTask> {
 
     private final RetrieverService retrieverService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final Executor executor;
 
-    public record IntentTask(NodeScore nodeScore, int intentTopK) {
+    public record IntentTask(NodeScore nodeScore, int intentTopK, String embeddingModel) {
     }
 
     public IntentParallelRetriever(RetrieverService retrieverService,
@@ -50,6 +56,7 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
         super(executor);
         this.retrieverService = retrieverService;
         this.knowledgeBaseMapper = knowledgeBaseMapper;
+        this.executor = executor;
     }
 
     /**
@@ -60,24 +67,84 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
                                                          int fallbackTopK,
                                                          int topKMultiplier) {
         List<IntentTask> intentTasks = targets.stream()
-                .map(nodeScore -> new IntentTask(
-                        nodeScore,
-                        resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier)
-                ))
+                .map(nodeScore -> {
+                    IntentNode node = nodeScore.getNode();
+                    return new IntentTask(
+                            nodeScore,
+                            resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier),
+                            resolveKbEmbeddingModel(node == null ? null : node.getKbId())
+                    );
+                })
                 .toList();
-        return super.executeParallelRetrieval(question, intentTasks, fallbackTopK);
+        return executeParallelRetrieval(question, intentTasks, fallbackTopK);
     }
 
     @Override
-    protected List<RetrievedChunk> createRetrievalTask(String question, IntentTask task, int ignoredTopK) {
+    public List<RetrievedChunk> executeParallelRetrieval(String question,
+                                                         List<IntentTask> targets,
+                                                         int topK) {
+        if (targets == null || targets.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<IntentTask>> byModel = new LinkedHashMap<>();
+        for (IntentTask task : targets) {
+            String modelKey = StringUtils.hasText(task.embeddingModel())
+                    ? task.embeddingModel().trim()
+                    : "";
+            byModel.computeIfAbsent(modelKey, ignored -> new ArrayList<>()).add(task);
+        }
+
+        List<RetrievedChunk> allChunks = new ArrayList<>();
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (Map.Entry<String, List<IntentTask>> entry : byModel.entrySet()) {
+            String modelKey = entry.getKey();
+            float[] queryVector = retrieverService.embedAndNormalize(
+                    question,
+                    StringUtils.hasText(modelKey) ? modelKey : null
+            );
+
+            List<CompletableFuture<List<RetrievedChunk>>> futures = entry.getValue().stream()
+                    .map(task -> CompletableFuture.supplyAsync(
+                            () -> retrieveWithVector(question, task, queryVector),
+                            executor
+                    ))
+                    .toList();
+
+            for (int i = 0; i < futures.size(); i++) {
+                IntentTask task = entry.getValue().get(i);
+                try {
+                    allChunks.addAll(futures.get(i).join());
+                    successCount++;
+                } catch (Exception e) {
+                    failureCount++;
+                    log.error("意图检索 获取检索结果失败 - 目标: {}", getTargetIdentifier(task), e);
+                }
+            }
+        }
+
+        allChunks.sort((a, b) -> Float.compare(
+                b.getScore() == null ? Float.NEGATIVE_INFINITY : b.getScore(),
+                a.getScore() == null ? Float.NEGATIVE_INFINITY : a.getScore()
+        ));
+
+        log.info("意图检索 检索统计 - 总目标数: {}, 成功: {}, 失败: {}, 检索到 Chunk 总数: {}",
+                targets.size(), successCount, failureCount, allChunks.size());
+        return allChunks;
+    }
+
+    private List<RetrievedChunk> retrieveWithVector(String question, IntentTask task, float[] queryVector) {
         NodeScore nodeScore = task.nodeScore();
         IntentNode node = nodeScore.getNode();
         try {
             String collection = node.getCollectionName() == null ? null : node.getCollectionName().trim();
-            return retrieverService.retrieve(
+            return retrieverService.retrieveByVector(
+                    queryVector,
                     RetrieveRequest.builder()
                             .collectionName(collection)
-                            .embeddingModel(resolveKbEmbeddingModel(node.getKbId()))
+                            .embeddingModel(task.embeddingModel())
                             .query(question)
                             .topK(Math.max(1, task.intentTopK()))
                             .build()
@@ -87,6 +154,15 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
                     node.getId(), node.getName(), node.getCollectionName(), e.getMessage(), e);
             return List.of();
         }
+    }
+
+    @Override
+    protected List<RetrievedChunk> createRetrievalTask(String question, IntentTask task, int ignoredTopK) {
+        return retrieveWithVector(
+                question,
+                task,
+                retrieverService.embedAndNormalize(question, task.embeddingModel())
+        );
     }
 
     @Override
@@ -101,9 +177,6 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
         return "意图检索";
     }
 
-    /**
-     * 计算单个意图节点检索 TopK
-     */
     private int resolveIntentTopK(NodeScore nodeScore, int fallbackTopK, int topKMultiplier) {
         int baseTopK = fallbackTopK;
         if (nodeScore != null && nodeScore.getNode() != null) {

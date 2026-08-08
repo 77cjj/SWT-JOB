@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.rag.core.intent;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nageoffer.ai.ragent.rag.enums.IntentKind;
 import com.nageoffer.ai.ragent.rag.enums.IntentLevel;
 import lombok.Builder;
@@ -129,6 +130,7 @@ public class IntentNode {
      * - 叶子节点才挂知识库（Milvus Collection）
      * - 叶子节点才会参与意图匹配打分
      */
+    @JsonIgnore
     public boolean isLeaf() {
         return children == null || children.isEmpty();
     }
@@ -136,6 +138,7 @@ public class IntentNode {
     /**
      * 是否为 KB 类型节点
      */
+    @JsonIgnore
     public boolean isKB() {
         return kind == null || kind == IntentKind.KB;
     }
@@ -143,6 +146,7 @@ public class IntentNode {
     /**
      * 是否为 MCP 类型节点
      */
+    @JsonIgnore
     public boolean isMCP() {
         return kind == IntentKind.MCP;
     }
@@ -150,6 +154,7 @@ public class IntentNode {
     /**
      * 是否为 SYSTEM 类型节点
      */
+    @JsonIgnore
     public boolean isSystem() {
         return kind == IntentKind.SYSTEM;
     }

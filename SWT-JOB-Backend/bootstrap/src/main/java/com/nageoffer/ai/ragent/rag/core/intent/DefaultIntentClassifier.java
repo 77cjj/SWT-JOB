@@ -26,6 +26,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nageoffer.ai.ragent.infra.util.LLMResponseCleaner;
+import com.nageoffer.ai.ragent.infra.util.LogSafe;
 import com.nageoffer.ai.ragent.rag.dao.entity.IntentNodeDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.IntentNodeMapper;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
@@ -137,6 +138,10 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
     public List<NodeScore> classifyTargets(String question) {
         // 每次都从Redis读取最新数据
         IntentTreeData data = loadIntentTreeData();
+        if (data.leafNodes.isEmpty()) {
+            log.debug("意图树没有可用叶子节点，跳过 LLM 意图识别");
+            return List.of();
+        }
 
         String systemPrompt = buildPrompt(data.leafNodes);
         ChatRequest request = ChatRequest.builder()
@@ -149,7 +154,13 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
                 .thinking(false)
                 .build();
 
-        String raw = llmService.chat(request);
+        String raw;
+        try {
+            raw = llmService.chat(request);
+        } catch (Exception e) {
+            log.warn("意图识别 LLM 调用失败，返回空意图", e);
+            return List.of();
+        }
 
         try {
             // 移除可能的 markdown 代码块标记
@@ -164,7 +175,7 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
                 // 容错：如果模型外面又包了一层 { "results": [...] }
                 arr = root.getAsJsonObject().getAsJsonArray("results");
             } else {
-                log.warn("LLM 返回了非预期的 JSON 格式, 原始响应: {}", raw);
+                log.warn("LLM 返回了非预期的 JSON 格式, 原始响应: {}", LogSafe.preview(raw));
                 return List.of();
             }
 
@@ -201,7 +212,7 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
             );
             return scores;
         } catch (Exception e) {
-            log.warn("解析 LLM 响应失败, 原始内容: {}", raw, e);
+            log.warn("解析 LLM 响应失败, 原始内容: {}", LogSafe.preview(raw), e);
             return List.of();
         }
     }
@@ -261,10 +272,11 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
     }
 
     private List<IntentNode> loadIntentTreeFromDB() {
-        // 1. 查出所有未删除节点（扁平结构）
+        // 1. 查出所有未删除且已启用的节点（扁平结构）
         List<IntentNodeDO> intentNodeDOList = intentNodeMapper.selectList(
                 Wrappers.lambdaQuery(IntentNodeDO.class)
                         .eq(IntentNodeDO::getDeleted, 0)
+                        .eq(IntentNodeDO::getEnabled, 1)
         );
 
         if (intentNodeDOList.isEmpty()) {

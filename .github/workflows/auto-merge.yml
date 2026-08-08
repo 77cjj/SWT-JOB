@@ -74,7 +74,7 @@ jobs:
 
   automerge:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Resolve PR number
         id: pr
@@ -143,22 +143,28 @@ jobs:
               return;
             }
 
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner, repo, pull_number: prNumber, per_page: 100,
+            // 用「当前 head commit 改动的文件」判断是否还要等 CI 启动，
+            // 避免 PR 累计改过 backend workflow、但本 commit 只改 docs 时死等。
+            const { data: headCommit } = await github.rest.repos.getCommit({
+              owner, repo, ref: pr.head.sha,
             });
-            const needsFe = files.some(f =>
-              f.filename.startsWith('SWT-JOB-Frontend/') ||
-              f.filename === 'scripts/check-frontend.sh' ||
-              f.filename === '.github/workflows/frontend-build.yml'
+            const headFiles = (headCommit.files || []).map(f => f.filename);
+            const commitTouchesFe = headFiles.some(f =>
+              f.startsWith('SWT-JOB-Frontend/') ||
+              f === 'scripts/check-frontend.sh' ||
+              f === '.github/workflows/frontend-build.yml'
             );
-            const needsBe = files.some(f =>
-              f.filename.startsWith('SWT-JOB-Backend/') ||
-              f.filename === '.github/workflows/backend-compile.yml'
+            const commitTouchesBe = headFiles.some(f =>
+              f.startsWith('SWT-JOB-Backend/') ||
+              f === '.github/workflows/backend-compile.yml'
             );
+            console.log(`head commit touchesFe=${commitTouchesFe} touchesBe=${commitTouchesBe} files=${headFiles.join(',')}`);
 
             // 轮询门禁：workflow_run 仅在默认分支上的 workflow 才会触发，
             // 所以同一次 job 内等待 CI，避免「先跑完 automerge、后跑完 compile」永远合不进去。
             const deadline = Date.now() + 12 * 60 * 1000;
+            // 本 commit 会触发 FE/BE CI 时多等一会儿让 check 出现；否则 45s 无门禁即可合
+            const appearDeadline = Date.now() + ((commitTouchesFe || commitTouchesBe) ? 3 * 60 * 1000 : 45 * 1000);
             let ready = false;
             while (Date.now() < deadline) {
               const { data: fresh } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
@@ -170,7 +176,6 @@ jobs:
                 console.log('PR has conflicts — skip');
                 return;
               }
-              // mergeable 可能暂时为 null（GitHub 还在算）
               if (fresh.mergeable === null) {
                 console.log('mergeable unknown, waiting...');
                 await sleep(10000);
@@ -184,7 +189,6 @@ jobs:
                 per_page: 100,
               });
               const gateRuns = (checks.data.check_runs || []).filter(c => gateNames.has(c.name));
-              // 每个门禁名只看最新一次 run
               const latestByName = new Map();
               for (const c of gateRuns) {
                 const prev = latestByName.get(c.name);
@@ -194,16 +198,20 @@ jobs:
               }
               const latest = [...latestByName.values()];
 
-              const missing = [];
-              if (needsFe && !latestByName.has('build')) missing.push('build');
-              if (needsBe && !latestByName.has('compile')) missing.push('compile');
+              if (latest.length === 0) {
+                if (Date.now() < appearDeadline) {
+                  console.log('No build/compile checks on SHA yet — waiting for CI to start');
+                  await sleep(10000);
+                  continue;
+                }
+                console.log('No gate checks appeared — OK to merge');
+                ready = true;
+                break;
+              }
 
               const pending = latest.filter(c => c.status !== 'completed');
-              if (missing.length || pending.length) {
-                console.log(
-                  `Waiting for gates. missing=${missing.join(',') || '-'} ` +
-                  `pending=${pending.map(c => c.name).join(',') || '-'}`
-                );
+              if (pending.length) {
+                console.log(`Waiting for gates: ${pending.map(c => c.name).join(',')}`);
                 await sleep(15000);
                 continue;
               }

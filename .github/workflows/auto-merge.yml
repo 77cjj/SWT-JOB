@@ -1,0 +1,216 @@
+name: Auto Merge
+
+# 机制：PR 带 automerge 标签，且全部 required checks 通过后，自动 squash 合入 master。
+# cursor/* 分支的 PR 会自动贴上 automerge（可手动去掉标签以阻止合入）。
+#
+# 干预：贴/撕标签 = 开/关自动合入；CI 失败 = 不会合入。
+# 跳过：draft PR、合入冲突、无权限。
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
+      - ready_for_review
+  check_suite:
+    types: [completed]
+  workflow_run:
+    workflows:
+      - Frontend Build Check
+      - Backend Compile Check
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  label-cursor-prs:
+    if: github.event_name == 'pull_request' && github.event.action == 'opened' && startsWith(github.head_ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add automerge label to cursor/* PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = ['automerge'];
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels,
+              });
+              console.log(`Labeled PR #${context.payload.pull_request.number} with automerge`);
+            } catch (e) {
+              // 标签可能尚不存在：先创建
+              if (e.status === 404 || (e.message && e.message.includes('Label does not exist'))) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'automerge',
+                  color: '0E8A16',
+                  description: 'CI 通过后自动 squash 合入 master',
+                }).catch(() => {});
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  labels,
+                });
+              } else {
+                throw e;
+              }
+            }
+
+  automerge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let prNumber = context.payload.pull_request?.number;
+            if (!prNumber && context.payload.workflow_run?.pull_requests?.length) {
+              prNumber = context.payload.workflow_run.pull_requests[0].number;
+            }
+            if (!prNumber && context.payload.check_suite?.pull_requests?.length) {
+              prNumber = context.payload.check_suite.pull_requests[0].number;
+            }
+            if (!prNumber) {
+              // workflow_run 有时不带 PR 列表：用 head SHA 反查
+              const sha = context.payload.workflow_run?.head_sha
+                || context.payload.check_suite?.head_sha;
+              if (sha) {
+                const { data } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open',
+                  per_page: 50,
+                });
+                const match = data.find(p => p.head.sha === sha);
+                prNumber = match?.number;
+              }
+            }
+            if (!prNumber) {
+              core.setOutput('skip', 'true');
+              console.log('No PR associated with this event');
+              return;
+            }
+            core.setOutput('number', String(prNumber));
+            core.setOutput('skip', 'false');
+
+      - name: Squash-merge if labeled and green
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = Number('${{ steps.pr.outputs.number }}');
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            if (pr.state !== 'open') {
+              console.log('PR not open');
+              return;
+            }
+            if (pr.draft) {
+              console.log('PR is draft — skip');
+              return;
+            }
+            if (pr.base.ref !== 'master') {
+              console.log(`Base is ${pr.base.ref}, only auto-merge to master`);
+              return;
+            }
+
+            const hasLabel = (pr.labels || []).some(l => l.name === 'automerge');
+            if (!hasLabel) {
+              console.log('Missing automerge label — skip');
+              return;
+            }
+
+            // 刷新可合并状态
+            const { data: fresh } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            if (fresh.mergeable === false) {
+              console.log('PR has conflicts — skip');
+              return;
+            }
+
+            // 门禁：Frontend Build Check 的 job 名是 build；Backend Compile Check 是 compile
+            const ref = fresh.head.sha;
+            const checks = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref,
+              per_page: 100,
+            });
+
+            const gateNames = new Set(['build', 'compile']);
+            const gateRuns = (checks.data.check_runs || []).filter(c => gateNames.has(c.name));
+
+            // 若尚无任何门禁 check（例如只改 docs），允许合入
+            if (gateRuns.length > 0) {
+              const pending = gateRuns.filter(c => c.status !== 'completed');
+              if (pending.length > 0) {
+                console.log(`Checks still running: ${pending.map(c => c.name).join(', ')}`);
+                return;
+              }
+              const failed = gateRuns.filter(c =>
+                c.conclusion !== 'success' && c.conclusion !== 'skipped' && c.conclusion !== 'neutral'
+              );
+              if (failed.length > 0) {
+                console.log(`Checks failed: ${failed.map(c => `${c.name}=${c.conclusion}`).join(', ')}`);
+                return;
+              }
+            } else {
+              console.log('No build/compile checks on this SHA yet — wait for CI');
+              // 有前端/后端路径变更时，应等待；用 files 判断
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                owner, repo, pull_number: prNumber, per_page: 100,
+              });
+              const needsFe = files.some(f => f.filename.startsWith('SWT-JOB-Frontend/'));
+              const needsBe = files.some(f => f.filename.startsWith('SWT-JOB-Backend/'));
+              if (needsFe || needsBe) {
+                console.log('PR touches FE/BE but no gate checks yet — skip this run');
+                return;
+              }
+            }
+
+            console.log(`Merging PR #${prNumber} (${fresh.title})`);
+            try {
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                commit_title: `${fresh.title} (#${prNumber})`,
+              });
+              console.log('Merged successfully');
+
+              // 尽量删分支
+              try {
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `heads/${fresh.head.ref}`,
+                });
+                console.log(`Deleted branch ${fresh.head.ref}`);
+              } catch (e) {
+                console.log(`Could not delete branch: ${e.message}`);
+              }
+            } catch (e) {
+              console.log(`Merge failed: ${e.message}`);
+              core.setFailed(e.message);
+            }

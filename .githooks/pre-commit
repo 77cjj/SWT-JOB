@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# 提交前门禁：快检查（密钥泄漏 + 前端 eslint 变更文件）
+# 跳过：SKIP_HOOKS=1 git commit ...
+set -euo pipefail
+
+if [[ "${SKIP_HOOKS:-}" == "1" ]]; then
+  echo "pre-commit: SKIP_HOOKS=1，跳过"
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# --- 1) 阻止常见密钥进库 ---
+secret_patterns=(
+  'BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY'
+  'AKIA[0-9A-Z]{16}'
+  'sk_live_[0-9a-zA-Z]{20,}'
+  'whsec_[0-9a-zA-Z]{20,}'
+  'xox[baprs]-[0-9a-zA-Z-]{10,}'
+)
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+if [[ -n "$staged" ]]; then
+  while IFS= read -r file; do
+    [[ -z "$file" || ! -f "$file" ]] && continue
+    case "$file" in
+      *.png|*.jpg|*.jpeg|*.gif|*.webp|*.ico|*.pdf|*.jar|*.class|*.woff|*.woff2|package-lock.json|*.lock)
+        continue
+        ;;
+      *.example|.env.example)
+        continue
+        ;;
+    esac
+    for pat in "${secret_patterns[@]}"; do
+      # 文档里常示例 -----BEGIN … PRIVATE KEY-----，对 *.md 跳过该模式
+      if [[ "$file" == *.md ]] && [[ "$pat" == *"PRIVATE KEY"* ]]; then
+        continue
+      fi
+      if git grep -I -n -E --cached -e "$pat" -- "$file" >/dev/null 2>&1; then
+        echo "pre-commit: 疑似密钥写入暂存区：$file（匹配 /$pat/）" >&2
+        echo "若为误报：SKIP_HOOKS=1 git commit ..." >&2
+        exit 1
+      fi
+    done
+  done <<< "$staged"
+fi
+
+# --- 2) 前端变更：对暂存的 ts/tsx/js/jsx 跑 eslint ---
+fe_files=()
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  if [[ "$file" == SWT-JOB-Frontend/* ]] && [[ "$file" =~ \.(ts|tsx|js|jsx)$ ]]; then
+    fe_files+=("${file#SWT-JOB-Frontend/}")
+  fi
+done <<< "$staged"
+
+if ((${#fe_files[@]} > 0)); then
+  if [[ ! -d SWT-JOB-Frontend/node_modules ]]; then
+    echo "pre-commit: SWT-JOB-Frontend/node_modules 不存在，跳过 eslint（请先 npm ci）"
+  elif [[ ! -x SWT-JOB-Frontend/node_modules/.bin/eslint ]]; then
+    echo "pre-commit: 未找到 eslint，跳过"
+  else
+    echo "pre-commit: eslint ${#fe_files[@]} 个前端文件"
+    (
+      cd SWT-JOB-Frontend
+      npx --no-install eslint --max-warnings=0 "${fe_files[@]}"
+    )
+  fi
+fi
+
+echo "pre-commit: ok"

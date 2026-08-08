@@ -7,7 +7,31 @@ SWT-JOB is organized as a monorepo with separate frontend and backend projects.
 - `SWT-JOB-Frontend/`: Next.js frontend deployed by Vercel.
 - `SWT-JOB-Backend/`: Spring Boot backend intended to run on ECS.
 - `scripts/`: Local development and deployment helper scripts.
+- `.githooks/`: Local git hooks（提交前 / 推送前检查）.
 - `middleware.dockerfile`: Local middleware image definition.
+
+## Git hooks（本地门禁）
+
+克隆后执行一次：
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+| Hook | 做什么 | 干预 → 结果 |
+|------|--------|-------------|
+| `pre-commit` | 扫描疑似密钥；对暂存前端文件跑 eslint | 拦下坏提交；`SKIP_HOOKS=1` 可跳过 |
+| `pre-push` | 前端变更 → `./scripts/check-frontend.sh`；后端变更 → `mvn compile` | 推送前拦住 Vercel/编译错误；`SKIP_FRONTEND_CHECK=1` 只跳过前端构建 |
+
+因果链：本地 hooks → 少把坏代码推上远程 → CI / Vercel 更少红灯。CI 仍是最终门禁（hooks 可被跳过）。
+
+## Auto-merge（少手动合 PR）
+
+机制：`cursor/*` 分支开出的 PR 会自动贴 `automerge` 标签；当 Frontend Build / Backend Compile 通过且无冲突时，Actions 会 **squash 合入 `master`** 并尝试删分支。
+
+- 想阻止某 PR 自动合入：去掉 `automerge` 标签（或保持 draft）。
+- 非 cursor 分支：手动加 `automerge` 标签即可走同一套流程。
+- 仓库 Settings 建议开启：**Allow auto-merge**、**Automatically delete head branches**（本 workflow 也会尝试删分支）。
 
 ## Deployment
 

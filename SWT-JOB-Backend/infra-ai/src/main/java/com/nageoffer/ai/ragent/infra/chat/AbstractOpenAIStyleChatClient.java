@@ -74,8 +74,11 @@ public abstract class AbstractOpenAIStyleChatClient implements ChatClient {
      * 默认实现：当请求开启 thinking 时添加 enable_thinking 字段
      */
     protected void customizeRequestBody(JsonObject body, ChatRequest request) {
+        // Qwen3 等模型默认可能开启 thinking，未显式关闭会导致每次都深度思考
         if (Boolean.TRUE.equals(request.getThinking())) {
             body.addProperty("enable_thinking", true);
+        } else {
+            body.addProperty("enable_thinking", false);
         }
     }
 
@@ -276,6 +279,10 @@ public abstract class AbstractOpenAIStyleChatClient implements ChatClient {
         if (message == null || !message.has("content") || message.get("content").isJsonNull()) {
             throw new ModelClientException(provider() + " 响应缺少 content", ModelClientErrorType.INVALID_RESPONSE, null);
         }
-        return message.get("content").getAsString();
+        String content = message.get("content").getAsString();
+        if (content.isBlank()) {
+            throw new ModelClientException(provider() + " 响应 content 为空白", ModelClientErrorType.INVALID_RESPONSE, null);
+        }
+        return content;
     }
 }

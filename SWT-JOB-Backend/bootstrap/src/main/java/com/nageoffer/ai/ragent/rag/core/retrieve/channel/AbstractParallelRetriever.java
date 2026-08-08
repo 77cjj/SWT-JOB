@@ -32,7 +32,8 @@ import java.util.concurrent.Executor;
  * 1. 创建 Future 列表
  * 2. 并行提交到线程池
  * 3. 收集结果并统计成功/失败数
- * 4. 打印统计日志
+ * 4. 跨目标按得分归并排序
+ * 5. 打印统计日志
  * <p>
  * 子类只需实现：
  * - createRetrievalTask: 创建单个检索任务
@@ -58,7 +59,7 @@ public abstract class AbstractParallelRetriever<T> {
      * @param topK     每个目标的 TopK
      * @return 合并后的检索结果
      */
-    public final List<RetrievedChunk> executeParallelRetrieval(String question,
+    public List<RetrievedChunk> executeParallelRetrieval(String question,
                                                                List<T> targets,
                                                                int topK) {
         // 1. 创建 Future 列表
@@ -91,11 +92,18 @@ public abstract class AbstractParallelRetriever<T> {
             }
         }
 
-        // 3. 打印统计日志
+        // 3. 跨目标按相关性得分归并排序，避免拼接顺序影响下游 RRF / 截断
+        allChunks.sort((a, b) -> Float.compare(scoreOf(b), scoreOf(a)));
+
+        // 4. 打印统计日志
         log.info("{} 检索统计 - 总目标数: {}, 成功: {}, 失败: {}, 检索到 Chunk 总数: {}",
                 getStatisticsName(), targets.size(), successCount, failureCount, allChunks.size());
 
         return allChunks;
+    }
+
+    private static float scoreOf(RetrievedChunk chunk) {
+        return chunk.getScore() == null ? Float.NEGATIVE_INFINITY : chunk.getScore();
     }
 
     /**

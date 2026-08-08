@@ -101,6 +101,8 @@ public class IngestionTaskServiceImpl implements IngestionTaskService {
                     .fileName(fileName)
                     .build();
             return executeInternal(pipelineId, source, bytes, mimeType, null);
+        } catch (ClientException e) {
+            throw e;
         } catch (Exception e) {
             throw new ClientException("读取上传文件失败: " + e.getMessage());
         }

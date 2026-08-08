@@ -44,11 +44,16 @@ public class PgRetrieverService implements RetrieverService {
 
     @Override
     public List<RetrievedChunk> retrieve(RetrieveRequest request) {
-        List<Float> embedding = StringUtils.hasText(request.getEmbeddingModel())
-                ? embeddingService.embed(request.getQuery(), request.getEmbeddingModel())
-                : embeddingService.embed(request.getQuery());
-        float[] vector = normalize(toArray(embedding));
+        float[] vector = embedAndNormalize(request.getQuery(), request.getEmbeddingModel());
         return retrieveByVector(vector, request);
+    }
+
+    @Override
+    public float[] embedAndNormalize(String query, String embeddingModel) {
+        List<Float> embedding = StringUtils.hasText(embeddingModel)
+                ? embeddingService.embed(query, embeddingModel)
+                : embeddingService.embed(query);
+        return normalize(toArray(embedding));
     }
 
     @Override

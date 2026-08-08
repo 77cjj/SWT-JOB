@@ -111,7 +111,8 @@ public class RoutingLLMService implements LLMService {
             if (client == null) {
                 continue;
             }
-            if (!healthStore.allowCall(target.id())) {
+            ModelHealthStore.CallPermit permit = healthStore.allowCall(target.id());
+            if (permit == null) {
                 continue;
             }
 
@@ -135,7 +136,7 @@ public class RoutingLLMService implements LLMService {
                 continue;
             }
 
-            ProbeStreamBridge.ProbeResult result = awaitFirstPacket(bridge, handle, callback);
+            ProbeStreamBridge.ProbeResult result = awaitFirstPacket(bridge, handle, callback, permit);
 
             if (result.isSuccess()) {
                 healthStore.markSuccess(target.id());
@@ -164,12 +165,18 @@ public class RoutingLLMService implements LLMService {
 
     private ProbeStreamBridge.ProbeResult awaitFirstPacket(ProbeStreamBridge bridge,
                                                            StreamCancellationHandle handle,
-                                                           StreamCallback callback) {
+                                                           StreamCallback callback,
+                                                           ModelHealthStore.CallPermit permit) {
         try {
             return bridge.awaitFirstPacket(FIRST_PACKET_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            handle.cancel();
+            try {
+                handle.cancel();
+            } finally {
+                // 首包等待被中断时不会走成功/失败回调，需由持有者释放半开探测名额
+                healthStore.releaseHalfOpenPermit(permit);
+            }
             RemoteException interruptedException = new RemoteException(STREAM_INTERRUPTED_MESSAGE, e, BaseErrorCode.REMOTE_ERROR);
             callback.onError(interruptedException);
             throw interruptedException;

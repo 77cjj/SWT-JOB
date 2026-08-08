@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# 推送前门禁：前端有改动时跑与 Vercel 等价的生产构建（含 TypeScript）
+# 跳过：SKIP_HOOKS=1 git push ...  或  SKIP_FRONTEND_CHECK=1 git push ...
+set -euo pipefail
+
+if [[ "${SKIP_HOOKS:-}" == "1" ]]; then
+  echo "pre-push: SKIP_HOOKS=1，跳过"
+  exit 0
+fi
+
+if [[ "${SKIP_FRONTEND_CHECK:-}" == "1" ]]; then
+  echo "pre-push: SKIP_FRONTEND_CHECK=1，跳过前端构建"
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# 远程 refs 来自 stdin：local_ref local_sha remote_ref remote_sha
+frontend_changed=0
+backend_changed=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_sha:-}" ]] && continue
+  # 删除分支
+  if [[ "$local_sha" =~ ^0+$ ]]; then
+    continue
+  fi
+
+  if [[ "$remote_sha" =~ ^0+$ ]]; then
+    # 新分支：与 master 比
+    base="$(git merge-base "$local_sha" origin/master 2>/dev/null || git merge-base "$local_sha" master 2>/dev/null || true)"
+    if [[ -z "$base" ]]; then
+      range="$local_sha"
+    else
+      range="$base..$local_sha"
+    fi
+  else
+    range="$remote_sha..$local_sha"
+  fi
+
+  changed="$(git diff --name-only "$range" 2>/dev/null || true)"
+  if echo "$changed" | grep -q '^SWT-JOB-Frontend/'; then
+    frontend_changed=1
+  fi
+  if echo "$changed" | grep -q '^SWT-JOB-Backend/'; then
+    backend_changed=1
+  fi
+done
+
+if [[ "$frontend_changed" == "1" ]]; then
+  echo "pre-push: 检测到前端变更，运行 ./scripts/check-frontend.sh"
+  ./scripts/check-frontend.sh
+fi
+
+if [[ "$backend_changed" == "1" ]]; then
+  if [[ -x SWT-JOB-Backend/mvnw ]]; then
+    echo "pre-push: 检测到后端变更，运行 mvn -q -DskipTests compile"
+    (
+      cd SWT-JOB-Backend
+      ./mvnw -q -DskipTests compile
+    )
+  else
+    echo "pre-push: 未找到 mvnw，跳过后端编译"
+  fi
+fi
+
+if [[ "$frontend_changed" == "0" && "$backend_changed" == "0" ]]; then
+  echo "pre-push: 无前后端业务代码变更，跳过构建"
+fi
+
+echo "pre-push: ok"

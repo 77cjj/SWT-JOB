@@ -1,0 +1,41 @@
+name: Backend Compile Check
+
+on:
+  pull_request:
+    paths:
+      - "SWT-JOB-Backend/**"
+      - ".github/workflows/backend-compile.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "SWT-JOB-Backend/**"
+      - ".github/workflows/backend-compile.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: SWT-JOB-Backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: SWT-JOB-Backend/pom.xml
+
+      - name: Compile
+        run: ./mvnw -B -DskipTests compile

@@ -30,12 +30,19 @@ permissions:
   statuses: read
 
 concurrency:
+  # 不要 cancel-in-progress：opened 贴标签的 run 会被紧随其后的 ready_for_review 取消，导致永远没标签
   group: auto-merge-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   label-cursor-prs:
-    if: github.event_name == 'pull_request' && github.event.action == 'opened' && startsWith(github.head_ref, 'cursor/')
+    if: >
+      github.event_name == 'pull_request' &&
+      startsWith(github.head_ref, 'cursor/') &&
+      (github.event.action == 'opened' ||
+       github.event.action == 'reopened' ||
+       github.event.action == 'ready_for_review' ||
+       github.event.action == 'synchronize')
     runs-on: ubuntu-latest
     steps:
       - name: Add automerge label to cursor/* PRs
@@ -43,16 +50,30 @@ jobs:
         with:
           script: |
             const labels = ['automerge'];
+            const issue_number = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: issue_number,
+            });
+            const names = (pr.labels || []).map(l => l.name);
+            if (names.includes('no-automerge')) {
+              console.log('no-automerge present — not labeling');
+              return;
+            }
+            if (names.includes('automerge')) {
+              console.log('automerge label already present');
+              return;
+            }
             try {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
+                issue_number,
                 labels,
               });
-              console.log(`Labeled PR #${context.payload.pull_request.number} with automerge`);
+              console.log(`Labeled PR #${issue_number} with automerge`);
             } catch (e) {
-              // 标签可能尚不存在：先创建
               if (e.status === 404 || (e.message && e.message.includes('Label does not exist'))) {
                 await github.rest.issues.createLabel({
                   owner: context.repo.owner,
@@ -64,7 +85,7 @@ jobs:
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: context.payload.pull_request.number,
+                  issue_number,
                   labels,
                 });
               } else {
@@ -73,6 +94,8 @@ jobs:
             }
 
   automerge:
+    needs: [label-cursor-prs]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -143,28 +166,26 @@ jobs:
               return;
             }
 
-            // 用「当前 head commit 改动的文件」判断是否还要等 CI 启动，
-            // 避免 PR 累计改过 backend workflow、但本 commit 只改 docs 时死等。
-            const { data: headCommit } = await github.rest.repos.getCommit({
-              owner, repo, ref: pr.head.sha,
+            // GitHub Actions 的 paths 过滤器对 pull_request 是「相对 base 的整个 PR diff」，
+            // 不是最新一个 commit。这里必须用同样的范围，否则会在 compile 还在跑时提前合入。
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: prNumber, per_page: 100,
             });
-            const headFiles = (headCommit.files || []).map(f => f.filename);
-            const commitTouchesFe = headFiles.some(f =>
-              f.startsWith('SWT-JOB-Frontend/') ||
-              f === 'scripts/check-frontend.sh' ||
-              f === '.github/workflows/frontend-build.yml'
+            const prTouchesFe = files.some(f =>
+              f.filename.startsWith('SWT-JOB-Frontend/') ||
+              f.filename === 'scripts/check-frontend.sh' ||
+              f.filename === '.github/workflows/frontend-build.yml'
             );
-            const commitTouchesBe = headFiles.some(f =>
-              f.startsWith('SWT-JOB-Backend/') ||
-              f === '.github/workflows/backend-compile.yml'
+            const prTouchesBe = files.some(f =>
+              f.filename.startsWith('SWT-JOB-Backend/') ||
+              f.filename === '.github/workflows/backend-compile.yml'
             );
-            console.log(`head commit touchesFe=${commitTouchesFe} touchesBe=${commitTouchesBe} files=${headFiles.join(',')}`);
+            console.log(`PR touchesFe=${prTouchesFe} touchesBe=${prTouchesBe}`);
 
             // 轮询门禁：workflow_run 仅在默认分支上的 workflow 才会触发，
             // 所以同一次 job 内等待 CI，避免「先跑完 automerge、后跑完 compile」永远合不进去。
             const deadline = Date.now() + 12 * 60 * 1000;
-            // 本 commit 会触发 FE/BE CI 时多等一会儿让 check 出现；否则 45s 无门禁即可合
-            const appearDeadline = Date.now() + ((commitTouchesFe || commitTouchesBe) ? 3 * 60 * 1000 : 45 * 1000);
+            const appearDeadline = Date.now() + ((prTouchesFe || prTouchesBe) ? 3 * 60 * 1000 : 45 * 1000);
             let ready = false;
             while (Date.now() < deadline) {
               const { data: fresh } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
@@ -198,13 +219,22 @@ jobs:
               }
               const latest = [...latestByName.values()];
 
-              if (latest.length === 0) {
+              const missing = [];
+              if (prTouchesFe && !latestByName.has('build')) missing.push('build');
+              if (prTouchesBe && !latestByName.has('compile')) missing.push('compile');
+
+              if (missing.length) {
                 if (Date.now() < appearDeadline) {
-                  console.log('No build/compile checks on SHA yet — waiting for CI to start');
+                  console.log(`Waiting for gates to appear: ${missing.join(',')}`);
                   await sleep(10000);
                   continue;
                 }
-                console.log('No gate checks appeared — OK to merge');
+                core.setFailed(`Timed out waiting for CI to start: ${missing.join(',')}`);
+                return;
+              }
+
+              if (latest.length === 0) {
+                console.log('No gate checks required — OK to merge');
                 ready = true;
                 break;
               }

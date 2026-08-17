@@ -167,15 +167,15 @@ cmd_doctor() {
   "$WB" version || true
   if [[ -f "$HOME/.workbench/config.json" ]]; then
     ok "凭证文件存在: ~/.workbench/config.json"
-    local mode
-    mode="$(python3 -c 'import json,os,sys
+    local cred_mode
+    cred_mode="$(python3 -c 'import json,os
 p=os.path.expanduser("~/.workbench/config.json")
 d=json.load(open(p))
 cur=d.get("current","default")
 prof=(d.get("profiles") or {}).get(cur) or d
-print(prof.get("mode","unknown"))
-' 2>/dev/null || echo unknown)"
-    info "当前凭证模式: $mode（不会打印密钥）"
+print(prof.get("mode") or "unknown")
+' 2>/dev/null || true)"
+    info "当前凭证模式: ${cred_mode:-unknown} / 不会打印密钥"
   else
     warn "未找到 ~/.workbench/config.json，请在本机执行: workbench config"
   fi
@@ -225,7 +225,7 @@ cmd_upload() {
   while IFS= read -r a; do
     [[ -n "$a" ]] && extra+=("$a")
   done < <(wb_args)
-  "$WB" upload "$src" "$dest" -i "$INSTANCE_ID" "${extra[@]}"
+  "$WB" upload "$src" "$dest" -i "$INSTANCE_ID" -f "${extra[@]}"
 }
 
 cmd_download() {

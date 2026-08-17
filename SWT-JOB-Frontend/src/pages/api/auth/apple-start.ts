@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import crypto from "crypto";
 
+import { ENABLE_OAUTH_LOGIN } from "@/config/runtimeEnv";
+
 function siteOrigin(req: NextApiRequest): string {
   const proto = (req.headers["x-forwarded-proto"] as string) || "https";
   const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
@@ -11,6 +13,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({ ok: false, message: "Method not allowed" });
+  }
+
+  if (!ENABLE_OAUTH_LOGIN) {
+    return res.status(503).json({ ok: false, message: "第三方登录已暂时关闭，请使用账号密码登录" });
   }
 
   const clientId = (process.env.APPLE_CLIENT_ID || process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || "").trim();

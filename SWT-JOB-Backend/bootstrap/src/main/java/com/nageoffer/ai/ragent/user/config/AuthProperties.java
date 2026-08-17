@@ -33,4 +33,7 @@ public class AuthProperties {
 
     /** 新注册用户（Google 等）赠送的 AI 问答次数；admin 不受限 */
     private int newUserFreeChatQuota = 3;
+
+    /** 第三方登录总开关（Google / Apple / 微信） */
+    private boolean oauthEnabled = true;
 }

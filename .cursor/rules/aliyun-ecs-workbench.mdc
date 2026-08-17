@@ -1,0 +1,11 @@
+---
+description: 本机 Cursor 通过 Workbench CLI 操作阿里云 ECS，不要用交互 SSH/connect
+alwaysApply: true
+---
+
+后端跑在阿里云 Linux ECS，前端在 Vercel。本机要看线上后端、日志或健康检查时：
+
+- 先读并遵循 `.cursor/skills/aliyun-workbench-cli/SKILL.md`
+- 调用 `./scripts/ecs.sh`（`exec` / `status` / `health` / `logs`），不要 `workbench connect` 或交互 SSH
+- 凭证只在本机 `~/.workbench/config.json`；实例 ID 在 gitignored 的 `.env.ecs`
+- Cursor Cloud Agent 默认没有这台 Mac 上的 Workbench 凭证，不能直接当已连上 ECS

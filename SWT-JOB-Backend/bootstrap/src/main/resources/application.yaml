@@ -270,6 +270,7 @@ app:
     dev-bypass-username: ${DEV_ADMIN_USERNAME:Admin}
     dev-bypass-password: ${DEV_ADMIN_PASSWORD:}
     new-user-free-chat-quota: ${NEW_USER_FREE_CHAT_QUOTA:3}
+    oauth-enabled: ${ENABLE_OAUTH_LOGIN:true}
   site-inquiry:
     wework-webhook-url: ${SITE_INQUIRY_WEWORK_WEBHOOK:}
     webhook-secret: ${SITE_INQUIRY_WEBHOOK_SECRET:}

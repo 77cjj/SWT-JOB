@@ -180,6 +180,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginVO loginWithGoogle(String idToken) {
+        requireOauthEnabled();
         VerifiedGoogleUser googleUser = googleOAuthService.verifyIdToken(idToken);
         UserDO user = findOrCreateOAuthUser(
                 googleUser.email(),
@@ -190,6 +191,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginVO loginWithApple(String idToken) {
+        requireOauthEnabled();
         VerifiedAppleUser appleUser = appleOAuthService.verifyIdToken(idToken);
         String username = StrUtil.isNotBlank(appleUser.email())
                 ? appleUser.email()
@@ -200,6 +202,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginVO loginWithWeChat(String code) {
+        requireOauthEnabled();
         VerifiedWeChatUser wx = weChatOAuthService.exchangeCode(code);
         String username = StrUtil.isNotBlank(wx.unionId())
                 ? "wechat:" + wx.unionId()
@@ -212,6 +215,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout() {
         StpUtil.logout();
+    }
+
+    private void requireOauthEnabled() {
+        if (!authProperties.isOauthEnabled()) {
+            throw new ClientException("第三方登录已暂时关闭，请使用账号密码登录");
+        }
     }
 
     private UserDO findOrCreateOAuthUser(String username, String avatar, String displayHint) {

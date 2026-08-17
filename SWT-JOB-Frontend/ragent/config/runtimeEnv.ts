@@ -29,14 +29,10 @@ export const WECHAT_APP_ID = (process.env.NEXT_PUBLIC_WECHAT_APP_ID || "").trim(
 
 /**
  * 第三方登录（Google / Apple / 微信）总开关。
- * - 显式 true / false 时按配置
- * - 未配置时：只要配了任一 Client ID 就默认开启（避免 Vercel 漏配开关导致 Google 按钮消失）
+ * 显式 true 才开启。暂时关闭：不设或设为 false。
  */
 const oauthLoginFlag = (process.env.NEXT_PUBLIC_ENABLE_OAUTH_LOGIN || "").trim().toLowerCase();
-export const ENABLE_OAUTH_LOGIN =
-  oauthLoginFlag === "true" ||
-  (oauthLoginFlag !== "false" &&
-    Boolean(GOOGLE_CLIENT_ID || APPLE_CLIENT_ID || WECHAT_APP_ID));
+export const ENABLE_OAUTH_LOGIN = oauthLoginFlag === "true";
 
 const rawBypassAuth = process.env.NEXT_PUBLIC_RAGENT_BYPASS_AUTH === "true";
 export const RAGENT_BYPASS_AUTH = rawBypassAuth && !isProduction;

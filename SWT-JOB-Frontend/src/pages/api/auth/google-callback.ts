@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { ENABLE_OAUTH_LOGIN } from "@/config/runtimeEnv";
 import { exchangeGoogleIdToken, extractGoogleCredential } from "../../../lib/auth/googleAuthProxy";
 
 function escapeHtml(text: string): string {
@@ -15,6 +16,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).send("Method Not Allowed");
+  }
+
+  if (!ENABLE_OAUTH_LOGIN) {
+    return res.status(503).send("第三方登录已暂时关闭，请使用账号密码登录");
   }
 
   const credential = extractGoogleCredential(req.body);

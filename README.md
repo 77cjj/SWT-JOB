@@ -6,7 +6,7 @@ SWT-JOB is organized as a monorepo with separate frontend and backend projects.
 
 - `SWT-JOB-Frontend/`: Next.js frontend deployed by Vercel.
 - `SWT-JOB-Backend/`: Spring Boot backend intended to run on ECS.
-- `scripts/`: Local development and deployment helper scripts.
+- `scripts/`: Local development and deployment helper scripts（含本机 `ecs.sh`：Workbench CLI 包装）。
 - `.githooks/`: Local git hooks（提交前 / 推送前检查）.
 - `middleware.dockerfile`: Local middleware image definition.
 
@@ -32,6 +32,25 @@ SWT-JOB is organized as a monorepo with separate frontend and backend projects.
 - 想阻止某 PR 自动合入：加 `no-automerge` 标签，或保持 draft（去掉 `automerge` 在 cursor 分支上可能被下次 push 重新贴上）。
 - 非 cursor 分支：手动加 `automerge` 标签即可走同一套流程。
 - 仓库 Settings 建议开启：**Allow auto-merge**、**Automatically delete head branches**（本 workflow 也会尝试删分支）。
+
+## Local AI × Workbench CLI（本机 Cursor）
+
+后端在阿里云 Linux ECS 上。本机装了 [Workbench CLI](https://help.aliyun.com/zh/ecs/user-guide/connect-to-an-instance-through-workbench-cli/) 之后，Cursor Agent 用结构化 `exec`/`upload`/`download` 管实例，**不必**给实例开公网 SSH，也**不要**用交互式 `workbench connect`（会卡住 Agent）。
+
+一次性：
+
+```bash
+# 已在 Mac 上安装 workbench 并执行过 workbench config 的可跳过安装
+cp .env.ecs.example .env.ecs   # 填 SWT_ECS_INSTANCE_ID，文件已 gitignore
+./scripts/ecs.sh doctor
+./scripts/ecs.sh status
+./scripts/ecs.sh health
+./scripts/ecs.sh logs 80
+```
+
+约定见 `AGENTS.md` 与 `.cursor/skills/aliyun-workbench-cli/SKILL.md`。正式发版仍走下面的 GitHub Actions；Workbench 用于本机排障与健康检查。
+
+凭证只存在本机 `~/.workbench/config.json`（0600）。请用 RAM 最小权限，不要用主账号 AccessKey。
 
 ## Deployment
 

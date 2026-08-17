@@ -38,6 +38,13 @@ public class SearchChannelProperties {
     public static class Channels {
 
         /**
+         * 单通道超时上限（毫秒）
+         * <p>
+         * 超时通道按空结果降级，其余通道照常融合；{@code <= 0} 表示不限时
+         */
+        private long timeoutMs = 15000;
+
+        /**
          * 向量全局检索配置
          */
         private VectorGlobal vectorGlobal = new VectorGlobal();

@@ -97,5 +97,16 @@ public interface RetrieverService {
      * @return RetrievedChunk 列表（按相似度排序）
      */
     List<RetrievedChunk> retrieveByVector(float[] vector, RetrieveRequest retrieveParam);
+
+    /**
+     * 根据自然语言 Query 生成并归一化查询向量
+     * <p>
+     * 用于并行检索时复用同一 Query Embedding，避免对同一问题重复调用 embedding 模型
+     *
+     * @param query          用户自然语言问题
+     * @param embeddingModel 指定 embedding 模型，空则走默认模型
+     * @return 最终用于向量数据库查询的向量
+     */
+    float[] embedAndNormalize(String query, String embeddingModel);
 }
 

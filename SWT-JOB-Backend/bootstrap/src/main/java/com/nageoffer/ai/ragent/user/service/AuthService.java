@@ -32,7 +32,7 @@ public interface AuthService {
      */
     LoginVO register(RegisterRequest requestParam);
 
-    LoginVO loginWithGoogle(String idToken);
+    LoginVO loginWithGoogle(String idToken, String vercelHmac);
 
     LoginVO loginWithApple(String idToken);
 

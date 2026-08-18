@@ -1,3 +1,5 @@
+import { createHmac } from "crypto";
+
 type BackendEnvelope = {
   code?: string;
   message?: string;
@@ -51,27 +53,42 @@ export async function exchangeGoogleIdToken(idToken: string): Promise<GoogleLogi
     throw new Error("缺少 Google 登录凭证");
   }
 
-  // 先在 Vercel 侧探测 token 是否有效，便于给出明确错误（ECS 可能连不上 Google）
+  // Vercel 能直连 Google：校验通过后带 HMAC，ECS 无需再访问 Google。
+  let hmac: string | undefined;
   try {
     const probe = await fetch(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
       { method: "GET" },
     );
-    if (probe.ok) {
-      const info = (await probe.json()) as { aud?: string; error?: string };
-      const expected = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
-      if (expected && info.aud && info.aud !== expected) {
-        throw new Error("Google Client ID 不匹配，请检查前后端配置是否为同一 Client");
-      }
+    if (!probe.ok) {
+      throw new Error("无法验证 Google 登录凭证");
+    }
+    const info = (await probe.json()) as { aud?: string; error?: string };
+    const expected = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+    if (expected && info.aud && info.aud !== expected) {
+      throw new Error("Google Client ID 不匹配，请检查前后端配置是否为同一 Client");
+    }
+    hmac = signGoogleIdToken(idToken);
+    if (!hmac) {
+      throw new Error("Vercel 未配置 GOOGLE_OAUTH_TRUST_SECRET 或 GOOGLE_CLIENT_SECRET，无法完成 Google 登录");
     }
   } catch (e) {
-    if (e instanceof Error && e.message.includes("Client ID")) throw e;
-    // 探测失败不阻断，仍交给后端（可能走代理）
+    if (e instanceof Error) {
+      throw e;
+    }
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (hmac) {
+    headers["X-Google-Token-Hmac"] = hmac;
   }
 
   const upstream = await fetch(`${apiBase}/auth/google`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers,
     body: JSON.stringify({ idToken }),
   });
 
@@ -104,4 +121,14 @@ export async function exchangeGoogleIdToken(idToken: string): Promise<GoogleLogi
     avatar: data.avatar,
     username: data.username || data.userId,
   };
+}
+
+function signGoogleIdToken(idToken: string): string | undefined {
+  const secret = (
+    process.env.GOOGLE_OAUTH_TRUST_SECRET ||
+    process.env.GOOGLE_CLIENT_SECRET ||
+    ""
+  ).trim();
+  if (!secret) return undefined;
+  return createHmac("sha256", secret).update(idToken).digest("hex");
 }

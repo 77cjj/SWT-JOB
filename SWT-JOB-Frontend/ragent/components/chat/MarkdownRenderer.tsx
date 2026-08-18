@@ -157,6 +157,9 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
               {children}
             </ol>
           );
+        },
+        hr() {
+          return <hr className="my-4 h-px border-0 bg-border" />;
         }
       }}
     >

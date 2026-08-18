@@ -17,6 +17,9 @@
 
 package com.nageoffer.ai.ragent.rag.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
@@ -50,6 +53,31 @@ public class RagTraceRecordServiceImpl implements RagTraceRecordService {
                 .errorMessage(errorMessage)
                 .endTime(endTime)
                 .durationMs(durationMs)
+                .build();
+        runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
+                .eq(RagTraceRunDO::getTraceId, traceId));
+    }
+
+    @Override
+    public void mergeExtraData(String traceId, String extraJsonPatch) {
+        if (StrUtil.isBlank(traceId) || StrUtil.isBlank(extraJsonPatch)) {
+            return;
+        }
+        RagTraceRunDO existing = runMapper.selectOne(Wrappers.lambdaQuery(RagTraceRunDO.class)
+                .eq(RagTraceRunDO::getTraceId, traceId)
+                .last("limit 1"));
+        if (existing == null) {
+            return;
+        }
+        JSONObject merged = StrUtil.isBlank(existing.getExtraData())
+                ? JSONUtil.createObj()
+                : JSONUtil.parseObj(existing.getExtraData());
+        JSONObject patch = JSONUtil.parseObj(extraJsonPatch);
+        for (String key : patch.keySet()) {
+            merged.set(key, patch.get(key));
+        }
+        RagTraceRunDO update = RagTraceRunDO.builder()
+                .extraData(merged.toString())
                 .build();
         runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
                 .eq(RagTraceRunDO::getTraceId, traceId));

@@ -29,8 +29,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 
 @Slf4j
 @Service
@@ -40,11 +44,19 @@ public class GoogleOAuthService {
     private final GoogleOAuthProperties googleOAuthProperties;
 
     public VerifiedGoogleUser verifyIdToken(String idToken) {
+        return verifyIdToken(idToken, null);
+    }
+
+    public VerifiedGoogleUser verifyIdToken(String idToken, String vercelHmac) {
         if (StrUtil.isBlank(idToken)) {
             throw new ClientException("Google 登录凭证为空");
         }
         if (StrUtil.isBlank(googleOAuthProperties.getClientId())) {
             throw new ClientException("服务端未配置 GOOGLE_CLIENT_ID");
+        }
+
+        if (hmacMatches(idToken.trim(), vercelHmac)) {
+            return parseVerifiedPayload(idToken.trim());
         }
 
         String body = fetchTokenInfo(idToken.trim());
@@ -74,6 +86,69 @@ public class GoogleOAuthService {
                 json.getStr("name"),
                 json.getStr("picture")
         );
+    }
+
+    private boolean hmacMatches(String idToken, String providedHmac) {
+        String secret = googleOAuthProperties.getTrustHmacSecret();
+        if (StrUtil.isBlank(secret) || StrUtil.isBlank(providedHmac)) {
+            return false;
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            String expected = bytesToHex(mac.doFinal(idToken.getBytes(StandardCharsets.UTF_8)));
+            return MessageDigest.isEqual(
+                    expected.getBytes(StandardCharsets.UTF_8),
+                    providedHmac.trim().toLowerCase().getBytes(StandardCharsets.UTF_8)
+            );
+        } catch (Exception e) {
+            log.warn("Google HMAC 校验失败: {}", e.toString());
+            return false;
+        }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    private VerifiedGoogleUser parseVerifiedPayload(String idToken) {
+        String[] parts = idToken.split("\\.");
+        if (parts.length < 2) {
+            throw new ClientException("Google 登录凭证格式无效");
+        }
+        try {
+            String json = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            JSONObject payload = JSONUtil.parseObj(json);
+            String aud = payload.getStr("aud");
+            if (!googleOAuthProperties.getClientId().equals(aud)) {
+                throw new ClientException("Google Client ID 不匹配");
+            }
+            Long exp = payload.getLong("exp");
+            if (exp != null && exp * 1000L < System.currentTimeMillis()) {
+                throw new ClientException("Google 登录无效或已过期");
+            }
+            String email = payload.getStr("email");
+            if (StrUtil.isBlank(email)) {
+                throw new ClientException("Google 账号缺少邮箱信息");
+            }
+            if ("false".equalsIgnoreCase(payload.getStr("email_verified"))) {
+                throw new ClientException("请先在 Google 账号中验证邮箱");
+            }
+            return new VerifiedGoogleUser(
+                    payload.getStr("sub"),
+                    email.trim().toLowerCase(),
+                    payload.getStr("name"),
+                    payload.getStr("picture")
+            );
+        } catch (ClientException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ClientException("Google 登录凭证无法解析");
+        }
     }
 
     private String fetchTokenInfo(String idToken) {

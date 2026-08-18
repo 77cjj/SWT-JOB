@@ -42,4 +42,13 @@ public class GoogleOAuthProperties {
      * 代理 URL 若被保护，需在请求头带 x-vercel-protection-bypass。
      */
     private String tokeninfoProxyBypass = "";
+
+    /** 是否开放 Google 登录，默认开启 */
+    private boolean enabled = true;
+
+    /**
+     * Vercel 已校验 id_token 后，用此密钥做 HMAC，ECS 无需再访问 Google。
+     * 未配置时回退 client secret / bypass。
+     */
+    private String trustHmacSecret = "";
 }

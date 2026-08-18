@@ -28,11 +28,15 @@ export const APPLE_CLIENT_ID = (process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || "").t
 export const WECHAT_APP_ID = (process.env.NEXT_PUBLIC_WECHAT_APP_ID || "").trim();
 
 /**
- * 第三方登录（Google / Apple / 微信）总开关。
- * 显式 true 才开启。暂时关闭：不设或设为 false。
+ * 仅 Google 登录：有 Client ID 且未显式关闭时开启。
+ * 苹果 / 微信按钮已从登录 UI 移除。
  */
-const oauthLoginFlag = (process.env.NEXT_PUBLIC_ENABLE_OAUTH_LOGIN || "").trim().toLowerCase();
-export const ENABLE_OAUTH_LOGIN = oauthLoginFlag === "true";
+const googleLoginFlag = (process.env.NEXT_PUBLIC_ENABLE_GOOGLE_LOGIN || "").trim().toLowerCase();
+export const ENABLE_GOOGLE_LOGIN =
+  Boolean(GOOGLE_CLIENT_ID) && googleLoginFlag !== "false";
+
+/** @deprecated 兼容旧开关；现等同 ENABLE_GOOGLE_LOGIN */
+export const ENABLE_OAUTH_LOGIN = ENABLE_GOOGLE_LOGIN;
 
 const rawBypassAuth = process.env.NEXT_PUBLIC_RAGENT_BYPASS_AUTH === "true";
 export const RAGENT_BYPASS_AUTH = rawBypassAuth && !isProduction;

@@ -31,6 +31,7 @@ import com.nageoffer.ai.ragent.user.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -72,8 +73,9 @@ public class AuthController {
      * Google Identity Services 登录（前端传入 idToken）
      */
     @PostMapping("/auth/google")
-    public Result<LoginVO> googleLogin(@RequestBody GoogleLoginRequest requestParam) {
-        return Results.success(authService.loginWithGoogle(requestParam.getIdToken()));
+    public Result<LoginVO> googleLogin(@RequestBody GoogleLoginRequest requestParam,
+                                       @RequestHeader(value = "X-Google-Token-Hmac", required = false) String hmac) {
+        return Results.success(authService.loginWithGoogle(requestParam.getIdToken(), hmac));
     }
 
     /** Apple Sign In（前端/Vercel 传入 idToken） */

@@ -48,7 +48,7 @@ export function RunsTable({
             <Table className="trace-list-table">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="trace-col-trace">Trace Name</TableHead>
+                  <TableHead className="trace-col-trace">问题 / 回答</TableHead>
                   <TableHead className="trace-col-run-id">Trace Id</TableHead>
                   <TableHead className="trace-col-meta">会话ID / TaskID</TableHead>
                   <TableHead className="trace-col-user">用户名</TableHead>
@@ -62,9 +62,12 @@ export function RunsTable({
                 {runs.map((run) => (
                   <TableRow key={run.traceId} className="trace-list-table-row">
                     <TableCell className="trace-col-trace">
-                      <div className="trace-list-run-trace">
-                        <p className="trace-list-run-name line-clamp-1" title={run.traceName || "-"}>
-                          {run.traceName || "-"}
+                      <div className="trace-list-run-trace space-y-1">
+                        <p className="trace-list-run-name line-clamp-2" title={run.question || run.traceName || "-"}>
+                          {run.question || run.traceName || "-"}
+                        </p>
+                        <p className="trace-list-run-meta-line is-secondary line-clamp-2" title={run.answer || "-"}>
+                          {run.answer || "（尚无回答摘要）"}
                         </p>
                       </div>
                     </TableCell>

@@ -17,4 +17,7 @@ public class AppleOAuthProperties {
      * 例：https://swtjob.vercel.app/api/auth/apple-verify
      */
     private String verifyProxyUrl = "";
+
+    /** 是否开放 Apple 登录，默认关闭 */
+    private boolean enabled = false;
 }

@@ -28,8 +28,11 @@ import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.config.AppleOAuthProperties;
 import com.nageoffer.ai.ragent.user.config.AuthMailProperties;
 import com.nageoffer.ai.ragent.user.config.AuthProperties;
+import com.nageoffer.ai.ragent.user.config.GoogleOAuthProperties;
+import com.nageoffer.ai.ragent.user.config.WeChatOAuthProperties;
 import com.nageoffer.ai.ragent.user.service.AppleOAuthService;
 import com.nageoffer.ai.ragent.user.service.AppleOAuthService.VerifiedAppleUser;
 import com.nageoffer.ai.ragent.user.service.GoogleOAuthService;
@@ -59,6 +62,9 @@ public class AuthServiceImpl implements AuthService {
     private final AppleOAuthService appleOAuthService;
     private final WeChatOAuthService weChatOAuthService;
     private final AuthProperties authProperties;
+    private final GoogleOAuthProperties googleOAuthProperties;
+    private final AppleOAuthProperties appleOAuthProperties;
+    private final WeChatOAuthProperties weChatOAuthProperties;
     private final AuthMailProperties authMailProperties;
     private final UserSchemaService userSchemaService;
 
@@ -179,9 +185,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public LoginVO loginWithGoogle(String idToken) {
-        requireOauthEnabled();
-        VerifiedGoogleUser googleUser = googleOAuthService.verifyIdToken(idToken);
+    public LoginVO loginWithGoogle(String idToken, String vercelHmac) {
+        if (!googleOAuthProperties.isEnabled()) {
+            throw new ClientException("Google 登录已关闭，请使用账号密码登录");
+        }
+        VerifiedGoogleUser googleUser = googleOAuthService.verifyIdToken(idToken, vercelHmac);
         UserDO user = findOrCreateOAuthUser(
                 googleUser.email(),
                 StrUtil.blankToDefault(googleUser.picture(), DEFAULT_AVATAR_URL),
@@ -191,7 +199,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginVO loginWithApple(String idToken) {
-        requireOauthEnabled();
+        if (!appleOAuthProperties.isEnabled()) {
+            throw new ClientException("Apple 登录已关闭，请使用账号密码或 Google 登录");
+        }
         VerifiedAppleUser appleUser = appleOAuthService.verifyIdToken(idToken);
         String username = StrUtil.isNotBlank(appleUser.email())
                 ? appleUser.email()
@@ -202,7 +212,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginVO loginWithWeChat(String code) {
-        requireOauthEnabled();
+        if (!weChatOAuthProperties.isEnabled()) {
+            throw new ClientException("微信登录已关闭，请使用账号密码或 Google 登录");
+        }
         VerifiedWeChatUser wx = weChatOAuthService.exchangeCode(code);
         String username = StrUtil.isNotBlank(wx.unionId())
                 ? "wechat:" + wx.unionId()
@@ -215,12 +227,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout() {
         StpUtil.logout();
-    }
-
-    private void requireOauthEnabled() {
-        if (!authProperties.isOauthEnabled()) {
-            throw new ClientException("第三方登录已暂时关闭，请使用账号密码登录");
-        }
     }
 
     private UserDO findOrCreateOAuthUser(String username, String avatar, String displayHint) {

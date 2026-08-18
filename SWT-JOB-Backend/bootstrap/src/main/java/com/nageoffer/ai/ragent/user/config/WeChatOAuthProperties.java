@@ -14,4 +14,6 @@ public class WeChatOAuthProperties {
 
     /** 微信开放平台 AppSecret（仅服务端） */
     private String appSecret = "";
-}
+
+    /** 是否开放微信登录，默认关闭 */
+    private boolean enabled = false;}

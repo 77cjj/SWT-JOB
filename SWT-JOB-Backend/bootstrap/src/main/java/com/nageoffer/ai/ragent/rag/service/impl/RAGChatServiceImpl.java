@@ -19,11 +19,14 @@ package com.nageoffer.ai.ragent.rag.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.convention.ResourceReference;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.rag.aop.ChatRateLimit;
 import com.nageoffer.ai.ragent.rag.service.RAGChatService;
+import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import com.nageoffer.ai.ragent.user.service.UserChatQuotaService;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
@@ -34,6 +37,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 /**
  * RAG 对话服务默认实现
@@ -47,6 +52,7 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final StreamCallbackFactory callbackFactory;
     private final StreamTaskManager taskManager;
     private final UserChatQuotaService userChatQuotaService;
+    private final RagTraceRecordService ragTraceRecordService;
 
     @Override
     @ChatRateLimit
@@ -60,7 +66,9 @@ public class RAGChatServiceImpl implements RAGChatService {
         log.info("开始流式对话，会话ID：{}，任务ID：{}，联网搜索：{}，语言：{}",
                 actualConversationId, taskId, Boolean.TRUE.equals(webSearch), responseLanguage);
 
-        StreamCallback callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
+        StreamCallback callback = wrapForTrace(
+                callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId)
+        );
 
         StreamChatContext ctx = StreamChatContext.builder()
                 .question(question)
@@ -84,5 +92,67 @@ public class RAGChatServiceImpl implements RAGChatService {
     @Override
     public void stopTask(String taskId) {
         taskManager.cancel(taskId);
+    }
+
+    private StreamCallback wrapForTrace(StreamCallback inner) {
+        String traceId = RagTraceContext.getTraceId();
+        if (StrUtil.isBlank(traceId)) {
+            return inner;
+        }
+        StringBuilder answer = new StringBuilder();
+        long startedAt = System.currentTimeMillis();
+        return new StreamCallback() {
+            @Override
+            public void onContent(String content) {
+                if (StrUtil.isNotBlank(content) && answer.length() < 800) {
+                    int room = 800 - answer.length();
+                    answer.append(content, 0, Math.min(room, content.length()));
+                }
+                inner.onContent(content);
+            }
+
+            @Override
+            public void onThinking(String content) {
+                inner.onThinking(content);
+            }
+
+            @Override
+            public void onResources(List<ResourceReference> resources) {
+                inner.onResources(resources);
+            }
+
+            @Override
+            public void onComplete() {
+                ragTraceRecordService.mergeExtraData(
+                        traceId,
+                        JSONUtil.createObj().set("answer", answer.toString()).toString()
+                );
+                ragTraceRecordService.finishRun(
+                        traceId,
+                        "SUCCESS",
+                        null,
+                        new java.util.Date(),
+                        System.currentTimeMillis() - startedAt
+                );
+                inner.onComplete();
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                ragTraceRecordService.mergeExtraData(
+                        traceId,
+                        JSONUtil.createObj().set("answer", answer.toString()).toString()
+                );
+                String message = error == null ? "stream error" : error.getClass().getSimpleName() + ": " + StrUtil.blankToDefault(error.getMessage(), "");
+                ragTraceRecordService.finishRun(
+                        traceId,
+                        "ERROR",
+                        StrUtil.maxLength(message, 500),
+                        new java.util.Date(),
+                        System.currentTimeMillis() - startedAt
+                );
+                inner.onError(error);
+            }
+        };
     }
 }

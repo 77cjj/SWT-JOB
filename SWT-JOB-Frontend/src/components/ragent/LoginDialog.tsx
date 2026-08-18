@@ -6,13 +6,8 @@ import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  ENABLE_OAUTH_LOGIN,
-  GOOGLE_CLIENT_ID,
-} from '@/config/runtimeEnv';
+import { ENABLE_OAUTH_LOGIN, GOOGLE_CLIENT_ID } from '@/config/runtimeEnv';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
-import { WeChatSignInButton } from '@/components/auth/WeChatSignInButton';
 import { useAuthStore } from '@/stores/authStore';
 import { useI18n } from '../../context/I18nContext';
 import { useSupportWidgetStore } from '../../stores/supportWidgetStore';
@@ -202,8 +197,6 @@ export function LoginDialog() {
                   />
                 </div>
               ) : null}
-              <AppleSignInButton />
-              <WeChatSignInButton />
               <p className="text-center text-xs text-muted-foreground">{t('auth.oauthHint')}</p>
             </div>
           ) : null}

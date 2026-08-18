@@ -6,13 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/stores/authStore";
-import {
-  ENABLE_OAUTH_LOGIN,
-  GOOGLE_CLIENT_ID,
-} from "@/config/runtimeEnv";
+import { ENABLE_OAUTH_LOGIN, GOOGLE_CLIENT_ID } from "@/config/runtimeEnv";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { AppleSignInButton } from "@/components/auth/AppleSignInButton";
-import { WeChatSignInButton } from "@/components/auth/WeChatSignInButton";
 import { useI18n } from "../../src/context/I18nContext";
 
 export function LoginPage() {
@@ -111,8 +106,6 @@ export function LoginPage() {
           {ENABLE_OAUTH_LOGIN ? (
             <div className="space-y-2 py-1">
               {GOOGLE_CLIENT_ID ? <GoogleSignInButton width={320} /> : null}
-              <AppleSignInButton />
-              <WeChatSignInButton />
             </div>
           ) : null}
           <Button type="submit" className="w-full" disabled={isLoading}>

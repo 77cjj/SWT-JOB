@@ -81,7 +81,10 @@ export function RagTracePage() {
       .map((item) => Number(item.durationMs ?? 0))
       .filter((value) => Number.isFinite(value) && value > 0);
     const successCount = runs.filter((item) => normalizeStatus(item.status) === "success").length;
-    const failedCount = runs.filter((item) => normalizeStatus(item.status) === "failed").length;
+    const failedCount = runs.filter((item) => {
+      const status = normalizeStatus(item.status);
+      return status === "failed" || status === "error";
+    }).length;
     const runningCount = runs.filter((item) => normalizeStatus(item.status) === "running").length;
     const avgDuration = durations.length
       ? Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length)

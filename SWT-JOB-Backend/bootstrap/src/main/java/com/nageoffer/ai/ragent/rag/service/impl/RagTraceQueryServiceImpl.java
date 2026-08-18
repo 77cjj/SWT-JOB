@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -68,7 +69,16 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
             wrapper.eq(RagTraceRunDO::getTaskId, request.getTaskId());
         }
         if (StrUtil.isNotBlank(request.getStatus())) {
-            wrapper.eq(RagTraceRunDO::getStatus, request.getStatus());
+            String status = request.getStatus().trim();
+            if ("failed".equalsIgnoreCase(status) || "error".equalsIgnoreCase(status)) {
+                wrapper.in(RagTraceRunDO::getStatus, "ERROR", "FAILED");
+            } else if ("success".equalsIgnoreCase(status)) {
+                wrapper.eq(RagTraceRunDO::getStatus, "SUCCESS");
+            } else if ("running".equalsIgnoreCase(status)) {
+                wrapper.eq(RagTraceRunDO::getStatus, "RUNNING");
+            } else {
+                wrapper.eq(RagTraceRunDO::getStatus, status.toUpperCase());
+            }
         }
 
         IPage<RagTraceRunDO> pageResult = runMapper.selectPage(request, wrapper);
@@ -115,7 +125,20 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
                 .durationMs(run.getDurationMs())
                 .startTime(run.getStartTime())
                 .endTime(run.getEndTime())
+                .question(extractExtra(run.getExtraData(), "question"))
+                .answer(extractExtra(run.getExtraData(), "answer"))
                 .build();
+    }
+
+    private String extractExtra(String extraData, String key) {
+        if (StrUtil.isBlank(extraData)) {
+            return null;
+        }
+        try {
+            return JSONUtil.parseObj(extraData).getStr(key);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private Map<String, String> loadUsernameMap(List<RagTraceRunDO> runs) {

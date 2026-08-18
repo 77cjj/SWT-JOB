@@ -19,6 +19,7 @@ package com.nageoffer.ai.ragent.rag.aop;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.rag.config.RagTraceProperties;
@@ -47,7 +48,6 @@ import java.util.Date;
 public class ChatRateLimitAspect {
 
     private static final String STATUS_RUNNING = "RUNNING";
-    private static final String STATUS_SUCCESS = "SUCCESS";
     private static final String STATUS_ERROR = "ERROR";
 
     private final ChatQueueLimiter chatQueueLimiter;
@@ -98,22 +98,19 @@ public class ChatRateLimitAspect {
                 .userId(UserContext.getUserId())
                 .status(STATUS_RUNNING)
                 .startTime(new Date())
-                .extraData(StrUtil.format("{\"questionLength\":{}}", StrUtil.length(question)))
+                .extraData(JSONUtil.createObj()
+                        .set("question", StrUtil.maxLength(StrUtil.nullToEmpty(question), 800))
+                        .toString())
                 .build());
 
         RagTraceContext.setTraceId(traceId);
         RagTraceContext.setTaskId(taskId);
         try {
             method.invoke(target, args);
-            traceRecordService.finishRun(
-                    traceId,
-                    STATUS_SUCCESS,
-                    null,
-                    new Date(),
-                    System.currentTimeMillis() - startMillis
-            );
+            // 流式结束由 StreamCallback 收尾（成功/失败），此处不标 SUCCESS，避免把挂起的 SSE 记成成功
         } catch (Throwable ex) {
             Throwable cause = unwrap(ex);
+            log.warn("执行流式对话失败", cause);
             traceRecordService.finishRun(
                     traceId,
                     STATUS_ERROR,
@@ -121,7 +118,6 @@ public class ChatRateLimitAspect {
                     new Date(),
                     System.currentTimeMillis() - startMillis
             );
-            log.warn("执行流式对话失败", cause);
             emitter.completeWithError(cause);
         } finally {
             RagTraceContext.clear();

@@ -78,17 +78,17 @@ public class VectorGlobalSearchChannel implements SearchChannel {
             return false;
         }
 
-        // 条件1：没有识别出任何意图
-        List<NodeScore> allScores = context.getIntents().stream()
+        // 无 KB 意图时走全局向量检索：SYSTEM/MCP 高分不应挡住文档库
+        List<NodeScore> kbScores = context.getIntents().stream()
                 .flatMap(si -> si.nodeScores().stream())
+                .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
                 .toList();
-        if (CollUtil.isEmpty(allScores)) {
-            log.info("未识别出任何意图，启用全局检索");
+        if (CollUtil.isEmpty(kbScores)) {
+            log.info("没有 KB 意图，启用全局检索");
             return true;
         }
 
-        // 条件2：意图置信度都很低
-        double maxScore = allScores.stream()
+        double maxScore = kbScores.stream()
                 .mapToDouble(NodeScore::getScore)
                 .max()
                 .orElse(0.0);

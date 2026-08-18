@@ -31,6 +31,8 @@ public interface RagTraceRecordService {
 
     void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs);
 
+    void mergeExtraData(String traceId, String extraJsonPatch);
+
     void startNode(RagTraceNodeDO node);
 
     void finishNode(String traceId, String nodeId, String status, String errorMessage, Date endTime, long durationMs);

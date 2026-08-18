@@ -37,11 +37,16 @@ export const STATUS_OPTIONS: { value: TraceStatus; label: string }[] = [
 
 export const normalizeStatus = (status?: string | null): string => (status || "").trim().toLowerCase();
 
+export const isFailedStatus = (status?: string | null): boolean => {
+  const normalized = normalizeStatus(status);
+  return normalized === "failed" || normalized === "error";
+};
+
 export const statusLabel = (status?: string | null): string => {
   const normalized = normalizeStatus(status);
   if (!normalized) return "UNKNOWN";
   if (normalized === "success") return "SUCCESS";
-  if (normalized === "failed") return "FAILED";
+  if (normalized === "failed" || normalized === "error") return "FAILED";
   if (normalized === "running") return "RUNNING";
   if (normalized === "timeout") return "TIMEOUT";
   return normalized.toUpperCase();
@@ -49,7 +54,7 @@ export const statusLabel = (status?: string | null): string => {
 
 export const statusBadgeVariant = (status?: string | null): BadgeVariant => {
   const normalized = normalizeStatus(status);
-  if (normalized === "failed" || normalized === "timeout") return "destructive";
+  if (normalized === "failed" || normalized === "error" || normalized === "timeout") return "destructive";
   if (normalized === "running") return "secondary";
   if (normalized === "success") return "default";
   return "outline";

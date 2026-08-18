@@ -121,11 +121,6 @@ public class StreamChatPipeline {
         long afterRetrieve = System.currentTimeMillis();
 
         emitResources(ctx, retrievalCtx);
-        if (handleEmptyRetrieval(ctx, retrievalCtx)) {
-            logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, afterRetrieve, -1);
-            return;
-        }
-
         streamRagResponse(ctx, retrievalCtx);
         logPipelineTiming(ctx, startedAt, afterMemory, afterRewrite, afterIntent, afterRetrieve, System.currentTimeMillis());
     }
@@ -178,6 +173,13 @@ public class StreamChatPipeline {
 
     private void resolveIntents(StreamChatContext ctx) {
         List<SubQuestionIntent> subIntents = intentResolver.resolve(ctx.getRewriteResult());
+        boolean emptyScores = CollUtil.isEmpty(subIntents)
+                || subIntents.stream().allMatch(si -> CollUtil.isEmpty(si.nodeScores()));
+        if (emptyScores) {
+            String q = ctx.getRewriteResult().rewrittenQuestion();
+            ctx.setSubIntents(List.of(new SubQuestionIntent(q, List.of())));
+            return;
+        }
         ctx.setSubIntents(subIntents);
     }
 
@@ -198,9 +200,13 @@ public class StreamChatPipeline {
 
     private boolean handleSystemOnly(StreamChatContext ctx) {
         List<SubQuestionIntent> subIntents = ctx.getSubIntents();
-        boolean allSystemOnly = subIntents.stream()
-                .allMatch(si -> intentResolver.isSystemOnly(si.nodeScores()));
+        boolean allSystemOnly = CollUtil.isNotEmpty(subIntents)
+                && subIntents.stream().allMatch(si -> intentResolver.isSystemOnly(si.nodeScores()));
         if (!allSystemOnly) {
+            return false;
+        }
+        // SYSTEM 意图只覆盖寒暄；业务问题即使被标成 SYSTEM 也继续走知识库检索
+        if (!isChitchatQuery(ctx.getRewriteResult().rewrittenQuestion())) {
             return false;
         }
         String customPrompt = subIntents.stream()
@@ -273,16 +279,6 @@ public class StreamChatPipeline {
                 .webContext(web.getContextText())
                 .intentChunks(base.getIntentChunks())
                 .build();
-    }
-
-    private boolean handleEmptyRetrieval(StreamChatContext ctx, RetrievalContext retrievalCtx) {
-        if (!retrievalCtx.isEmpty()) {
-            return false;
-        }
-        StreamCallback callback = ctx.getCallback();
-        callback.onContent(ResponseLanguage.emptyRetrievalMessage(ctx.getLanguage()));
-        callback.onComplete();
-        return true;
     }
 
     private void emitResources(StreamChatContext ctx, RetrievalContext retrievalCtx) {

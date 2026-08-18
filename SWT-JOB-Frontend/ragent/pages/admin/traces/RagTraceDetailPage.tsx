@@ -290,7 +290,10 @@ export function RagTraceDetailPage() {
   const stats = useMemo(() => {
     const nodes = detail?.nodes || [];
     const total = nodes.length;
-    const failed = nodes.filter((n) => normalizeStatus(n.status) === "failed").length;
+    const failed = nodes.filter((n) => {
+      const status = normalizeStatus(n.status);
+      return status === "failed" || status === "error";
+    }).length;
     const success = nodes.filter((n) => normalizeStatus(n.status) === "success").length;
     const running = nodes.filter((n) => normalizeStatus(n.status) === "running").length;
 
@@ -426,6 +429,19 @@ export function RagTraceDetailPage() {
               <div className="text-sm">
                 <span className="font-medium text-red-800">执行出错：</span>
                 <span className="text-red-600 ml-1">{selectedRun.errorMessage}</span>
+              </div>
+            </div>
+        )}
+
+        {(selectedRun.question || selectedRun.answer) && (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-1">用户问题</p>
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{selectedRun.question || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-1">模型回答摘要</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedRun.answer || "（流未完成或无输出）"}</p>
               </div>
             </div>
         )}

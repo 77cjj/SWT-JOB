@@ -396,10 +396,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       question: trimmed,
       conversationId: conversationId || undefined,
       webSearch: webSearchEnabled ? true : undefined,
-      // 与网站语言切换联动，后端据此约束模型回答语言
       language: readUiLanguage()
     });
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${query}`;
+
+    const FIRST_TOKEN_TIMEOUT_MS = 90_000;
+    const TOTAL_TIMEOUT_MS = 180_000;
+    let receivedContent = false;
+    let firstTokenTimer: ReturnType<typeof setTimeout> | null = null;
+    let totalTimer: ReturnType<typeof setTimeout> | null = null;
+    const clearStreamTimers = () => {
+      if (firstTokenTimer) clearTimeout(firstTokenTimer);
+      if (totalTimer) clearTimeout(totalTimer);
+      firstTokenTimer = null;
+      totalTimer = null;
+    };
+
+    const failWithTimeout = (reason: string) => {
+      if (get().streamingMessageId !== assistantId) return;
+      clearStreamTimers();
+      get().streamAbort?.();
+      handlers.onError?.(new Error(reason));
+    };
 
     const handlers = {
       onMeta: (payload: { conversationId: string; taskId: string }) => {
@@ -426,11 +444,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       onMessage: (payload: MessageDeltaPayload) => {
         if (!payload || typeof payload !== "object") return;
         if (payload.type !== "response") return;
+        receivedContent = true;
+        if (firstTokenTimer) {
+          clearTimeout(firstTokenTimer);
+          firstTokenTimer = null;
+        }
         get().appendStreamContent(payload.delta);
       },
       onThinking: (payload: MessageDeltaPayload) => {
         if (!payload || typeof payload !== "object") return;
         if (payload.type !== "think") return;
+        receivedContent = true;
+        if (firstTokenTimer) {
+          clearTimeout(firstTokenTimer);
+          firstTokenTimer = null;
+        }
         get().appendThinkingContent(payload.delta);
       },
       onReject: (payload: MessageDeltaPayload) => {
@@ -443,6 +471,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       onFinish: (payload: CompletionPayload) => {
         if (get().streamingMessageId !== assistantId) return;
+        clearStreamTimers();
         if (!payload) return;
         if (payload.title && get().currentSessionId) {
           get().updateSessionTitle(get().currentSessionId as string, payload.title);
@@ -494,6 +523,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       onCancel: (payload: CompletionPayload) => {
         if (get().streamingMessageId !== assistantId) return;
+        clearStreamTimers();
         if (payload?.title && get().currentSessionId) {
           get().updateSessionTitle(get().currentSessionId as string, payload.title);
         }
@@ -524,6 +554,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       onDone: () => {
         if (get().streamingMessageId !== assistantId) return;
+        clearStreamTimers();
         set({
           isStreaming: false,
           thinkingStartAt: null,
@@ -541,6 +572,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       onError: (error: Error) => {
         if (get().streamingMessageId !== assistantId) return;
+        clearStreamTimers();
         set((state) => ({
           isStreaming: false,
           thinkingStartAt: null,
@@ -573,6 +605,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     );
 
     set({ streamAbort: cancel });
+    firstTokenTimer = setTimeout(() => {
+      if (!receivedContent) {
+        failWithTimeout("回答超时未开始输出，已停止加载");
+      }
+    }, FIRST_TOKEN_TIMEOUT_MS);
+    totalTimer = setTimeout(() => {
+      failWithTimeout("回答超时，已停止加载");
+    }, TOTAL_TIMEOUT_MS);
 
     try {
       await start();
@@ -582,6 +622,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
       handlers.onError?.(error as Error);
     } finally {
+      clearStreamTimers();
       if (get().streamingMessageId === assistantId) {
         set({
           isStreaming: false,

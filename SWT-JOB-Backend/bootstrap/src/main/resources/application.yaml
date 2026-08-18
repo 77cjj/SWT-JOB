@@ -248,20 +248,22 @@ sa-token:
 google:
   oauth:
     client-id: ${GOOGLE_CLIENT_ID:}
-    # ECS 无法直连 Google 时，填 Vercel 代理，例如 https://swtjob.vercel.app/api/auth/google-tokeninfo
+    enabled: ${ENABLE_GOOGLE_LOGIN:true}
     tokeninfo-proxy-url: ${GOOGLE_TOKENINFO_PROXY_URL:}
-    # Vercel Deployment Protection 开启时，填 Protection Bypass for Automation 密钥
     tokeninfo-proxy-bypass: ${GOOGLE_TOKENINFO_PROXY_BYPASS:}
+    trust-hmac-secret: ${GOOGLE_OAUTH_TRUST_SECRET:${GOOGLE_CLIENT_SECRET:}}
 
 apple:
   oauth:
     client-id: ${APPLE_CLIENT_ID:}
+    enabled: ${ENABLE_APPLE_LOGIN:false}
     verify-proxy-url: ${APPLE_VERIFY_PROXY_URL:}
 
 wechat:
   oauth:
     app-id: ${WECHAT_APP_ID:}
     app-secret: ${WECHAT_APP_SECRET:}
+    enabled: ${ENABLE_WECHAT_LOGIN:false}
 
 app:
   demo-mode: false

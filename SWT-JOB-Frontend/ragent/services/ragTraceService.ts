@@ -14,6 +14,8 @@ export interface RagTraceRun {
   durationMs?: number | null;
   startTime?: string | null;
   endTime?: string | null;
+  question?: string | null;
+  answer?: string | null;
 }
 
 export interface RagTraceNode {

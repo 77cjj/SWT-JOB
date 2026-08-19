@@ -25,3 +25,14 @@ export const SANITY_REVALIDATE_SECRET =
 export function hasSanityConfig() {
   return Boolean(SANITY_PROJECT_ID && SANITY_DATASET);
 }
+
+/** Sanity 3.99 structure tool 首页（默认 tool name 是 `structure`，不是旧的 `desk`）。 */
+export function getStudioHomePath() {
+  return `${SANITY_STUDIO_BASE_PATH}/structure`;
+}
+
+/** 打开指定文档编辑器。intent 深链不依赖自定义 desk 的 pane id。 */
+export function getStudioEditPath(docId: string, type = "docPage") {
+  const id = docId.replace(/^drafts\./, "");
+  return `${SANITY_STUDIO_BASE_PATH}/intent/edit/id=${encodeURIComponent(id)};type=${encodeURIComponent(type)}`;
+}

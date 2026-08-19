@@ -10,6 +10,7 @@
 
 import StudioClient from './StudioClient';
 import { redirect } from "next/navigation";
+import { getStudioHomePath } from "../../../lib/sanity/env";
 
 // Studio 在开发态与鉴权态都依赖运行时能力，强制静态会导致路由卡住或白屏。
 export const dynamic = 'force-dynamic';
@@ -23,8 +24,10 @@ export default async function StudioPage({
 }) {
   const resolvedParams = await params;
   const first = resolvedParams.tool?.[0];
-  if (first && ["releases", "tasks", "comments"].includes(first)) {
-    redirect("/studio/structure");
+  // 3.99 会自带 releases/tasks/comments；内容编辑在 structureTool。
+  // 不要拦截 intent（「编辑本页」深链）或 structure 本身。
+  if (!first || ["releases", "tasks", "comments"].includes(first)) {
+    redirect(getStudioHomePath());
   }
 
   return <StudioClient />;

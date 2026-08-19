@@ -1,6 +1,8 @@
 import { defineConfig } from "sanity";
+import { structureTool } from "sanity/structure";
 
 import { schemaTypes } from "./sanity/schemaTypes";
+import { structure } from "./sanity/structure";
 import {
   SANITY_DATASET,
   SANITY_PREVIEW_URL,
@@ -14,7 +16,11 @@ export default defineConfig({
   projectId: SANITY_PROJECT_ID || "missing-project-id",
   dataset: SANITY_DATASET || "production",
   basePath: SANITY_STUDIO_BASE_PATH,
-  plugins: [],
+  plugins: [
+    structureTool({
+      structure,
+    }),
+  ],
   schema: {
     types: schemaTypes,
   },

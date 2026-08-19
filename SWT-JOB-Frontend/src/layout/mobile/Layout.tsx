@@ -15,6 +15,8 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
+import { useSiteFeatures } from '../../context/SiteFeaturesContext';
+import type { SiteFeatureKey } from '../../lib/site/siteFeaturesApi';
 import { cn } from '../../../ragent/lib/utils';
 import { LanguageMenu } from '../../components/common/LanguageMenu';
 
@@ -32,12 +34,18 @@ interface MobileLayoutProps extends PropsWithChildren {
 
 type NavKey = 'home' | 'jobs' | 'docs' | 'chat' | 'deals';
 
-const NAV_ITEMS: { key: NavKey; href: string; icon: React.ReactNode; match: (path: string) => boolean }[] = [
-  { key: 'chat', href: '/', icon: <SmartToyRounded fontSize="small" />, match: (p) => p === '/' || p.startsWith('/chat') },
-  { key: 'deals', href: '/deals', icon: <LocalOfferRounded fontSize="small" />, match: (p) => p === '/deals' || p.startsWith('/deals/') },
-  { key: 'home', href: '/compare', icon: <BarChartRounded fontSize="small" />, match: (p) => p === '/compare' },
-  { key: 'jobs', href: '/jobs', icon: <HistoryRounded fontSize="small" />, match: (p) => p === '/jobs' || p.startsWith('/jobs/') },
-  { key: 'docs', href: '/docs', icon: <MenuBookRounded fontSize="small" />, match: (p) => p.startsWith('/docs') },
+const NAV_ITEMS: {
+  key: NavKey;
+  feature: SiteFeatureKey;
+  href: string;
+  icon: React.ReactNode;
+  match: (path: string) => boolean;
+}[] = [
+  { key: 'chat', feature: 'chat', href: '/', icon: <SmartToyRounded fontSize="small" />, match: (p) => p === '/' || p.startsWith('/chat') },
+  { key: 'deals', feature: 'deals', href: '/deals', icon: <LocalOfferRounded fontSize="small" />, match: (p) => p === '/deals' || p.startsWith('/deals/') },
+  { key: 'home', feature: 'compare', href: '/compare', icon: <BarChartRounded fontSize="small" />, match: (p) => p === '/compare' },
+  { key: 'jobs', feature: 'jobs', href: '/jobs', icon: <HistoryRounded fontSize="small" />, match: (p) => p === '/jobs' || p.startsWith('/jobs/') },
+  { key: 'docs', feature: 'docs', href: '/docs', icon: <MenuBookRounded fontSize="small" />, match: (p) => p.startsWith('/docs') },
 ];
 
 export default function MobileLayout({ children, mainClassName, rootClassName }: MobileLayoutProps) {
@@ -47,9 +55,11 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
   const pathname = router.pathname;
   const isDark = mode === 'dark';
   const authDialogOpen = useAuthStore((s) => s.loginDialogOpen);
+  const { isFeatureEnabled } = useSiteFeatures();
   // 高于维护毛玻璃（1200），保证顶栏始终可点返回
   const headerZ = authDialogOpen ? 'z-[1600]' : 'z-[1300]';
 
+  const visibleNav = NAV_ITEMS.filter((item) => isFeatureEnabled(item.feature));
   const navLabel = (key: NavKey) => {
     const full = t(`nav.${key}`);
     if (language === 'zh') {
@@ -101,8 +111,11 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
           isDark ? 'border-neutral-800/60 bg-neutral-950' : 'border-neutral-200 bg-white'
         }`}
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5 items-stretch px-1 py-1">
-          {NAV_ITEMS.map((item) => {
+        <div
+          className="mx-auto grid max-w-lg items-stretch px-1 py-1"
+          style={{ gridTemplateColumns: `repeat(${Math.max(visibleNav.length, 1)}, minmax(0, 1fr))` }}
+        >
+          {visibleNav.map((item) => {
             const isActive = item.match(pathname);
             return (
               <Link

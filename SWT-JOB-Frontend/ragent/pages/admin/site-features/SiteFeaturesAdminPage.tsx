@@ -72,7 +72,7 @@ export function SiteFeaturesAdminPage() {
         <div>
           <h1 className="admin-page-title">功能开放开关</h1>
           <p className="admin-page-subtitle">
-            控制前台五大菜单是否开放。关闭后用户仍可进入页面，但会看到毛玻璃维护提示，且不播放新手教程。
+            控制前台五大菜单是否对用户显示。关闭后入口从导航消失，访问该路径会跳到仍开放的模块，不再叠加毛玻璃蒙版。
           </p>
         </div>
         <Button variant="outline" onClick={() => void load()}>
@@ -99,7 +99,7 @@ export function SiteFeaturesAdminPage() {
                   </Label>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     键名 <code>{row.key}</code>
-                    {row.enabled ? ' · 当前开放' : ' · 当前维护遮罩'}
+                    {row.enabled ? ' · 当前显示' : ' · 当前隐藏'}
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-sm cursor-pointer select-none">

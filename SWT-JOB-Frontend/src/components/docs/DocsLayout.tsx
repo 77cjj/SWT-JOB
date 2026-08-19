@@ -18,6 +18,7 @@ import { DocsToc } from "./DocsToc";
 import { DocCommentsSection } from "./DocCommentsSection";
 import { DocsSearchDialog } from "./DocsSearchDialog";
 import { DocsPageNav } from "./DocsPageNav";
+import { DocAdminEditLink } from "./DocAdminEditLink";
 
 type DocsLayoutProps = {
   navigation: DocsNavigation;
@@ -136,6 +137,7 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
                 <div className="docs-article-header-row">
                   <h1>{toChineseTitle(page.title)}</h1>
                   <div className="docs-article-actions">
+                    <DocAdminEditLink docId={page.id} source={page.source} />
                     <button
                       type="button"
                       className="docs-action-btn"
@@ -154,7 +156,9 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
               </header>
               <div className="docs-content">{content}</div>
               <DocsPageNav prev={prev} next={next} />
-              {page.fullSlug ? <DocCommentsSection docSlug={page.fullSlug} /> : null}
+              {page.fullSlug ? (
+                <DocCommentsSection docSlug={page.fullSlug} />
+              ) : null}
             </>
           )}
         </main>

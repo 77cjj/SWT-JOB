@@ -107,32 +107,44 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public DashboardPerformanceVO loadPerformance(String window) {
-        WindowRange range = resolveWindowRange(window, Duration.ofHours(24));
-        List<Long> durations = listDurations(range.start, range.end);
-        long avgLatency = average(durations);
-        long p95Latency = percentile(durations);
+        try {
+            WindowRange range = resolveWindowRange(window, Duration.ofHours(24));
+            List<Long> durations = listDurations(range.start, range.end);
+            long avgLatency = average(durations);
+            long p95Latency = percentile(durations);
 
-        long success = countTraceRuns(range.start, range.end, STATUS_SUCCESS);
-        long error = countTraceRuns(range.start, range.end, STATUS_ERROR);
-        long total = success + error;
-        long assistantCount = countAssistantMessages(range.start, range.end);
-        long noDocCount = countNoDocMessages(range.start, range.end);
-        long slowCount = durations.stream().filter(duration -> duration > SLOW_LATENCY_THRESHOLD_MS).count();
+            long success = countTraceRuns(range.start, range.end, STATUS_SUCCESS);
+            long error = countTraceRuns(range.start, range.end, STATUS_ERROR);
+            long total = success + error;
+            long assistantCount = countAssistantMessages(range.start, range.end);
+            long noDocCount = countNoDocMessages(range.start, range.end);
+            long slowCount = durations.stream().filter(duration -> duration > SLOW_LATENCY_THRESHOLD_MS).count();
 
-        double successRate = total == 0 ? 0.0 : round1((success * 100.0) / total);
-        double errorRate = total == 0 ? 0.0 : round1((error * 100.0) / total);
-        double noDocRate = assistantCount == 0 ? 0.0 : round1((noDocCount * 100.0) / assistantCount);
-        double slowRate = durations.isEmpty() ? 0.0 : round1((slowCount * 100.0) / durations.size());
+            double successRate = total == 0 ? 0.0 : round1((success * 100.0) / total);
+            double errorRate = total == 0 ? 0.0 : round1((error * 100.0) / total);
+            double noDocRate = assistantCount == 0 ? 0.0 : round1((noDocCount * 100.0) / assistantCount);
+            double slowRate = durations.isEmpty() ? 0.0 : round1((slowCount * 100.0) / durations.size());
 
-        return DashboardPerformanceVO.builder()
-                .window(range.windowLabel)
-                .avgLatencyMs(avgLatency)
-                .p95LatencyMs(p95Latency)
-                .successRate(successRate)
-                .errorRate(errorRate)
-                .noDocRate(noDocRate)
-                .slowRate(slowRate)
-                .build();
+            return DashboardPerformanceVO.builder()
+                    .window(range.windowLabel)
+                    .avgLatencyMs(avgLatency)
+                    .p95LatencyMs(p95Latency)
+                    .successRate(successRate)
+                    .errorRate(errorRate)
+                    .noDocRate(noDocRate)
+                    .slowRate(slowRate)
+                    .build();
+        } catch (Exception ex) {
+            return DashboardPerformanceVO.builder()
+                    .window(window == null || window.isBlank() ? "24h" : window)
+                    .avgLatencyMs(0L)
+                    .p95LatencyMs(0L)
+                    .successRate(0.0)
+                    .errorRate(0.0)
+                    .noDocRate(0.0)
+                    .slowRate(0.0)
+                    .build();
+        }
     }
 
     @Override

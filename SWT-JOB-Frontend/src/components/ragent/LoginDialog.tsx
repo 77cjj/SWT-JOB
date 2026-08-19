@@ -141,43 +141,13 @@ export function LoginDialog() {
   return (
     <Dialog
       open={open}
-      modal={false}
       onOpenChange={(next) => (!next ? handleClose() : undefined)}
     >
       <DialogContent
         className="max-w-md rounded-2xl border-border/70 bg-background/95 p-0 shadow-xl backdrop-blur"
-        onPointerDownOutside={(event) => {
-          const target = event.target as HTMLElement | null;
-          if (
-            target?.closest('header') ||
-            target?.closest('.MuiMenu-root') ||
-            target?.closest('.MuiPopover-root') ||
-            target?.closest('.MuiModal-root')
-          ) {
-            event.preventDefault();
-            return;
-          }
-          if (!ENABLE_OAUTH_LOGIN) return;
-          if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
-            event.preventDefault();
-          }
-        }}
-        onInteractOutside={(event) => {
-          const target = event.target as HTMLElement | null;
-          if (
-            target?.closest('header') ||
-            target?.closest('.MuiMenu-root') ||
-            target?.closest('.MuiPopover-root') ||
-            target?.closest('.MuiModal-root')
-          ) {
-            event.preventDefault();
-            return;
-          }
-          if (!ENABLE_OAUTH_LOGIN) return;
-          if (target?.closest('[data-google-signin]') || target?.closest('iframe[src*="accounts.google.com"]')) {
-            event.preventDefault();
-          }
-        }}
+        onPointerDownOutside={(event) => event.preventDefault()}
+        onInteractOutside={(event) => event.preventDefault()}
+        onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <DialogHeader className="space-y-2 px-6 pt-6 text-left">
           <DialogTitle className="font-display text-xl">{title}</DialogTitle>

@@ -810,7 +810,7 @@ export const zh = {
       docs: 'SWT 文档',
     },
     underDevelopment: '{label}仍在开发中',
-    underDevelopmentHint: '网站维护者正在完善此页面。可点击上方菜单切换到其他功能；正式开放前暂不可操作。',
+    underDevelopmentHint: '此模块暂未对用户开放。',
     ariaMaintaining: '{label}维护中',
   },
 

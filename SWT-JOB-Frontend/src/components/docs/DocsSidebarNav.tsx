@@ -8,6 +8,7 @@ import type { DocNavSection, DocPageData, DocsNavigation } from "../../lib/docs/
 import { toChineseTitle } from "../../lib/docs/title";
 import { hasSanityConfig } from "../../lib/sanity/env";
 import { openDocsSearch } from "./DocsSearchDialog";
+import { useAuthStore } from "@/stores/authStore";
 
 function sectionHasActivePage(section: DocNavSection, page: DocPageData) {
   return section.items.some((item) => item.slug.join("/") === page.fullSlug);
@@ -20,7 +21,8 @@ export function DocsSidebarNav({
   navigation: DocsNavigation;
   page: DocPageData;
 }) {
-  const showStudioLink = hasSanityConfig();
+  const isAdmin = useAuthStore((s) => s.user?.role) === "admin";
+  const showStudioLink = hasSanityConfig() && isAdmin;
 
   return (
     <div className="docs-sidebar-inner">

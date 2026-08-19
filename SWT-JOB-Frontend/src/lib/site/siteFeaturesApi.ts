@@ -89,3 +89,19 @@ export function featureKeyForPath(pathname: string): SiteFeatureKey | null {
   if (pathname === '/docs' || pathname.startsWith('/docs/')) return 'docs';
   return null;
 }
+
+export const FEATURE_HREFS: Record<SiteFeatureKey, string> = {
+  chat: '/',
+  deals: '/deals',
+  compare: '/compare',
+  jobs: '/jobs',
+  docs: '/docs',
+};
+
+export function firstEnabledHref(features: SiteFeatureMap): string {
+  const order: SiteFeatureKey[] = ['chat', 'deals', 'compare', 'jobs', 'docs'];
+  for (const key of order) {
+    if (features[key] !== false) return FEATURE_HREFS[key];
+  }
+  return '/';
+}

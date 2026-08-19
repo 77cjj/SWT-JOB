@@ -6,7 +6,7 @@ import { Search } from "@mui/icons-material";
 
 import type { DocNavSection, DocPageData, DocsNavigation } from "../../lib/docs/types";
 import { toChineseTitle } from "../../lib/docs/title";
-import { hasSanityConfig } from "../../lib/sanity/env";
+import { getStudioHomePath, hasSanityConfig } from "../../lib/sanity/env";
 import { openDocsSearch } from "./DocsSearchDialog";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -60,7 +60,7 @@ export function DocsSidebarNav({
       {showStudioLink ? (
         <div className="docs-sidebar-footer">
           <a
-            href="/studio/structure"
+            href={getStudioHomePath()}
             className="docs-studio-link"
             target="_blank"
             rel="noreferrer"

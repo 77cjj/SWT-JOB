@@ -17,11 +17,11 @@ export const structure: StructureResolver = (S) =>
     .title("内容管理")
     .items([
       S.listItem()
-        .id("all-doc-pages")
+        .id("docPage")
         .title("全部文档")
+        .schemaType("docPage")
         .child(
           S.documentTypeList("docPage")
-            .id("all-doc-pages-list")
             .title("全部文档"),
         ),
       ...sectionDefs.map((section) =>

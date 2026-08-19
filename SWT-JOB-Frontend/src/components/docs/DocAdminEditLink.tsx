@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuthStore } from "@/stores/authStore";
-import { hasSanityConfig, SANITY_STUDIO_BASE_PATH } from "../../lib/sanity/env";
+import { getStudioEditPath, hasSanityConfig } from "../../lib/sanity/env";
 
 export function DocAdminEditLink({ docId, source }: { docId?: string; source?: string }) {
   const role = useAuthStore((s) => s.user?.role);
@@ -10,7 +10,7 @@ export function DocAdminEditLink({ docId, source }: { docId?: string; source?: s
   if (!isAdmin || !hasSanityConfig() || source !== "sanity" || !docId) {
     return null;
   }
-  const href = `${SANITY_STUDIO_BASE_PATH}/structure/docPage;${encodeURIComponent(docId)}`;
+  const href = getStudioEditPath(docId);
   return (
     <Link href={href} className="docs-action-btn" target="_blank" rel="noreferrer">
       编辑本页

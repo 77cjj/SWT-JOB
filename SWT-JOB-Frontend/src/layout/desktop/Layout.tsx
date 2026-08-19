@@ -7,6 +7,7 @@ import { DarkMode, LightMode } from '@mui/icons-material';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppTheme } from '../../context/AppThemeContext';
 import { useI18n } from '../../context/I18nContext';
+import { useSiteFeatures } from '../../context/SiteFeaturesContext';
 import { cn } from '../../../ragent/lib/utils';
 import { LanguageMenu } from '../../components/common/LanguageMenu';
 
@@ -38,6 +39,7 @@ export default function DesktopLayout({
   const { mode, toggleMode } = useAppTheme();
   const { t } = useI18n();
   const authDialogOpen = useAuthStore((s) => s.loginDialogOpen);
+  const { isFeatureEnabled } = useSiteFeatures();
 
   const isDark = mode === 'dark';
   const rootClass = isDark
@@ -65,6 +67,7 @@ export default function DesktopLayout({
           <h1 className="text-xl font-semibold tracking-wide">SWT Helper</h1>
           <div className="flex items-center gap-4">
             <nav className={`flex gap-6 text-sm ${navTextClass}`}>
+              {isFeatureEnabled('chat') ? (
               <Link
                 href="/"
                 className={`transition-colors ${linkHoverClass} ${
@@ -73,6 +76,8 @@ export default function DesktopLayout({
               >
                 {t("nav.chat")}
               </Link>
+              ) : null}
+              {isFeatureEnabled('deals') ? (
               <div className="relative group/deals">
                 <Link
                   href="/deals"
@@ -114,6 +119,8 @@ export default function DesktopLayout({
                   </div>
                 </div>
               </div>
+              ) : null}
+              {isFeatureEnabled('compare') ? (
               <Link
                 href="/compare"
                 className={`transition-colors ${linkHoverClass} ${
@@ -122,6 +129,8 @@ export default function DesktopLayout({
               >
                 {t("nav.home")}
               </Link>
+              ) : null}
+              {isFeatureEnabled('jobs') ? (
               <Link
                 href="/jobs"
                 className={`transition-colors ${linkHoverClass} ${
@@ -130,6 +139,8 @@ export default function DesktopLayout({
               >
                 {t("nav.jobs")}
               </Link>
+              ) : null}
+              {isFeatureEnabled('docs') ? (
               <Link
                 href="/docs"
                 className={`transition-colors ${linkHoverClass} ${
@@ -138,6 +149,7 @@ export default function DesktopLayout({
               >
                 {t("nav.docs")}
               </Link>
+              ) : null}
             </nav>
 
             <div className="flex items-center gap-2">

@@ -400,8 +400,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${query}`;
 
-    const FIRST_TOKEN_TIMEOUT_MS = 90_000;
-    const TOTAL_TIMEOUT_MS = 180_000;
+    const FIRST_TOKEN_TIMEOUT_MS = 25_000;
+    const TOTAL_TIMEOUT_MS = 90_000;
     let receivedContent = false;
     let firstTokenTimer: ReturnType<typeof setTimeout> | null = null;
     let totalTimer: ReturnType<typeof setTimeout> | null = null;

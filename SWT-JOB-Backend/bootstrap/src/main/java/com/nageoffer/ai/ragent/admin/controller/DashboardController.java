@@ -24,11 +24,13 @@ import com.nageoffer.ai.ragent.admin.service.DashboardService;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/dashboard")
@@ -43,7 +45,20 @@ public class DashboardController {
 
     @GetMapping("/performance")
     public Result<DashboardPerformanceVO> performance(@RequestParam(required = false) String window) {
-        return Results.success(dashboardService.loadPerformance(window));
+        try {
+            return Results.success(dashboardService.loadPerformance(window));
+        } catch (Exception ex) {
+            log.warn("dashboard performance 查询失败 window={}", window, ex);
+            return Results.success(DashboardPerformanceVO.builder()
+                    .window(window == null || window.isBlank() ? "24h" : window)
+                    .avgLatencyMs(0L)
+                    .p95LatencyMs(0L)
+                    .successRate(0.0)
+                    .errorRate(0.0)
+                    .noDocRate(0.0)
+                    .slowRate(0.0)
+                    .build());
+        }
     }
 
     @GetMapping("/trends")

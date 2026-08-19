@@ -54,9 +54,21 @@ export async function getDashboardOverview(window: string = "24h"): Promise<Dash
 }
 
 export async function getDashboardPerformance(window: string = "24h"): Promise<DashboardPerformance> {
-  return api.get<DashboardPerformance, DashboardPerformance>("/admin/dashboard/performance", {
-    params: { window }
-  });
+  try {
+    return await api.get<DashboardPerformance, DashboardPerformance>("/admin/dashboard/performance", {
+      params: { window }
+    });
+  } catch {
+    return {
+      window,
+      avgLatencyMs: 0,
+      p95LatencyMs: 0,
+      successRate: 0,
+      errorRate: 0,
+      noDocRate: 0,
+      slowRate: 0,
+    };
+  }
 }
 
 export async function getDashboardTrends(

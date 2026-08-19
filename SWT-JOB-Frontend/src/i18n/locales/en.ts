@@ -816,7 +816,7 @@ export const en = {
     },
     underDevelopment: '{label} is still in development',
     underDevelopmentHint:
-      'The site maintainer is finishing this page. Use the top menu to switch elsewhere; it is not interactive until launch.',
+      'This module is hidden from visitors.',
     ariaMaintaining: '{label} under maintenance',
   },
 

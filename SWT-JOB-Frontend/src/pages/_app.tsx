@@ -9,6 +9,7 @@ import { createAppTheme } from '../theme/theme';
 import '../index.css';
 import '../ragent-local.css';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { DocsRouteLoadingProvider } from '../context/DocsRouteLoadingContext';
 import { SiteFeaturesProvider } from '../context/SiteFeaturesContext';
 
@@ -49,6 +50,7 @@ function SWTApp({ Component, pageProps }: AppProps) {
       <Component {...pageProps} />
       <FloatingSupportWidget />
       <Analytics />
+      <SpeedInsights />
     </ThemeProvider>
   );
 }

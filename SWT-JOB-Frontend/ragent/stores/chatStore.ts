@@ -400,8 +400,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
     const url = `${RAGENT_API_BASE_URL}/rag/v3/chat${query}`;
 
-    const FIRST_TOKEN_TIMEOUT_MS = 25_000;
-    const TOTAL_TIMEOUT_MS = 90_000;
+    // 后端单个模型允许 60 秒首包等待，还可能执行一次候选模型回退。
+    const FIRST_TOKEN_TIMEOUT_MS = 75_000;
+    const TOTAL_TIMEOUT_MS = 180_000;
     let receivedContent = false;
     let firstTokenTimer: ReturnType<typeof setTimeout> | null = null;
     let totalTimer: ReturnType<typeof setTimeout> | null = null;
@@ -415,6 +416,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const failWithTimeout = (reason: string) => {
       if (get().streamingMessageId !== assistantId) return;
       clearStreamTimers();
+      const taskId = get().streamTaskId;
+      if (taskId) {
+        stopTask(taskId).catch(() => null);
+      }
       get().streamAbort?.();
       handlers.onError?.(new Error(reason));
     };
@@ -463,6 +468,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
       onReject: (payload: MessageDeltaPayload) => {
         if (!payload || typeof payload !== "object") return;
+        receivedContent = true;
+        if (firstTokenTimer) {
+          clearTimeout(firstTokenTimer);
+          firstTokenTimer = null;
+        }
         get().appendStreamContent(payload.delta);
       },
       onResources: (payload: ResourcesPayload) => {
@@ -599,7 +609,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       {
         url,
         headers: token ? { Authorization: token } : undefined,
-        retryCount: 1
+        // GET 会创建并持久化一次对话任务，断流后自动重试会造成重复任务。
+        retryCount: 0
       },
       handlers
     );
@@ -624,13 +635,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } finally {
       clearStreamTimers();
       if (get().streamingMessageId === assistantId) {
-        set({
+        set((state) => ({
           isStreaming: false,
           streamTaskId: null,
           streamAbort: null,
           streamingMessageId: null,
-          cancelRequested: false
-        });
+          cancelRequested: false,
+          messages: state.messages.map((message) =>
+            message.id === assistantId && message.status === "streaming"
+              ? { ...message, status: "error", isThinking: false }
+              : message
+          )
+        }));
       }
     }
   },

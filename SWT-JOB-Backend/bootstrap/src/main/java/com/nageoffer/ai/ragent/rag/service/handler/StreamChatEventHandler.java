@@ -187,7 +187,10 @@ public class StreamChatEventHandler implements StreamCallback {
             return;
         }
         taskManager.unregister(taskId);
-        sender.fail(t);
+        log.error("流式回答失败，conversationId：{}，taskId：{}", conversationId, taskId, t);
+        sender.sendEvent(SSEEventType.ERROR.value(), Map.of("error", "回答生成失败，请稍后重试"));
+        sender.sendEvent(SSEEventType.DONE.value(), "[DONE]");
+        sender.complete();
     }
 
     @Override

@@ -296,7 +296,9 @@ public class ResourceReferenceResolver {
         if (documentDO == null) {
             return null;
         }
-        for (String candidate : List.of(documentDO.getSourceLocation(), documentDO.getFileUrl(), documentDO.getDocName())) {
+        // List.of rejects null elements, while legacy/imported documents commonly have
+        // only one of these fields populated.
+        for (String candidate : new String[]{documentDO.getSourceLocation(), documentDO.getFileUrl(), documentDO.getDocName()}) {
             String dealsPath = extractDealsPath(candidate);
             if (StrUtil.isNotBlank(dealsPath)) {
                 return dealsPath;
@@ -331,7 +333,7 @@ public class ResourceReferenceResolver {
         if (documentDO == null) {
             return null;
         }
-        for (String candidate : List.of(documentDO.getSourceLocation(), documentDO.getFileUrl(), documentDO.getDocName())) {
+        for (String candidate : new String[]{documentDO.getSourceLocation(), documentDO.getFileUrl(), documentDO.getDocName()}) {
             String docsPath = extractDocsPath(candidate);
             if (StrUtil.isNotBlank(docsPath)) {
                 return docsPath;

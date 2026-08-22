@@ -58,6 +58,13 @@ public class GoogleOAuthService {
         if (hmacMatches(idToken.trim(), vercelHmac)) {
             return parseVerifiedPayload(idToken.trim());
         }
+        if (StrUtil.isNotBlank(vercelHmac)) {
+            log.warn("Google 登录收到 Vercel 签名，但与 ECS 共享密钥不匹配");
+            throw new ClientException(
+                    "Google 登录服务配置不一致：请确保 Vercel 与 ECS 的 "
+                            + "GOOGLE_OAUTH_TRUST_SECRET 完全相同，并分别 Redeploy/重启"
+            );
+        }
 
         String body = fetchTokenInfo(idToken.trim());
         JSONObject json = JSONUtil.parseObj(body);

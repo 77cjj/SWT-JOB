@@ -58,7 +58,13 @@ public enum SSEEventType {
     /**
      * 拒绝事件
      */
-    REJECT("reject");
+    REJECT("reject"),
+
+    /**
+     * 流处理失败事件，确保已建立的 SSE 响应能向前端正常收尾
+     */
+    ERROR("error");
+
 
     private final String value;
 

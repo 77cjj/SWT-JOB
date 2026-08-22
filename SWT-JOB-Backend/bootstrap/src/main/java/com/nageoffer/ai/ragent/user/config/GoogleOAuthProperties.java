@@ -48,7 +48,7 @@ public class GoogleOAuthProperties {
 
     /**
      * Vercel 已校验 id_token 后，用此密钥做 HMAC，ECS 无需再访问 Google。
-     * 未配置时回退 client secret / bypass。
+     * 未配置时可由 application.yaml 回退到 Google client secret。
      */
     private String trustHmacSecret = "";
 }

@@ -46,6 +46,7 @@ async function readSseStream(response: Response, handlers: StreamHandlers, signa
   let buffer = "";
   let eventName = "message";
   let dataLines: string[] = [];
+  let receivedTerminalEvent = false;
 
   const dispatchEvent = () => {
     if (dataLines.length === 0) {
@@ -70,12 +71,15 @@ async function readSseStream(response: Response, handlers: StreamHandlers, signa
         }
         break;
       case "finish":
+        receivedTerminalEvent = true;
         handlers.onFinish?.(payload as CompletionPayload);
         break;
       case "done":
+        receivedTerminalEvent = true;
         handlers.onDone?.();
         break;
       case "cancel":
+        receivedTerminalEvent = true;
         handlers.onCancel?.(payload as CompletionPayload);
         break;
       case "reject":
@@ -88,6 +92,7 @@ async function readSseStream(response: Response, handlers: StreamHandlers, signa
         handlers.onTitle?.(payload as { title: string });
         break;
       case "error":
+        receivedTerminalEvent = true;
         handlers.onError?.(new Error(String((payload as { error?: string })?.error || payload)));
         break;
       default:
@@ -106,6 +111,9 @@ async function readSseStream(response: Response, handlers: StreamHandlers, signa
     const { value, done } = await reader.read();
     if (done) {
       dispatchEvent();
+      if (!receivedTerminalEvent && !signal?.aborted) {
+        throw new Error("回答连接提前中断，请重试");
+      }
       break;
     }
     buffer += decoder.decode(value, { stream: true });

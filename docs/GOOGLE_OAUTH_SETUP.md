@@ -34,6 +34,7 @@ http://localhost:3000/api/auth/google-callback
 |------|-----|
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | `xxxx.apps.googleusercontent.com` |
 | `NEXT_PUBLIC_RAGENT_API_BASE_URL` | `https://swtjob.vercel.app/api/ragent` |
+| `GOOGLE_OAUTH_TRUST_SECRET` | 与 ECS 完全相同的随机长密钥（服务端变量，不加 `NEXT_PUBLIC_`） |
 | `NEXT_PUBLIC_ENABLE_OAUTH_LOGIN` | 可选；不设时只要有 Google Client ID 就会显示 Google 登录。强制关闭设 `false` |
 
 保存后 **Redeploy**。
@@ -43,11 +44,13 @@ http://localhost:3000/api/auth/google-callback
 ```env
 GOOGLE_CLIENT_ID=与上面相同的客户端 ID
 GOOGLE_CLIENT_SECRET=客户端密钥
+# 推荐：与 Vercel 环境变量使用完全相同的随机长密钥
+GOOGLE_OAUTH_TRUST_SECRET=一段随机长密钥
 # 国内 ECS 常无法直连 oauth2.googleapis.com，务必配置：
 GOOGLE_TOKENINFO_PROXY_URL=https://swtjob.vercel.app/api/auth/google-tokeninfo
 ```
 
-`GOOGLE_CLIENT_SECRET` 仅后端验证扩展接口时使用；当前实现用 `tokeninfo` 校验 `idToken`，**必须配置 `GOOGLE_CLIENT_ID`**。若直连 Google 超时并报「无法验证 Google 登录」，配置 `GOOGLE_TOKENINFO_PROXY_URL` 后重启即可。
+Vercel 也必须配置同一个 `GOOGLE_OAUTH_TRUST_SECRET` 并 Redeploy。当前实现会先由 Vercel 校验 `idToken`，再用共享密钥签名给 ECS；这样国内 ECS 无需访问 Google 或 Vercel 代理。`GOOGLE_CLIENT_ID` 仍必须配置且前后端一致。
 
 若报 **「代理校验失败」**：
 

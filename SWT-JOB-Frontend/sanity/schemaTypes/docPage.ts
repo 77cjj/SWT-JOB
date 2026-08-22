@@ -108,9 +108,9 @@ export const docPageType = defineType({
     }),
     defineField({
       name: "body",
-      title: "正文",
+      title: "Sanity 正文",
       type: "array",
-      hidden: ({ document }) => document?.contentSource === "server",
+      description: "可随时编辑和保存；当“正文来源”切换为 Sanity 后，前台才会使用这里的内容。",
       of: [
         { type: "block" },
         {

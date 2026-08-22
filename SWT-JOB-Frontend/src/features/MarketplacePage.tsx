@@ -29,7 +29,6 @@ import {
   Avatar,
 } from '@mui/material';
 import {
-  AccountBalanceWallet,
   CardGiftcard,
   WorkOutline,
   Add,
@@ -56,6 +55,7 @@ import { toast } from 'sonner';
 import { US_STATE_OPTIONS } from '../lib/member/profile';
 import { referralPrograms } from '../data/referralDeals';
 import { formatFetchError } from '../lib/formatFetchError';
+import DealsHubHeader from '../components/deals/DealsHubHeader';
 
 type ListingFormState = {
   title: string;
@@ -272,6 +272,13 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
     return true;
   };
 
+  const openCreateListing = () => {
+    if (!requireLogin()) return;
+    setEditingId(null);
+    setForm(emptyListingForm());
+    setCreateOpen(true);
+  };
+
   const buildListingBody = () =>
     createType === 'refer'
       ? {
@@ -427,47 +434,14 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
   return (
     <Box>
       {!embedded ? (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 2,
-            mb: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
-              {t('marketplace.title')}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<Add />}
-            sx={{ flexShrink: 0, mt: 0.5 }}
-            onClick={() => {
-              if (!requireLogin()) return;
-              setEditingId(null);
-              setForm(emptyListingForm());
-              setCreateOpen(true);
-            }}
-          >
-            {t('marketplace.createListing')}
-          </Button>
-        </Box>
+        <DealsHubHeader active="market" onPrimaryAction={openCreateListing} />
       ) : (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
           <Button
             variant="contained"
             size="small"
             startIcon={<Add />}
-            onClick={() => {
-              if (!requireLogin()) return;
-              setEditingId(null);
-              setForm(emptyListingForm());
-              setCreateOpen(true);
-            }}
+            onClick={openCreateListing}
           >
             {t('marketplace.createListing')}
           </Button>
@@ -480,7 +454,16 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
         onChange={(_, v) => setTab(v)}
         variant="scrollable"
         scrollButtons="auto"
-        sx={{ mb: 2, borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
+        sx={{
+          mb: 2,
+          px: 0.75,
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 2,
+          minHeight: 46,
+          bgcolor: 'action.hover',
+          '& .MuiTabs-indicator': { height: 3, borderRadius: 999 },
+        }}
       >
         <Tab value="refer" icon={<CardGiftcard />} iconPosition="start" label={t('marketplace.tabs.refer')} sx={{ minHeight: 40 }} />
         <Tab value="job_intel" icon={<WorkOutline />} iconPosition="start" label={t('marketplace.tabs.jobIntel')} sx={{ minHeight: 40 }} />
@@ -509,7 +492,20 @@ export default function MarketplacePage({ embedded = false }: { embedded?: boole
       {(tab === 'refer' || tab === 'job_intel' || tab === 'my_listings') && (
         <>
           {tab === 'refer' ? (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2, alignItems: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1.25,
+                mb: 2,
+                p: 1.5,
+                alignItems: 'center',
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+              }}
+            >
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>{t('marketplace.sortBy')}</InputLabel>
                 <Select
@@ -875,8 +871,26 @@ function ListingsGrid({
               opacity: soldOut ? 0.55 : 1,
               filter: soldOut ? 'grayscale(0.7)' : 'none',
               bgcolor: soldOut ? 'action.hover' : undefined,
+              borderRadius: 2.5,
+              overflow: 'hidden',
+              transition: 'transform .2s ease, box-shadow .2s ease, border-color .2s ease',
+              '&:hover': soldOut
+                ? undefined
+                : {
+                    transform: 'translateY(-3px)',
+                    borderColor: 'primary.light',
+                    boxShadow: '0 18px 45px rgba(15,23,42,.10)',
+                  },
             }}
           >
+            <Box
+              sx={{
+                height: 4,
+                background: item.type === 'refer'
+                  ? 'linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)'
+                  : 'linear-gradient(90deg, #0ea5e9, #10b981)',
+              }}
+            />
             {item.type === 'refer' && total > 0 ? (
               <Box
                 sx={{
@@ -900,7 +914,7 @@ function ListingsGrid({
                 </Typography>
               </Box>
             ) : null}
-            <CardContent sx={{ flex: 1, pr: item.type === 'refer' ? 10 : 2 }} onClick={() => onOpenDetail(item)} style={{ cursor: 'pointer' }}>
+            <CardContent sx={{ flex: 1, p: 2.25, pr: item.type === 'refer' ? 10 : 2.25 }} onClick={() => onOpenDetail(item)} style={{ cursor: 'pointer' }}>
               <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
                 <Chip
                   size="small"
@@ -913,10 +927,19 @@ function ListingsGrid({
                 ) : null}
                 {soldOut ? <Chip size="small" label={t('marketplace.soldOut')} color="default" /> : null}
               </Box>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
+              <Typography
+                variant="h6"
+                fontWeight={750}
+                gutterBottom
+                sx={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', letterSpacing: '-.015em' }}
+              >
                 {item.title}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 1.25, lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              >
                 {item.description}
               </Typography>
               {item.type === 'refer' ? (
@@ -1000,7 +1023,7 @@ function ListingsGrid({
                 ) : null}
               </Box>
             </CardContent>
-            <CardActions sx={{ px: 2, pb: 2, flexWrap: 'wrap', gap: 0.5 }}>
+            <CardActions sx={{ px: 2.25, pb: 2.25, pt: 0, flexWrap: 'wrap', gap: 0.5 }}>
               {tab === 'my_listings' ? (
                 <>
                   <Button size="small" onClick={() => onEdit(item)}>

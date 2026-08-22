@@ -24,6 +24,8 @@ import {
   Apps,
   Science,
   PhoneAndroid,
+  CheckCircleOutline,
+  WarningAmber,
 } from '@mui/icons-material';
 import {
   dealCategoryOrder,
@@ -38,6 +40,7 @@ import {
   formatEditionPeriod,
   resolveAllPrograms,
   sortProgramsForDisplay,
+  resolveProgramCategory,
   type ResolvedProgram,
 } from '../lib/deals/deal-utils';
 import { resolveDealCornerBadge } from '../lib/deals/reward-badge';
@@ -46,6 +49,7 @@ import type { Language } from '../i18n/types';
 import { pickBilingual } from '../i18n/bilingual';
 import { useReferralPrograms } from '../lib/deals/useReferralPrograms';
 import { useAuthStore } from '@/stores/authStore';
+import DealsHubHeader from '../components/deals/DealsHubHeader';
 
 const categoryIcons: Record<DealCategory, React.ReactNode> = {
   bank: <AccountBalance fontSize="small" />,
@@ -99,6 +103,7 @@ function DealCard({
   const period = formatEditionPeriod(edition, lang);
   const officialUrl = edition.officialUrl;
   const cornerBadge = resolveDealCornerBadge(program);
+  const decision = edition.decisionProfile;
   const showAmountBadge =
     !isStale &&
     cornerBadge != null &&
@@ -127,13 +132,19 @@ function DealCard({
         border: 1,
         borderColor: isStale ? 'action.disabled' : 'divider',
         borderStyle: isStale ? 'dashed' : 'solid',
-        borderRadius: 2,
-        p: 2,
+        borderRadius: 2.5,
+        p: 2.25,
         display: 'flex',
         flexDirection: 'column',
         gap: 1.25,
         height: '100%',
-        transition: 'box-shadow 0.2s, opacity 0.2s',
+        background: (theme) =>
+          isStale
+            ? theme.palette.action.hover
+            : theme.palette.mode === 'dark'
+              ? 'linear-gradient(180deg, rgba(99,102,241,.08), rgba(23,23,23,1) 28%)'
+              : 'linear-gradient(180deg, rgba(238,242,255,.72), #fff 28%)',
+        transition: 'transform .2s ease, box-shadow .2s ease, border-color .2s ease, opacity .2s',
         overflow: 'hidden',
         cursor: isStale ? 'default' : 'pointer',
         ...(isStale
@@ -143,7 +154,13 @@ function DealCard({
               bgcolor: 'action.hover',
               '&:hover': { boxShadow: 0 },
             }
-          : { '&:hover': { boxShadow: 2 } }),
+          : {
+              '&:hover': {
+                boxShadow: '0 18px 45px rgba(15,23,42,.10)',
+                borderColor: 'primary.light',
+                transform: 'translateY(-3px)',
+              },
+            }),
       }}
     >
       {isStale ? (
@@ -284,6 +301,37 @@ function DealCard({
         {period}
       </Typography>
 
+      {decision && !isStale ? (
+        <Box
+          sx={{
+            p: 1.25,
+            borderRadius: 1.75,
+            bgcolor: 'action.hover',
+            border: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="caption" color="primary.main" fontWeight={800}>
+            {t('deals.bestFor')}
+          </Typography>
+          <Typography variant="body2" fontWeight={650} sx={{ mt: 0.2, lineHeight: 1.45 }}>
+            {pickBilingual(decision.bestFor, lang)}
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1, mt: 1 }}>
+            {decision.facts.slice(0, 4).map((fact) => (
+              <Box key={`${fact.label.zh}-${fact.value.zh}`} sx={{ minWidth: 0 }}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {pickBilingual(fact.label, lang)}
+                </Typography>
+                <Typography variant="caption" fontWeight={750} sx={{ lineHeight: 1.35 }}>
+                  {pickBilingual(fact.value, lang)}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      ) : null}
+
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
         <Box>
           <Typography
@@ -366,6 +414,12 @@ function DealCard({
           </Button>
         ) : null}
       </Box>
+      {decision && !isStale ? (
+        <Typography variant="caption" color="text.secondary" sx={{ mt: -0.25 }}>
+          {tWithParams('deals.verifiedAt', { date: decision.verifiedAt })} ·{' '}
+          {decision.evidence === 'official' ? t('deals.evidenceOfficial') : t('deals.evidenceMixed')}
+        </Typography>
+      ) : null}
     </Box>
   );
 }
@@ -376,7 +430,7 @@ export default function DealsPage() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === 'admin';
   const [category, setCategory] = useState<DealCategory | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
   const [snack, setSnack] = useState<{ open: boolean; message: string; severity?: 'success' | 'info' }>({
     open: false,
     message: '',
@@ -388,12 +442,22 @@ export default function DealsPage() {
   const [externalLink, setExternalLink] = useState<{ url: string; label: string } | null>(null);
 
   const allResolved = useMemo(() => resolveAllPrograms(programs), [programs]);
+  const activeCount = allResolved.filter((item) => !item.isStale).length;
+  const staleCount = allResolved.length - activeCount;
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<DealCategory, number>();
+    allResolved.forEach((item) => {
+      const key = resolveProgramCategory(item.program);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return counts;
+  }, [allResolved]);
 
   const filtered = useMemo(() => {
     const base =
       category === 'all'
         ? allResolved
-        : allResolved.filter((r) => r.program.category === category);
+        : allResolved.filter((r) => resolveProgramCategory(r.program) === category);
     return sortProgramsForDisplay(base);
   }, [allResolved, category]);
 
@@ -403,6 +467,8 @@ export default function DealsPage() {
 
   return (
     <Box>
+      <DealsHubHeader active="official" activeCount={activeCount} staleCount={staleCount} />
+
       <Tabs
         value={category}
         onChange={(_, v) => setCategory(v)}
@@ -410,18 +476,57 @@ export default function DealsPage() {
         scrollButtons="auto"
         sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
       >
-        <Tab value="all" label={t('common.all')} sx={{ minHeight: 40, py: 1 }} />
+        <Tab value="all" label={`${t('common.all')} ${allResolved.length}`} sx={{ minHeight: 40, py: 1 }} />
         {dealCategoryOrder.map((cat) => (
           <Tab
             key={cat}
             value={cat}
             icon={(categoryIcons[cat] ?? categoryIcons.other) as React.ReactElement}
             iconPosition="start"
-            label={t(`deals.categories.${cat}`)}
+            label={`${t(`deals.categories.${cat}`)} ${categoryCounts.get(cat) ?? 0}`}
             sx={{ minHeight: 40, py: 1 }}
           />
         ))}
       </Tabs>
+
+      {category === 'remittance' ? (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0,1.7fr) minmax(260px,.8fr)' },
+            gap: 2,
+            p: { xs: 2, md: 2.5 },
+            mb: 2,
+            borderRadius: 2.5,
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: 'action.hover',
+          }}
+        >
+          <Box>
+            <Typography variant="h6" fontWeight={800}>
+              {t('deals.remittanceGuideTitle')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.65 }}>
+              {t('deals.remittanceGuideBody')}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {[t('deals.remittanceCheck1'), t('deals.remittanceCheck2'), t('deals.remittanceCheck3')].map((label) => (
+              <Box key={label} sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
+                <CheckCircleOutline sx={{ fontSize: 18, color: 'success.main', mt: 0.1 }} />
+                <Typography variant="body2">{label}</Typography>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ gridColumn: { md: '1 / -1' }, display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
+            <WarningAmber sx={{ fontSize: 17, color: 'warning.main', mt: 0.1 }} />
+            <Typography variant="caption" color="text.secondary">
+              {t('deals.remittanceDynamicHint')}
+            </Typography>
+          </Box>
+        </Box>
+      ) : null}
 
       <Box
         sx={{

@@ -101,6 +101,23 @@ function remittanceDeal(partial: Omit<ReferralProgram, 'category' | 'offerKind' 
   };
 }
 
+const remitDecision = (
+  bestForZh: string,
+  bestForEn: string,
+  facts: Array<[string, string, string, string]>,
+  watchOutZh: string,
+  watchOutEn: string,
+): NonNullable<ReferralProgram['editions'][number]['decisionProfile']> => ({
+  bestFor: { zh: bestForZh, en: bestForEn },
+  facts: facts.map(([labelZh, labelEn, valueZh, valueEn]) => ({
+    label: { zh: labelZh, en: labelEn },
+    value: { zh: valueZh, en: valueEn },
+  })),
+  watchOut: { zh: watchOutZh, en: watchOutEn },
+  verifiedAt: '2026-08-22',
+  evidence: 'mixed',
+});
+
 /** 前台展示用的换汇/汇款项目（与 Notion 同步） */
 export const notionRemittancePrograms: ReferralProgram[] = [
   remittanceDeal({
@@ -114,6 +131,17 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: '2026-09-30',
       reward: { zh: '首笔3000刀内更优汇率 + $25 Prezzee 礼品卡', en: 'Better rate on first $3k + $25 Prezzee gift card' },
       summary: { zh: '8/1–9/30 活动；首笔汇款3000刀内汇率更优（约千分之六）。', en: 'Promo through Sep 30, 2026; better rate on first $3k transfer.' },
+      decisionProfile: remitDecision(
+        '首笔接近 $3,000、愿意在活动期内完成的人',
+        'First transfers near $3,000 during the promo window',
+        [
+          ['核心门槛', 'Threshold', '完成首笔汇款', 'Complete the first transfer'],
+          ['比价重点', 'Compare', '优惠后实际到账金额', 'Final amount received after promo'],
+          ['活动性质', 'Offer type', '限时汇率 + 礼品卡', 'Limited-time rate + gift card'],
+        ],
+        '礼品卡和优惠汇率都可能有资格限制；付款前保存最终报价截图。',
+        'Gift card and promo rate may have eligibility limits; save the final quote before paying.',
+      ),
       requirements: { zh: ['通过官方活动页注册', '完成首笔汇款'], en: ['Sign up via promo', 'Complete first transfer'] },
       tags: { zh: ['换汇', '限时'], en: ['Remittance', 'Limited time'] },
     }],
@@ -132,6 +160,17 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '$20 官方奖励 + 本站返现 $10', en: '$20 official + $10 site cashback' },
       summary: { zh: '验证账户并汇款 ≥$100；官方 $20，本站另返 $10。', en: 'Verify and send $100+; $20 official bonus + $10 from site.' },
+      decisionProfile: remitDecision(
+        '想用小额首汇测试流程并拿邀请奖励的人',
+        'A small first transfer to test the flow and earn a referral bonus',
+        [
+          ['最低汇款', 'Minimum', '≥ $100', '≥ $100'],
+          ['官方奖励', 'Official bonus', '约 $20', 'About $20'],
+          ['比价重点', 'Compare', '收款人最终到账', 'Final recipient amount'],
+        ],
+        '奖励资格、支持走廊和汇率会按账号变化，以付款前报价为准。',
+        'Eligibility, corridors, and rates vary by account; trust the pre-payment quote.',
+      ),
       cardGuideBrief: { zh: '验证账户并汇款 ≥$100，官方约 $20。', en: 'Verify + send $100+ for ~$20 official bonus.' },
       cardExtraBrief: { zh: '本站另返 $10。', en: 'Site adds $10 cashback.' },
       requirements: { zh: ['汇款 $100', '使用 Refer 码 JIAJCETW', '等待约 1 天到账'], en: ['Send $100+', 'Code JIAJCETW', '~1 day to post'] },
@@ -157,6 +196,17 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '免手续费/汇率提升 + 本站返现 $7', en: 'Fee waiver/rate boost + $7 site cashback' },
       summary: { zh: '使用 Refer 码 RS46GM 成功汇款；首次汇款免手续费。', en: 'Use code RS46GM; first transfer fee waiver.' },
+      decisionProfile: remitDecision(
+        '主要向中国银行卡或常用人民币收款渠道汇小额生活费的人',
+        'Small family remittances to common CNY receiving channels',
+        [
+          ['收费方式', 'Pricing', '常见固定费 + 汇差', 'Often flat fee + FX spread'],
+          ['新人权益', 'New user', '首笔常有减免', 'First-transfer promotion'],
+          ['比价重点', 'Compare', '不要只看“免手续费”', 'Do not compare on “zero fee” alone'],
+        ],
+        '平台自有内容可能偏向自身；务必与至少一家平台同时输入相同金额比最终到账。',
+        'Provider content is promotional; compare the same amount against at least one alternative.',
+      ),
       cardGuideBrief: { zh: 'Refer 码汇款成功，首次常免手续费。', en: 'Transfer with refer code; first transfer often fee-free.' },
       cardExtraBrief: { zh: '本站返现 $7。', en: 'Site cashback $7.' },
       requirements: { zh: ['Refer 码 RS46GM', '成功汇款'], en: ['Code RS46GM', 'Complete transfer'] },
@@ -182,6 +232,17 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '$10 官方奖励 + 本站返现 $10', en: '$10 official + $10 site cashback' },
       summary: { zh: '汇款 ≥$51 成功到账；兑换码 JIAJUN9。', en: 'Send $51+; promo code JIAJUN9.' },
+      decisionProfile: remitDecision(
+        '门槛低、先做一笔小额首汇的人',
+        'A low-threshold first transfer',
+        [
+          ['最低汇款', 'Minimum', '≥ $51', '≥ $51'],
+          ['奖励方式', 'Bonus', '兑换码 + 官方奖励', 'Promo code + official bonus'],
+          ['到账要求', 'Requirement', '成功完成并到账', 'Transfer must complete'],
+        ],
+        '小额奖励可能掩盖较弱汇率；计算“奖励后净到账”，不要只看红包。',
+        'A bonus can hide a weaker rate; compare net recipient value after the reward.',
+      ),
       cardGuideBrief: { zh: '兑换码汇款 ≥$51 拿官方 $10。', en: 'Promo code + send $51+ for $10 official.' },
       cardExtraBrief: { zh: '本站另返 $10。', en: 'Site adds $10.' },
       requirements: { zh: ['汇款 ≥$51', 'Refer 码 JIAJUN9', '成功到账'], en: ['Send $51+', 'Code JIAJUN9', 'Transfer completes'] },
@@ -207,6 +268,18 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '首笔 $100+ 减 $5 + 本站返现 $10', en: '$5 off first $100+ transfer + $10 site cashback' },
       summary: { zh: '仅限 20 人；首笔转账 $100 以上。', en: 'Limited to 20 people; first transfer $100+.' },
+      decisionProfile: remitDecision(
+        '更看重到账速度或需要多种收款方式的人',
+        'People prioritizing delivery speed or payout options',
+        [
+          ['最低汇款', 'Minimum', '首笔 ≥ $100', 'First transfer ≥ $100'],
+          ['收费结构', 'Pricing', '手续费 + 汇率差', 'Fee + exchange-rate spread'],
+          ['速度', 'Speed', '按走廊与付款方式动态显示', 'Shown dynamically by route and funding method'],
+        ],
+        '“免手续费”不等于总成本最低；比较付款页的汇率、费用和最终到账。',
+        '“No fee” does not mean lowest total cost; compare rate, fees, and recipient amount.',
+      ),
+      officialUrl: 'https://www.remitly.com/us/zh/money-transfer',
       cardGuideBrief: { zh: '首笔 ≥$100 减免 + 本站返现。', en: 'First $100+ transfer fee cut + site cashback.' },
       cardExtraBrief: { zh: '本站返现约 $10。', en: 'About $10 site cashback.' },
       requirements: { zh: ['首笔转账 ≥$100', '名额有限（约 20 人）'], en: ['First transfer $100+', 'Limited slots (~20)'] },
@@ -226,6 +299,17 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '$10 转账优惠券', en: '$10 transfer coupon' },
       summary: { zh: '注册后赠送 $10 优惠券；汇率偏低，谨慎选择。', en: 'Register for $10 coupon; rate not competitive.' },
+      decisionProfile: remitDecision(
+        '已经比价确认其最终到账更高的人',
+        'Only when its live quote beats alternatives',
+        [
+          ['奖励形式', 'Reward', '$10 优惠券', '$10 coupon'],
+          ['当前定位', 'Position', '低优先级备选', 'Low-priority fallback'],
+          ['比价重点', 'Compare', '优惠券后的净到账', 'Net recipient amount after coupon'],
+        ],
+        '优惠券不是现金；若汇率差更大，拿券后仍可能更贵。',
+        'A coupon is not cash; a wider FX spread can still make the transfer more expensive.',
+      ),
       requirements: { zh: ['注册账户'], en: ['Sign up'] },
       tags: { zh: ['换汇', '不推荐'], en: ['Remittance', 'Low priority'] },
     }],
@@ -247,6 +331,18 @@ export const notionRemittancePrograms: ReferralProgram[] = [
       validUntil: null,
       reward: { zh: '$600 免手续费额度 + 本站返现 $10', en: '$600 fee-free limit + $10 site cashback' },
       summary: { zh: '注册并转账超过 $300；获 $600 免手续费额度。', en: 'Register and transfer $300+ for fee-free allowance.' },
+      decisionProfile: remitDecision(
+        '重视透明费用、跨多币种使用或中大额转账的人',
+        'People valuing transparent pricing, multi-currency use, or larger transfers',
+        [
+          ['汇率方式', 'Exchange rate', '中间市场汇率', 'Mid-market rate'],
+          ['收费方式', 'Pricing', '付款前展示手续费', 'Upfront transfer fee'],
+          ['邀请门槛', 'Referral threshold', '转账 > $300', 'Transfer > $300'],
+        ],
+        '费用按币种、金额和付款方式变化；“免手续费额度”必须核对适用范围。',
+        'Fees vary by currency, amount, and funding method; verify what the fee-free allowance covers.',
+      ),
+      officialUrl: 'https://wise.com/us/pricing/send-money',
       requirements: { zh: ['注册 Wise', '转账超过 $300'], en: ['Sign up', 'Transfer $300+'] },
       referralUrl: 'https://wise.com/invite/ilpc/jiajunc191',
       tags: { zh: ['换汇', '大额友好'], en: ['Remittance', 'Higher limits'] },

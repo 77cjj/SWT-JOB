@@ -42,6 +42,25 @@ export interface BilingualList {
   en: string[];
 }
 
+export interface DealDecisionFact {
+  label: BilingualText;
+  value: BilingualText;
+}
+
+/**
+ * 列表页的决策摘要。金额、汇率等易变信息不在这里写死，卡片只保存
+ * 相对稳定的选择逻辑；实时价格仍应在跳转前向官方重新报价。
+ */
+export interface DealDecisionProfile {
+  bestFor: BilingualText;
+  facts: DealDecisionFact[];
+  watchOut?: BilingualText;
+  /** 最近一次人工交叉核验日 YYYY-MM-DD */
+  verifiedAt: string;
+  /** official = 官方条款；mixed = 官方 + 社区实测 */
+  evidence: 'official' | 'mixed';
+}
+
 /** 某一时间段内的一次 Refer 活动（可归档到历史） */
 export interface DealEdition {
   id: string;
@@ -64,6 +83,8 @@ export interface DealEdition {
   tags?: BilingualList;
   /** 相对上一版的政策变动说明（用于时间线） */
   changeNote?: BilingualText;
+  /** 用于列表快速比较的结构化决策信息 */
+  decisionProfile?: DealDecisionProfile;
 }
 
 /** 一个品牌/产品的 Refer 项目（卡片主体），内含多期活动 */

@@ -524,6 +524,9 @@ export const zh = {
   deals: {
     title: '薅羊毛',
     subtitle: '邀请返现与开户奖励一览 · 细则以各平台官网为准',
+    hubEyebrow: 'SWT MONEY PLAYBOOK',
+    officialHeroTitle: '先把门槛算清，再决定薅哪一笔',
+    officialHeroBody: '按奖励、资金占用、身份要求和时间成本筛选。卡片只保留做决定需要的信息，活动细则与实时价格在付款或开户前再向官方核验。',
     sectionOfficial: '官方精选',
     sectionMarket: '交易市集',
     disclaimer: '本站非银行或运营商官方页面。奖励条件可能随时变更；涉及 SSN、Direct Deposit 等请自行核实，风险自负。',
@@ -602,12 +605,26 @@ export const zh = {
     howToClaimTitle: '如何领取官方奖励',
     practicalStepsTitle: '实操步骤与注意事项',
     officialRequirements: '官方参与条件',
+    bestFor: '适合谁',
+    verifiedAt: '核验于 {date}',
+    evidenceOfficial: '官方来源',
+    evidenceMixed: '官方 + 社区交叉核验',
+    remittanceGuideTitle: '换汇不要只看“奖励”或“免手续费”',
+    remittanceGuideBody: '同一时间、同一汇款金额、同一付款方式分别询价，真正可比的是收款人最终到账金额。优惠码只是成本的一部分，汇差、付款费和中间行费用都可能改变结果。',
+    remittanceCheck1: '对比最终到账，不只比较页面汇率',
+    remittanceCheck2: '确认到账方式、预计时间与取消规则',
+    remittanceCheck3: '付款前保存费用、汇率和到账金额截图',
+    remittanceDynamicHint: '汇率和费用实时变化；本站的示例与社区实测只能用于筛选候选，不能替代付款页报价。',
   },
 
   // 交易市集
   marketplace: {
     title: '交易市集',
     subtitle: 'Refer 返现与岗位信息费：发布者填写联系方式，寻找方自行联系协商。',
+    heroTitle: '社区线索市集，先看人再看价',
+    heroBody: '把个人 Refer、返现承诺和岗位情报放到同一处，但不替双方托管资金。优先选择信息完整、完成记录清楚、争议少的发布者。',
+    selfServeChip: '双方自行联系履约',
+    trustChip: '公开信誉与参与记录',
     subtitleShort: '双方留联系方式 · 自行对接协商',
     escrowPitchTitle: '',
     escrowPitchBody: '',
@@ -830,4 +847,3 @@ export const zh = {
     selectState: '请选择州',
   },
 };
-

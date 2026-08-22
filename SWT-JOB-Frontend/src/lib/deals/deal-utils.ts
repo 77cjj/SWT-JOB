@@ -13,6 +13,19 @@ export interface ResolvedProgram {
   isStale: boolean;
 }
 
+const DISPLAY_GROUP_CATEGORY: Partial<Record<NonNullable<ReferralProgram['displayGroup']>, ReferralProgram['category']>> = {
+  'bank-neobank': 'bank',
+  'bank-national': 'bank',
+  remittance: 'remittance',
+  cashback: 'cashback',
+  'ny-study': 'study',
+};
+
+/** displayGroup 是运营排序字段，但历史数据里它比 category 更可靠。 */
+export function resolveProgramCategory(program: ReferralProgram): ReferralProgram['category'] {
+  return (program.displayGroup && DISPLAY_GROUP_CATEGORY[program.displayGroup]) || program.category;
+}
+
 const EXPIRING_WITHIN_DAYS = 30;
 
 function startOfDay(d: Date): Date {
@@ -155,8 +168,8 @@ export function sortProgramsForDisplay(items: ResolvedProgram[]): ResolvedProgra
     const scoreDiff = recommendScoreOf(a) - recommendScoreOf(b);
     if (scoreDiff !== 0) return scoreDiff;
 
-    const ca = categoryOrder[a.program.category] ?? 99;
-    const cb = categoryOrder[b.program.category] ?? 99;
+    const ca = categoryOrder[resolveProgramCategory(a.program)] ?? 99;
+    const cb = categoryOrder[resolveProgramCategory(b.program)] ?? 99;
     if (ca !== cb) return ca - cb;
 
     const ga = groupOrder[resolveGroup(a.program)] ?? 99;

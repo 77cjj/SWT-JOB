@@ -1,6 +1,7 @@
 import { api } from '@/services/api';
 import type { ReferralProgram } from '../../data/referralDeals';
 import { referralPrograms as staticPrograms } from '../../data/referralDeals';
+import { resolveProgramCategory } from './deal-utils';
 
 export interface ReferralDealRecord {
   id: string;
@@ -36,12 +37,21 @@ export interface AdminDealRow {
 }
 
 function applyRecord(base: ReferralProgram, record: ReferralDealRecord): ReferralProgram {
+  const baseEditions = new Map(base.editions.map((edition) => [edition.id, edition]));
+  const mergedEditions = record.program.editions?.length
+    ? record.program.editions.map((edition) => ({
+        ...baseEditions.get(edition.id),
+        ...edition,
+      }))
+    : base.editions;
   const merged: ReferralProgram = {
     ...base,
     ...record.program,
     id: record.id,
-    editions: record.program.editions?.length ? record.program.editions : base.editions,
+    editions: mergedEditions,
   };
+  // 修复早期种子中 category=other、displayGroup=remittance 等冲突。
+  merged.category = resolveProgramCategory(merged);
   if (record.siteRebateUsd != null) {
     merged.siteRebateUsd = Number(record.siteRebateUsd);
   }
@@ -170,6 +180,7 @@ export async function deleteReferralDeal(id: string) {
 }
 
 export async function hideReferralDeal(id: string, title: string, _isNew?: boolean) {
+  void _isNew;
   // 隐藏始终 upsert tombstone，勿用 create（软删除后主键仍在）
   await bulkUpsertReferralDeals([tombstonePayload(id, title)]);
 }

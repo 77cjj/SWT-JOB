@@ -92,7 +92,7 @@ function MetricItem({
   };
 
   return (
-      <div className="flex items-center gap-2 px-4 py-2">
+      <div className="flex shrink-0 items-center gap-2 px-4 py-2">
         <Icon className={cn("h-4 w-4", styles[variant])} />
         <span className={cn("text-lg font-semibold", styles[variant])}>{value}</span>
         <span className="text-xs text-slate-500">{label}</span>
@@ -351,10 +351,10 @@ export function RagTraceDetailPage() {
   }
 
   return (
-      <div className="space-y-4 pb-8">
+      <div className="admin-page trace-page trace-detail-page space-y-4 pb-8">
         {/* 标题栏 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5 text-sm">
               <Link
                   href="/admin/traces"
@@ -375,7 +375,7 @@ export function RagTraceDetailPage() {
           </div>
 
           {/* 右侧按钮组 */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
                 asChild
                 variant="outline"
@@ -401,7 +401,7 @@ export function RagTraceDetailPage() {
         </div>
 
         {/* 元信息 */}
-        <div className="flex items-center gap-4 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
         <span
             className="font-mono cursor-pointer hover:text-slate-700 flex items-center gap-1 transition-colors"
             onClick={() => copyToClipboard(traceId, "Trace Id")}
@@ -447,7 +447,7 @@ export function RagTraceDetailPage() {
         )}
 
         {/* 指标条 */}
-        <div className="flex items-center bg-slate-50 rounded-lg border border-slate-200 divide-x divide-slate-200">
+        <div className="flex items-center overflow-x-auto bg-slate-50 rounded-lg border border-slate-200 divide-x divide-slate-200">
           <MetricItem
               icon={Clock}
               label="总耗时"
@@ -505,7 +505,7 @@ export function RagTraceDetailPage() {
                   <p>暂无节点记录</p>
                 </div>
             ) : (
-                <div>
+                <div className="min-w-[860px] overflow-hidden">
                   <div className="grid grid-cols-[minmax(180px,1fr)_120px_2fr_100px] gap-4 px-4 py-2 text-xs font-medium text-slate-500 bg-slate-50 border-y border-slate-100">
                     <span>节点</span>
                     <span>类型</span>

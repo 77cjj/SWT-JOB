@@ -25,6 +25,10 @@ export interface DocPageData {
   section: DocSectionKey | null;
   order: number;
   status: DocStatus;
+  /** 内容治理由 Sanity 控制；server 表示正文回退到仓库 MDX。 */
+  contentSource?: "sanity" | "server";
+  enabled?: boolean;
+  commentsEnabled?: boolean;
   summary?: string;
   markdown?: string;
   /** Portable Text blocks；构建期可能带有 `_headingId`（见 `prepareDocPage`） */

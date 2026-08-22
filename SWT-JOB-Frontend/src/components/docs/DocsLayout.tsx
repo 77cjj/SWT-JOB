@@ -156,7 +156,7 @@ export function DocsLayout({ navigation, page, content, toc }: DocsLayoutProps) 
               </header>
               <div className="docs-content">{content}</div>
               <DocsPageNav prev={prev} next={next} />
-              {page.fullSlug ? (
+              {page.fullSlug && page.commentsEnabled !== false ? (
                 <DocCommentsSection docSlug={page.fullSlug} />
               ) : null}
             </>

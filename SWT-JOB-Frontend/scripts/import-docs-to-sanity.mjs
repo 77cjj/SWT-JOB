@@ -61,19 +61,25 @@ const ROOT = path.join(process.cwd(), "src/pages/docs");
 const CLEANED_ROOT = path.join(process.cwd(), "sanity/清洗完毕文档");
 
 const sectionConfig = [
-  { key: "intro", title: "项目介绍", order: 10 },
-  { key: "preparation", title: "行前准备", order: 20 },
-  { key: "experience", title: "行中指南", order: 30 },
-  { key: "after", title: "行后与归国", order: 40 },
-  { key: "basics", title: "基础指南", order: 50 },
+  { key: "intro", title: "入门必读", order: 10 },
+  { key: "apply", title: "报名选岗", order: 20 },
+  { key: "visa", title: "签证护照", order: 30 },
+  { key: "departure", title: "行前准备", order: 40 },
+  { key: "arrival", title: "抵美落地", order: 50 },
+  { key: "living", title: "在美生活", order: 60 },
+  { key: "transport", title: "交通出行", order: 70 },
+  { key: "return", title: "归国收尾", order: 80 },
 ];
 
 const sectionMeta = {
-  intro: ["guide", "faq"],
-  preparation: ["agency", "timeline", "interview", "flights", "packing"],
-  experience: ["roles", "selection", "living-cost", "second-job", "safety"],
-  after: ["taxes", "shopping", "travel"],
-  basics: ["flights"],
+  intro: ["eligibility", "project-costs", "faq", "myths"],
+  apply: ["timeline", "agency", "roles", "selection", "interview"],
+  visa: ["passport", "visa-materials", "visa-interview", "visa-faq", "passport-lost"],
+  departure: ["flights", "packing", "money-prep", "sim-card", "whatsapp", "online-tools", "email-templates"],
+  arrival: ["arrival-guide", "sevis-checkin", "i94-ssn", "settling-in"],
+  living: ["housing", "living-cost", "food", "work-rules", "second-job", "medical", "safety", "reselling"],
+  transport: ["uber", "bus", "metro", "coach", "train", "car-rental", "bicycle", "domestic-travel"],
+  return: ["taxes", "payroll-withholding", "grace-travel", "side-hustles", "low-deposit-bank-bonuses"],
 };
 
 async function walkSectionFiles(sectionKey, currentRelative = "") {
@@ -309,6 +315,10 @@ async function collectDocs() {
     sectionOrder: 0,
     order: 0,
     status: "published",
+    // 首次迁移先保持线上使用原 MDX，编辑者可在 Studio 切到 Sanity 正文。
+    contentSource: "server",
+    enabled: true,
+    commentsEnabled: true,
     body: markdownToPortableText(indexDoc.content),
     legacyPath: "src/pages/docs/index.mdx",
   });
@@ -354,6 +364,9 @@ async function collectDocs() {
           sectionOrder: section.order,
           order: index,
           status: "published",
+          contentSource: "server",
+          enabled: true,
+          commentsEnabled: true,
           summary: typeof file.data.summary === "string" ? file.data.summary : undefined,
           body: markdownToPortableText(file.content),
           legacyPath: `src/pages/docs/${relativePath}`,
@@ -424,13 +437,33 @@ const client = createClient({
 });
 
 const docs = await collectDocs();
+const overwriteExisting = process.env.SANITY_IMPORT_OVERWRITE === "true";
+if (process.env.SANITY_IMPORT_DRY_RUN === "true") {
+  const duplicateSlugs = docs
+    .map((doc) => doc.slug.current)
+    .filter((slug, index, all) => all.indexOf(slug) !== index);
+  console.log(`Dry run: ${docs.length} documents, ${duplicateSlugs.length} duplicate slugs.`);
+  process.exit(duplicateSlugs.length > 0 ? 1 : 0);
+}
 
 try {
   for (const doc of docs) {
-    await client.createOrReplace(doc);
-    console.log(`Imported ${doc.slug.current || "docs-home"}`);
+    if (overwriteExisting) {
+      await client.createOrReplace(doc);
+    } else {
+      await client.createIfNotExists(doc);
+    }
+    await client
+      .patch(doc._id)
+      .setIfMissing({
+        contentSource: "sanity",
+        enabled: true,
+        commentsEnabled: true,
+      })
+      .commit();
+    console.log(`${overwriteExisting ? "Imported" : "Ensured"} ${doc.slug.current || "docs-home"}`);
   }
-  console.log(`Imported ${docs.length} documents into Sanity.`);
+  console.log(`${overwriteExisting ? "Imported" : "Ensured"} ${docs.length} documents in Sanity.`);
 } catch (err) {
   const code = err && typeof err === "object" && "code" in err ? err.code : undefined;
   const msg = err instanceof Error ? err.message : String(err);

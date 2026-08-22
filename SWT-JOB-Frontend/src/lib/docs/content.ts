@@ -19,6 +19,9 @@ type SanityDocRecord = {
   sectionOrder?: number;
   order?: number;
   status?: "draft" | "review" | "published";
+  contentSource?: "sanity" | "server";
+  enabled?: boolean;
+  commentsEnabled?: boolean;
   summary?: string;
   body?: unknown[];
   seoTitle?: string;
@@ -97,6 +100,9 @@ function normalizeSanityDoc(record: SanityDocRecord): DocPageData {
     section,
     order: record.order ?? 0,
     status: record.status ?? "published",
+    contentSource: record.contentSource ?? "sanity",
+    enabled: record.enabled !== false,
+    commentsEnabled: record.commentsEnabled !== false,
     summary: record.summary,
     body: record.body,
     updatedAt: record._updatedAt,
@@ -144,6 +150,48 @@ async function getSanityDocBySlug(slug: string[]): Promise<DocPageData | null> {
   return row ? normalizeSanityDoc(row) : null;
 }
 
+function withSanityGovernance(localDoc: DocPageData, control: DocPageData): DocPageData {
+  return {
+    ...localDoc,
+    // 即便正文来自 MDX，启用与评论配置仍由这条 Sanity 记录治理，编辑入口也应回到它。
+    id: control.id,
+    source: "sanity",
+    contentSource: "server",
+    enabled: true,
+    commentsEnabled: control.commentsEnabled !== false,
+    updatedAt: control.updatedAt ?? localDoc.updatedAt,
+  };
+}
+
+/**
+ * Sanity 记录同时承担内容与治理配置：
+ * - enabled=false 会阻断本地兜底，确保“停用”真的生效；
+ * - contentSource=server 时使用同 slug 的仓库 MDX 正文；
+ * - 没有 Sanity 控制记录的旧文档继续使用 MDX，保证迁移期间不中断。
+ */
+function resolveManagedDocs(sanityDocs: DocPageData[], localDocs: DocPageData[]): DocPageData[] {
+  const localBySlug = new Map(localDocs.map((doc) => [doc.fullSlug, doc]));
+  const controlledSlugs = new Set<string>();
+  const resolved: DocPageData[] = [];
+
+  for (const sanityDoc of sanityDocs) {
+    controlledSlugs.add(sanityDoc.fullSlug);
+    if (sanityDoc.enabled === false) continue;
+    if (sanityDoc.contentSource === "server") {
+      const localDoc = localBySlug.get(sanityDoc.fullSlug);
+      resolved.push(localDoc ? withSanityGovernance(localDoc, sanityDoc) : sanityDoc);
+      continue;
+    }
+    resolved.push(sanityDoc);
+  }
+
+  for (const localDoc of localDocs) {
+    if (!controlledSlugs.has(localDoc.fullSlug)) resolved.push(localDoc);
+  }
+
+  return filterAndSortDocs(resolved);
+}
+
 function buildNavigation(docs: DocPageData[]): DocsNavigation {
   const homeDoc = docs.find((doc) => doc.fullSlug === "");
 
@@ -183,19 +231,19 @@ function buildNavigation(docs: DocPageData[]): DocsNavigation {
 
 async function getPreferredDocs() {
   const [sanityDocs, docs] = await Promise.all([getSanityDocs(), getCachedLegacyDocs()]);
-  return mergeDocsByPriority([sanityDocs, docs]);
+  return resolveManagedDocs(sanityDocs, docs);
 }
 
 export async function getDocsNavigation(): Promise<DocsNavigation> {
   const [sanityDocs, docs] = await Promise.all([getSanityNavDocs(), getCachedLegacyDocs()]);
-  const merged = mergeDocsByPriority([sanityDocs, docs]);
+  const merged = resolveManagedDocs(sanityDocs, docs);
   if (merged.length > 0) return buildNavigation(merged);
   return getLegacyNavigation();
 }
 
 export async function getAllDocPaths() {
   const [sanityDocs, docs] = await Promise.all([getSanityNavDocs(), getCachedLegacyDocs()]);
-  const merged = mergeDocsByPriority([sanityDocs, docs]);
+  const merged = resolveManagedDocs(sanityDocs, docs);
   return merged.map((doc) => doc.slug);
 }
 
@@ -205,17 +253,14 @@ export async function getDocBySlug(slug: string[]) {
     return getDocBySlug(redirected);
   }
 
-  if (shouldPreferLocalDocs()) {
-    const docs = await getCachedLegacyDocs();
-    const localHit = docs.find((doc) => doc.fullSlug === slug.join("/"));
-    if (localHit) return localHit;
-  }
-
   const sanityHit = await getSanityDocBySlug(slug);
-  if (sanityHit) return sanityHit;
+  if (sanityHit?.enabled === false) return null;
+  if (sanityHit?.contentSource !== "server" && sanityHit) return sanityHit;
 
   const docs = await getCachedLegacyDocs();
   const localHit = docs.find((doc) => doc.fullSlug === slug.join("/"));
+  if (sanityHit && localHit) return withSanityGovernance(localHit, sanityHit);
+  if (sanityHit) return sanityHit;
   if (localHit) return localHit;
   return getLegacyDocBySlug(slug);
 }
@@ -235,14 +280,8 @@ function isObsoleteDocEntry(doc: DocPageData) {
   return false;
 }
 
-function mergeDocsByPriority(groups: DocPageData[][]): DocPageData[] {
-  const merged = new Map<string, DocPageData>();
-  for (const docs of groups) {
-    for (const doc of docs) {
-      merged.set(doc.fullSlug, doc);
-    }
-  }
-  return Array.from(merged.values())
+function filterAndSortDocs(docs: DocPageData[]): DocPageData[] {
+  return docs
     .filter((doc) => !isObsoleteDocEntry(doc))
     .sort(
     (a, b) =>

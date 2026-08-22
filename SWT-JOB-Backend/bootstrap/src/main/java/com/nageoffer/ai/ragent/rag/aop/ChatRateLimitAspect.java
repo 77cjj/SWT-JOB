@@ -57,7 +57,8 @@ public class ChatRateLimitAspect {
     @Around("@annotation(com.nageoffer.ai.ragent.rag.aop.ChatRateLimit)")
     public Object limitStreamChat(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
-        if (args == null || args.length < 4 || !(args[3] instanceof SseEmitter emitter)) {
+        SseEmitter emitter = findEmitter(args);
+        if (args == null || args.length < 2 || emitter == null) {
             return joinPoint.proceed();
         }
 
@@ -69,9 +70,26 @@ public class ChatRateLimitAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
 
+        String userId = UserContext.getUserId();
         chatQueueLimiter.enqueue(question, actualConversationId, emitter, () -> {
-            invokeWithTrace(method, target, args, question, actualConversationId, emitter);
+            invokeWithTrace(method, target, args, question, actualConversationId, userId, emitter);
         });
+        return null;
+    }
+
+    /**
+     * 不依赖固定参数下标。streamChat 增加 language 等参数后，Emitter 的位置会变化；
+     * 固定读取 args[3] 会让正常请求直接绕过 Trace。
+     */
+    private SseEmitter findEmitter(Object[] args) {
+        if (args == null) {
+            return null;
+        }
+        for (Object arg : args) {
+            if (arg instanceof SseEmitter emitter) {
+                return emitter;
+            }
+        }
         return null;
     }
 
@@ -80,6 +98,7 @@ public class ChatRateLimitAspect {
                                  Object[] args,
                                  String question,
                                  String conversationId,
+                                 String userId,
                                  SseEmitter emitter) {
         if (!ragTraceProperties.isEnabled()) {
             invokeTarget(method, target, args, emitter);
@@ -95,7 +114,7 @@ public class ChatRateLimitAspect {
                 .entryMethod(method.getDeclaringClass().getName() + "#" + method.getName())
                 .conversationId(conversationId)
                 .taskId(taskId)
-                .userId(UserContext.getUserId())
+                .userId(userId)
                 .status(STATUS_RUNNING)
                 .startTime(new Date())
                 .extraData(JSONUtil.createObj()

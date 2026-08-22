@@ -603,7 +603,7 @@ select:focus:not(:focus-visible),
     @apply rounded-2xl border-slate-200 bg-white shadow-xl;
   }
 
-  .admin-layout .trace-list-page {
+  .admin-layout .trace-page {
     --trace-space-4: 4px;
     --trace-space-8: 8px;
     --trace-space-12: 12px;
@@ -1220,20 +1220,22 @@ select:focus:not(:focus-visible),
   }
 
   .admin-layout .trace-list-table-wrap {
-    overflow-x: hidden;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
   }
 
   .admin-layout .trace-list-table-wrap .ui-table-wrap {
     margin-left: 0;
     margin-right: 0;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto;
     overflow-y: visible;
   }
 
   .admin-layout .trace-list-table {
     width: 100%;
-    table-layout: auto;
+    min-width: 1180px;
+    table-layout: fixed;
   }
 
   .admin-layout .trace-list-table .ui-table-head,

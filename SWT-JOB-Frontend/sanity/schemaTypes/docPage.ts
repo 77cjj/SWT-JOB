@@ -77,9 +77,40 @@ export const docPageType = defineType({
       },
     }),
     defineField({
+      name: "contentSource",
+      title: "正文来源",
+      type: "string",
+      initialValue: "sanity",
+      description:
+        "Sanity：使用下方正文；服务器 / 仓库 MDX：使用同路径的站点兜底文档，Sanity 只负责启用和评论开关。",
+      options: {
+        layout: "radio",
+        list: [
+          { title: "Sanity", value: "sanity" },
+          { title: "服务器 / 仓库 MDX", value: "server" },
+        ],
+      },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "enabled",
+      title: "前台启用",
+      type: "boolean",
+      initialValue: true,
+      description: "关闭后，该文档不会出现在目录、搜索和页面路由中。",
+    }),
+    defineField({
+      name: "commentsEnabled",
+      title: "开放评论区",
+      type: "boolean",
+      initialValue: true,
+      description: "关闭后，前台隐藏这篇文档的评论区。",
+    }),
+    defineField({
       name: "body",
       title: "正文",
       type: "array",
+      hidden: ({ document }) => document?.contentSource === "server",
       of: [
         { type: "block" },
         {
@@ -125,11 +156,17 @@ export const docPageType = defineType({
       title: "title",
       subtitle: "slug.current",
       status: "status",
+      enabled: "enabled",
+      contentSource: "contentSource",
     },
-    prepare({ title, subtitle, status }) {
+    prepare({ title, subtitle, status, enabled, contentSource }) {
       return {
         title,
-        subtitle: [status, subtitle].filter(Boolean).join(" · "),
+        subtitle: [
+          enabled === false ? "已停用" : status,
+          contentSource === "server" ? "服务器 / MDX" : "Sanity",
+          subtitle,
+        ].filter(Boolean).join(" · "),
       };
     },
   },

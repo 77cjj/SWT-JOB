@@ -129,9 +129,9 @@ public final class ResponseLanguage {
 
     public static String multiQuestionLeadIn(String language) {
         if (isChinese(language)) {
-            return "请基于上述文档内容，回答以下问题：\n\n";
+            return "请逐项回答以下问题。优先使用相关资料；稳定、低风险的通用常识可直接回答：\n\n";
         }
-        return "Based on the documents above, answer the following questions in "
-                + displayName(language) + ":\n\n";
+        return "Answer each question in " + displayName(language)
+                + ". Use the provided material for SWT-specific or current facts; stable, low-risk general knowledge may be answered directly:\n\n";
     }
 }

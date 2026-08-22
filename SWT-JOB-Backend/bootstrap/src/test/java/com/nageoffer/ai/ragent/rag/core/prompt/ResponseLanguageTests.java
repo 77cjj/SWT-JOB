@@ -49,4 +49,11 @@ class ResponseLanguageTests {
                 ResponseLanguage.emptyRetrievalMessage("en"));
         assertFalse(ResponseLanguage.isChinese("en"));
     }
+
+    @Test
+    void multiQuestionLeadInDoesNotForceEveryAnswerToComeFromDocuments() {
+        String leadIn = ResponseLanguage.multiQuestionLeadIn("zh");
+        assertTrue(leadIn.contains("通用常识可直接回答"));
+        assertFalse(leadIn.contains("基于上述文档内容"));
+    }
 }

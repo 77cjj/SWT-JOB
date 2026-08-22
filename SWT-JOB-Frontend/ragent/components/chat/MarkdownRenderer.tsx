@@ -19,6 +19,10 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { mode } = useAppTheme();
+  const normalizedContent = React.useMemo(
+    () => content.replace(/(?:&nbsp;|&#160;|&#x0*a0;|\u00a0)/gi, " "),
+    [content]
+  );
 
   const proseClassName =
     "chat-markdown prose prose-neutral max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[#111827] dark:prose-headings:text-[#F3F4F6] prose-p:text-[#1F2937] dark:prose-p:text-[#D1D5DB] prose-strong:text-[#111827] dark:prose-strong:text-[#F9FAFB] prose-code:before:content-none prose-code:after:content-none [&_p]:my-3 [&_p]:leading-7 [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1.5 [&_li]:leading-7 [&_h1]:mt-6 [&_h1]:mb-3 [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:mt-5 [&_h3]:mb-2 [&_pre]:my-4 [&_blockquote]:my-4 [&_table]:my-4";
@@ -163,7 +167,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         }
       }}
     >
-      {content}
+      {normalizedContent}
     </ReactMarkdown>
     </div>
   );

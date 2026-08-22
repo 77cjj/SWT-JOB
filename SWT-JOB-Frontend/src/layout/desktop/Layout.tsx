@@ -76,7 +76,7 @@ export default function DesktopLayout({
             <span className="text-lg font-semibold tracking-wide lg:text-xl">SWT Helper</span>
           </Link>
           <div className="flex min-w-0 items-center gap-2 lg:gap-4">
-            <nav className="flex min-w-0 items-center gap-1 overflow-x-auto text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:gap-2" aria-label="主导航">
+            <nav className="flex min-w-0 items-center gap-1 overflow-visible text-sm lg:gap-2" aria-label="主导航">
               {isFeatureEnabled('chat') ? (
               <Link
                 href="/"
@@ -87,12 +87,11 @@ export default function DesktopLayout({
               </Link>
               ) : null}
               {isFeatureEnabled('deals') ? (
-              <div className="relative group/deals">
+              <div className="group/deals relative shrink-0">
                 <Link
                   href="/deals"
-                  className={`transition-colors ${linkHoverClass} ${
-                    pathname === '/deals' || pathname.startsWith('/deals/') ? linkActiveClass : ''
-                  }`}
+                  aria-current={pathname === '/deals' || pathname.startsWith('/deals/') ? 'page' : undefined}
+                  className={navLinkClass(pathname === '/deals' || pathname.startsWith('/deals/'))}
                 >
                   {t('nav.deals')}
                 </Link>
@@ -145,7 +144,6 @@ export default function DesktopLayout({
                 className={navLinkClass(pathname === '/jobs')}
               >
                 {t("nav.jobs")}
-                <span className="absolute -right-1 -top-1 rounded-full bg-indigo-500 px-1 text-[8px] font-bold leading-3 text-white">NEW</span>
               </Link>
               ) : null}
               {isFeatureEnabled('docs') ? (

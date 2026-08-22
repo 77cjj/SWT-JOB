@@ -72,7 +72,7 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
   return (
     <div
       className={cn(
-        'flex min-h-screen flex-col',
+        'flex min-h-[100dvh] flex-col',
         isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-white text-neutral-900',
         rootClassName,
       )}
@@ -102,13 +102,14 @@ export default function MobileLayout({ children, mainClassName, rootClassName }:
         </div>
       </header>
       <main
-        className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]', mainClassName)}
+        className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]', mainClassName)}
       >
         {children}
       </main>
       <nav
-        className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-[1300] shrink-0 border-t pb-[env(safe-area-inset-bottom,0px)] ${
-          isDark ? 'border-neutral-800/60 bg-neutral-950' : 'border-neutral-200 bg-white'
+        aria-label="移动端主导航"
+        className={`mobile-bottom-nav fixed inset-x-0 bottom-0 z-[1300] shrink-0 border-t pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] ${
+          isDark ? 'border-neutral-800/60 bg-neutral-950/95' : 'border-neutral-200 bg-white/95'
         }`}
       >
         <div

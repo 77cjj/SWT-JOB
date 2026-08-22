@@ -101,6 +101,7 @@ rag:
     channels:
       timeout-ms: 15000
       vector-global:
+        always-run: true
         confidence-threshold: 0.6
         top-k-multiplier: 3
       intent-directed:

@@ -20,10 +20,7 @@ export const structure: StructureResolver = (S) =>
         .id("docPage")
         .title("全部文档")
         .schemaType("docPage")
-        .child(
-          S.documentTypeList("docPage")
-            .title("全部文档"),
-        ),
+        .child(S.documentTypeList("docPage").title("全部文档")),
       ...sectionDefs.map((section) =>
         S.listItem()
           .id(`section-${section.key}`)

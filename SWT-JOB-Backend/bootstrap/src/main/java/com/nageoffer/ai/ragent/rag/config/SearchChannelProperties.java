@@ -64,8 +64,16 @@ public class SearchChannelProperties {
         private boolean enabled = true;
 
         /**
+         * 是否与意图定向检索并行执行。
+         *
+         * 高置信度并不等于分类一定正确。开启后，KB 问题会同时走全库向量召回，
+         * 再交给去重和重排处理器统一筛选，避免“高置信度误判”导致完全查不到正确文档。
+         */
+        private boolean alwaysRun = true;
+
+        /**
          * 意图置信度阈值
-         * 当意图识别的最高分数低于此阈值时，启用全局检索
+         * alwaysRun 关闭时，意图识别的最高分数低于此阈值才启用全局检索
          */
         private double confidenceThreshold = 0.6;
 

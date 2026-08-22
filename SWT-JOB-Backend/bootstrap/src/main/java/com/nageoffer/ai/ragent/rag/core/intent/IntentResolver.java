@@ -42,6 +42,8 @@ import static com.nageoffer.ai.ragent.rag.enums.IntentKind.SYSTEM;
 @Service
 public class IntentResolver {
 
+    private static final double SYSTEM_SHORTCUT_MIN_SCORE = 0.8;
+
     private final IntentClassifier intentClassifier;
     private final Executor intentClassifyExecutor;
 
@@ -88,7 +90,8 @@ public class IntentResolver {
     public boolean isSystemOnly(List<NodeScore> nodeScores) {
         return nodeScores.size() == 1
                 && nodeScores.get(0).getNode() != null
-                && nodeScores.get(0).getNode().getKind() == SYSTEM;
+                && nodeScores.get(0).getNode().getKind() == SYSTEM
+                && nodeScores.get(0).getScore() >= SYSTEM_SHORTCUT_MIN_SCORE;
     }
 
     private List<NodeScore> classifyIntents(String question) {

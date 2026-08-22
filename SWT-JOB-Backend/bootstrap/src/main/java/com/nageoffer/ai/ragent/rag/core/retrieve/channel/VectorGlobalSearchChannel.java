@@ -41,8 +41,7 @@ import java.util.concurrent.Executor;
 /**
  * 向量全局检索通道
  * <p>
- * 在所有知识库中进行向量检索，作为兜底策略
- * 当意图识别失败或置信度低时启用
+ * 在所有知识库中进行向量检索，作为定向检索的并行召回或低置信度兜底
  */
 @Slf4j
 @Component
@@ -85,6 +84,13 @@ public class VectorGlobalSearchChannel implements SearchChannel {
                 .toList();
         if (CollUtil.isEmpty(kbScores)) {
             log.info("没有 KB 意图，启用全局检索");
+            return true;
+        }
+
+        // KB 查询默认采用“意图定向 + 全库向量”的混合召回。分类器即使给出高分也可能选错节点，
+        // 不能因为一次高置信度误判而关闭唯一的跨知识库兜底通道。
+        if (properties.getChannels().getVectorGlobal().isAlwaysRun()) {
+            log.info("KB 问题启用混合召回：意图定向检索 + 全局向量检索");
             return true;
         }
 

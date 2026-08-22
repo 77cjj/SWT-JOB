@@ -22,6 +22,9 @@ import {
 import {
   Search as SearchIcon,
   VolunteerActivism,
+  BoltRounded,
+  PlaceRounded,
+  VerifiedRounded,
 } from '@mui/icons-material';
 import { historicalJobsData } from '../data/historicalJobs';
 import { importIntelJobToCompare } from '../lib/jobs/importToCompare';
@@ -74,6 +77,10 @@ export default function HistoricalJobsPage() {
     const stateSet = new Set(historicalJobsData.map((job) => job.state));
     return Array.from(stateSet).sort();
   }, []);
+  const verifiedTotal = useMemo(
+    () => historicalJobsData.reduce((sum, job) => sum + (job.verifiedCount ?? 0), 0),
+    [],
+  );
 
   const filteredJobs = useMemo(() => {
     return historicalJobsData.filter((job) => {
@@ -136,6 +143,52 @@ export default function HistoricalJobsPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, maxWidth: 720 }}>
         {t('historicalJobs.subtitle')}
       </Typography>
+
+      <Box
+        component="section"
+        aria-label={t('historicalJobs.noticeTitle')}
+        sx={{
+          mb: 2.5,
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'auto 1fr' },
+          gap: 1.5,
+          alignItems: 'center',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 3,
+          px: { xs: 2, sm: 2.5 },
+          py: 1.75,
+          bgcolor: 'background.paper',
+          backgroundImage: (theme) =>
+            `linear-gradient(110deg, ${theme.palette.primary.main}12, transparent 48%)`,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <BoltRounded color="primary" fontSize="small" />
+          <Box>
+            <Typography variant="overline" color="primary.main" fontWeight={800} lineHeight={1.2}>
+              LIVE INTEL
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={800}>
+              {t('historicalJobs.noticeTitle')}
+            </Typography>
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box className="job-intel-stat">
+            <VerifiedRounded fontSize="inherit" />
+            {tWithParams('historicalJobs.noticeEntries', { count: historicalJobsData.length })}
+          </Box>
+          <Box className="job-intel-stat">
+            <PlaceRounded fontSize="inherit" />
+            {tWithParams('historicalJobs.noticeStates', { count: states.length })}
+          </Box>
+          <Box className="job-intel-stat">
+            <VolunteerActivism fontSize="inherit" />
+            {tWithParams('historicalJobs.noticeVerified', { count: verifiedTotal })}
+          </Box>
+        </Box>
+      </Box>
 
       <Box
         data-tour="jobs-toolbar"

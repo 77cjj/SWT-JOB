@@ -431,6 +431,10 @@ export const en = {
   historicalJobs: {
     title: 'Job Intel Library',
     subtitle: 'Structured feedback from past SWT participants. Public tier shows ranges and tags; contribute or subscribe to unlock full employer names and deeper intel.',
+    noticeTitle: 'Job intel snapshot',
+    noticeEntries: '{count} structured entries',
+    noticeStates: '{count} states covered',
+    noticeVerified: '{count} community checks',
     searchPlaceholder: 'Search role, location, state...',
     filterByState: 'Filter by State',
     viewMode: 'View Mode',
@@ -832,4 +836,3 @@ export const en = {
     selectState: 'Please select a state',
   },
 };
-

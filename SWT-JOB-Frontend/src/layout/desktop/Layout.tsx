@@ -56,23 +56,32 @@ export default function DesktopLayout({
   const navTextClass = isDark ? 'text-neutral-400' : 'text-neutral-600';
   const linkHoverClass = isDark ? 'hover:text-neutral-100' : 'hover:text-neutral-900';
   const linkActiveClass = isDark ? 'text-neutral-100 font-semibold' : 'text-neutral-900 font-semibold';
+  const navLinkClass = (active: boolean) =>
+    cn(
+      'relative whitespace-nowrap rounded-full px-3 py-1.5 transition-colors',
+      linkHoverClass,
+      active
+        ? cn(linkActiveClass, isDark ? 'bg-white/10' : 'bg-neutral-100')
+        : navTextClass,
+    );
 
   return (
     <div
       className={cn(rootClass, 'flex flex-col', rootMinH, rootClassName)}
       style={{ ['--app-header-height' as string]: '56px', ['--app-bottom-nav-height' as string]: '0px' }}
     >
-      <header className={`shrink-0 px-8 py-3 ${headerStickyClass} ${headerBorderClass}`}>
-        <div className={`mx-auto flex ${maxWidthClassName} items-center justify-between`}>
-          <h1 className="text-xl font-semibold tracking-wide">SWT Helper</h1>
-          <div className="flex items-center gap-4">
-            <nav className={`flex gap-6 text-sm ${navTextClass}`}>
+      <header className={`shrink-0 px-5 py-2.5 lg:px-8 ${headerStickyClass} ${headerBorderClass}`}>
+        <div className={`mx-auto flex min-w-0 ${maxWidthClassName} items-center justify-between gap-3`}>
+          <Link href="/" className="shrink-0 !text-inherit no-underline" aria-label="SWT Helper 首页">
+            <span className="text-lg font-semibold tracking-wide lg:text-xl">SWT Helper</span>
+          </Link>
+          <div className="flex min-w-0 items-center gap-2 lg:gap-4">
+            <nav className="flex min-w-0 items-center gap-1 overflow-x-auto text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:gap-2" aria-label="主导航">
               {isFeatureEnabled('chat') ? (
               <Link
                 href="/"
-                className={`transition-colors ${linkHoverClass} ${
-                  pathname === "/" || pathname.startsWith("/chat") ? linkActiveClass : ""
-                }`}
+                aria-current={pathname === "/" || pathname.startsWith("/chat") ? 'page' : undefined}
+                className={navLinkClass(pathname === "/" || pathname.startsWith("/chat"))}
               >
                 {t("nav.chat")}
               </Link>
@@ -123,9 +132,8 @@ export default function DesktopLayout({
               {isFeatureEnabled('compare') ? (
               <Link
                 href="/compare"
-                className={`transition-colors ${linkHoverClass} ${
-                  pathname === "/compare" ? linkActiveClass : ""
-                }`}
+                aria-current={pathname === '/compare' ? 'page' : undefined}
+                className={navLinkClass(pathname === '/compare')}
               >
                 {t("nav.home")}
               </Link>
@@ -133,19 +141,18 @@ export default function DesktopLayout({
               {isFeatureEnabled('jobs') ? (
               <Link
                 href="/jobs"
-                className={`transition-colors ${linkHoverClass} ${
-                  pathname === "/jobs" ? linkActiveClass : ""
-                }`}
+                aria-current={pathname === '/jobs' ? 'page' : undefined}
+                className={navLinkClass(pathname === '/jobs')}
               >
                 {t("nav.jobs")}
+                <span className="absolute -right-1 -top-1 rounded-full bg-indigo-500 px-1 text-[8px] font-bold leading-3 text-white">NEW</span>
               </Link>
               ) : null}
               {isFeatureEnabled('docs') ? (
               <Link
                 href="/docs"
-                className={`transition-colors ${linkHoverClass} ${
-                  pathname.startsWith("/docs") ? linkActiveClass : ""
-                }`}
+                aria-current={pathname.startsWith('/docs') ? 'page' : undefined}
+                className={navLinkClass(pathname.startsWith('/docs'))}
               >
                 {t("nav.docs")}
               </Link>
@@ -187,4 +194,3 @@ export default function DesktopLayout({
     </div>
   );
 }
-

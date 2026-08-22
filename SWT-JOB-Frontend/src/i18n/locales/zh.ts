@@ -427,6 +427,10 @@ export const zh = {
   historicalJobs: {
     title: '岗位情报库',
     subtitle: '来自往届 SWT 生的结构化反馈。公开层可看区间与标签；贡献或会员可解锁完整雇主名与深度情报。',
+    noticeTitle: '岗位情报速览',
+    noticeEntries: '{count} 条结构化情报',
+    noticeStates: '覆盖 {count} 个州',
+    noticeVerified: '{count} 次社区验证',
     searchPlaceholder: '搜索岗位、地点、州...',
     filterByState: '筛选州',
     viewMode: '视图',
@@ -826,5 +830,4 @@ export const zh = {
     selectState: '请选择州',
   },
 };
-
 

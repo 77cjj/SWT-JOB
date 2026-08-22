@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -180,22 +181,33 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
             }
 
             List<NodeScore> scores = new ArrayList<>();
+            HashSet<String> seenIds = new HashSet<>();
             for (JsonElement el : arr) {
                 if (!el.isJsonObject()) continue;
                 JsonObject obj = el.getAsJsonObject();
 
                 if (!obj.has("id") || !obj.has("score")) continue;
+                try {
+                    String id = obj.get("id").getAsString().trim();
+                    if (id.isEmpty() || !seenIds.add(id)) {
+                        continue;
+                    }
+                    double score = obj.get("score").getAsDouble();
+                    if (!Double.isFinite(score)) {
+                        continue;
+                    }
 
-                String id = obj.get("id").getAsString();
-                double score = obj.get("score").getAsDouble();
+                    IntentNode node = data.id2Node.get(id);
+                    if (node == null || !node.isLeaf()) {
+                        log.warn("LLM 返回了未知或非叶子意图节点 ID: {}, 已跳过", id);
+                        continue;
+                    }
 
-                IntentNode node = data.id2Node.get(id);
-                if (node == null) {
-                    log.warn("LLM 返回了未知的意图节点 ID: {}, 已跳过", id);
-                    continue;
+                    // 模型偶尔会返回百分制或轻微越界值；越界值不应破坏整批分类结果。
+                    scores.add(new NodeScore(node, Math.max(0.0, Math.min(1.0, score))));
+                } catch (RuntimeException itemError) {
+                    log.warn("跳过无法解析的意图项: {}", obj, itemError);
                 }
-
-                scores.add(new NodeScore(node, score));
             }
 
             // 降序排序
@@ -204,10 +216,13 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
             log.info("当前问题：{}\n意图识别树如下所示：{}\n",
                     question,
                     JSONUtil.toJsonPrettyStr(
-                            scores.stream().peek(each -> {
-                                IntentNode node = each.getNode();
-                                node.setChildren(null);
-                            }).collect(Collectors.toList())
+                            scores.stream()
+                                    .map(each -> Map.of(
+                                            "id", each.getNode().getId(),
+                                            "path", each.getNode().getFullPath(),
+                                            "score", each.getScore()
+                                    ))
+                                    .collect(Collectors.toList())
                     )
             );
             return scores;

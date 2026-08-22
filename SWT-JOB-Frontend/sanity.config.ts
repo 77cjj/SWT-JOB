@@ -2,7 +2,7 @@ import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
 
 import { schemaTypes } from "./sanity/schemaTypes";
-import { structure } from "./sanity/structure";
+import { structure } from "./sanity/studioStructure";
 import {
   SANITY_DATASET,
   SANITY_PREVIEW_URL,

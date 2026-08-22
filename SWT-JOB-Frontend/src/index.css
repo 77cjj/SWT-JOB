@@ -210,3 +210,9 @@
 .mobile-bottom-nav .mobile-nav-item .mobile-nav-icon {
   will-change: transform;
 }
+
+@layer components {
+  .job-intel-stat {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/80 dark:text-neutral-200;
+  }
+}
